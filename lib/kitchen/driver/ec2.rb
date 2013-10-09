@@ -31,11 +31,14 @@ module Kitchen
     # @author Fletcher Nichol <fnichol@nichol.ca>
     class Ec2 < Kitchen::Driver::SSHBase
 
-      default_config :region,             'us-east-1'
-      default_config :availability_zone,  'us-east-1b'
-      default_config :flavor_id,          'm1.small'
-      default_config :groups,             ['default']
-      default_config :tags,               { 'created-by' => 'test-kitchen' }
+      default_config :region,                      'us-east-1'
+      default_config :availability_zone,           'us-east-1b'
+      default_config :flavor_id,                   'm1.small'
+      default_config :iam_instance_profile_name,   nil
+      default_config :iam_instance_profile_arn,    nil
+      default_config :flavor_id,                   'm1.small'
+      default_config :groups,                      ['default']
+      default_config :tags,                        { 'created-by' => 'test-kitchen' }
       default_config :aws_access_key_id do |driver|
         ENV['AWS_ACCESS_KEY']
       end
@@ -104,13 +107,15 @@ module Kitchen
         debug_server_config
 
         connection.servers.create(
-          :availability_zone  => config[:availability_zone],
-          :groups             => config[:groups],
-          :tags               => config[:tags],
-          :flavor_id          => config[:flavor_id],
-          :image_id           => config[:image_id],
-          :key_name           => config[:aws_ssh_key_id],
-          :subnet_id          => config[:subnet_id],
+          :availability_zone         => config[:availability_zone],
+          :groups                    => config[:groups],
+          :tags                      => config[:tags],
+          :flavor_id                 => config[:flavor_id],
+          :image_id                  => config[:image_id],
+          :key_name                  => config[:aws_ssh_key_id],
+          :subnet_id                 => config[:subnet_id],
+          :iam_instance_profile_name => config[:iam_instance_profile_name],
+          :iam_instance_profile_arn  => config[:iam_instance_profile_arn],
         )
       end
 
