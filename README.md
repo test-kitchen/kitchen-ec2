@@ -1,7 +1,7 @@
 # <a name="title"></a> Kitchen::Ec2: A Test Kitchen Driver for Amazon EC2
 
 [![Gem Version](https://badge.fury.io/rb/kitchen-ec2.png)](http://badge.fury.io/rb/kitchen-ec2)
-[![Build Status](https://travis-ci.org/opscode/kitchen-ec2.png)](https://travis-ci.org/opscode/kitchen-ec2)
+[![Build Status](https://travis-ci.org/test-kitchen/kitchen-ec2.png)](https://travis-ci.org/opscode/kitchen-ec2)
 [![Code Climate](https://codeclimate.com/github/opscode/kitchen-ec2.png)](https://codeclimate.com/github/opscode/kitchen-ec2)
 
 A Test Kitchen Driver for Amazon EC2.
