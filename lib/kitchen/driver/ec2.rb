@@ -37,6 +37,7 @@ module Kitchen
       default_config :ebs_optimized,      false
       default_config :security_group_ids, ['default']
       default_config :tags,               { 'created-by' => 'test-kitchen' }
+      default_config :iam_instance_profile_arn,    nil
       default_config :aws_access_key_id do |driver|
         ENV['AWS_ACCESS_KEY'] || ENV['AWS_ACCESS_KEY_ID']
       end
@@ -119,6 +120,7 @@ module Kitchen
           :image_id           => config[:image_id],
           :key_name           => config[:aws_ssh_key_id],
           :subnet_id          => config[:subnet_id],
+          :iam_instance_profile_arn  => config[:iam_instance_profile_arn],
         )
       end
 
@@ -132,6 +134,7 @@ module Kitchen
         debug("ec2:tags '#{config[:tags]}'")
         debug("ec2:key_name '#{config[:aws_ssh_key_id]}'")
         debug("ec2:subnet_id '#{config[:subnet_id]}'")
+        debug("ec2:iam_instance_profile_arn '#{config[:iam_instance_profile_arn]}'")
       end
 
       def amis
