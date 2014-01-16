@@ -160,6 +160,12 @@ The default will be determined by the Platform name, if a default exists (see
 [amis.json][amis_json]). If a default cannot be computed, then the default is
 `"root"`.
 
+### <a name="config-user-data"></a> user\_data
+
+Path to the user data script to feed the instance. Use bash to install dependencies or download artifacts before chef runs.
+
+The default is unset, or `nil`.
+
 ## <a name="example"></a> Example
 
 The following could be used in a `.kitchen.yml` or in a `.kitchen.local.yml`
