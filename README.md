@@ -171,6 +171,12 @@ The default will be determined by the Platform name, if a default exists (see
 [amis.json][amis_json]). If a default cannot be computed, then the default is
 `"root"`.
 
+### <a name="config-iam-instance-profile-arn"></a> iam_instance_profile_arn
+
+The EC2 IAM Instance Profile ARN to use.
+
+The default is unset, or `nil`.
+
 ## <a name="example"></a> Example
 
 The following could be used in a `.kitchen.yml` or in a `.kitchen.local.yml`
@@ -219,6 +225,7 @@ driver:
   region: us-east-1
   availability_zone: us-east-1b
   require_chef_omnibus: true
+  iam_instance_profile_arn: arn:aws:iam::000000000000:instance-profile/Instance-Profile-Name
 
 platforms:
   - name: ubuntu-12.04
