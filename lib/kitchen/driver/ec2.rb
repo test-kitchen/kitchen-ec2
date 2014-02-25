@@ -126,8 +126,8 @@ module Kitchen
           :key_name           => config[:aws_ssh_key_id],
           :subnet_id          => config[:subnet_id],
           :user_data          => (config[:user_data].nil ? nil : \
-                                 File.read(config[:user_data]))
-        )
+            File.read(config[:user_data]))
+          )
       end
 
       def debug_server_config
