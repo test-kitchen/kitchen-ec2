@@ -121,6 +121,7 @@ module Kitchen
           mapping = {}
           name_mapping = {
             'deviceName' => 'DeviceName',
+            'virtualName' => 'VirtualName',
             'snapshotId' => 'Ebs.SnapshotId',
             'volumeSize' => 'Ebs.VolumeSize',
             'deleteOnTermination' => 'Ebs.DeleteOnTermination',
@@ -129,7 +130,9 @@ module Kitchen
             mapping = {}
             # create block device mapping from image's values
             name_mapping.each do |key, value|
-              mapping[value] = image_mapping[key]
+              if image_mapping[key]
+                mapping[value] = image_mapping[key]
+              end
             end
             # overwrite the volume size if it is the root device
             if mapping['DeviceName'] == image.root_device_name
