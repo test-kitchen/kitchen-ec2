@@ -37,6 +37,7 @@ module Kitchen
       default_config :security_group_ids, ['default']
       default_config :tags,               { 'created-by' => 'test-kitchen' }
       default_config :iam_profile_name,   nil
+      default_config :root_device_size,   nil
       default_config :aws_access_key_id do |driver|
         ENV['AWS_ACCESS_KEY'] || ENV['AWS_ACCESS_KEY_ID']
       end
@@ -113,6 +114,33 @@ module Kitchen
         )
       end
 
+      def block_device_mapping
+        block_device_mapping = []
+        if config[:root_device_size]
+          image = connection.images.get(config[:image_id])
+          mapping = {}
+          name_mapping = {
+            'deviceName' => 'DeviceName',
+            'snapshotId' => 'Ebs.SnapshotId',
+            'volumeSize' => 'Ebs.VolumeSize',
+            'deleteOnTermination' => 'Ebs.DeleteOnTermination',
+          }
+          image.block_device_mapping.each do |image_mapping|
+            mapping = {}
+            # create block device mapping from image's values
+            name_mapping.each do |key, value|
+              mapping[value] = image_mapping[key]
+            end
+            # overwrite the volume size if it is the root device
+            if mapping['DeviceName'] == image.root_device_name
+              mapping['Ebs.VolumeSize'] = config[:root_device_size]
+            end
+            block_device_mapping << mapping
+          end
+        end
+        block_device_mapping
+      end
+
       def create_server
         debug_server_config
 
@@ -126,6 +154,7 @@ module Kitchen
           :key_name                  => config[:aws_ssh_key_id],
           :subnet_id                 => config[:subnet_id],
           :iam_instance_profile_name => config[:iam_profile_name],
+          :block_device_mapping      => block_device_mapping,
         )
       end
 
@@ -135,6 +164,7 @@ module Kitchen
         debug("ec2:flavor_id '#{config[:flavor_id]}'")
         debug("ec2:ebs_optimized '#{config[:ebs_optimized]}'")
         debug("ec2:image_id '#{config[:image_id]}'")
+        debug("ec2:root_device_size '#{config[:root_device_size]}'")
         debug("ec2:security_group_ids '#{config[:security_group_ids]}'")
         debug("ec2:tags '#{config[:tags]}'")
         debug("ec2:key_name '#{config[:aws_ssh_key_id]}'")
