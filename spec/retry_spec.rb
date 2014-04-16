@@ -9,9 +9,9 @@ describe Kitchen::Retry do
   end
 
   it 'should retry on RequestLimitExceeded' do
-    o.should_receive(:puts).with('RequestLimitExceeded => Request limit exceeded.')
-    o.should_receive(:puts).with('Sleeping 1.00 seconds. Will retry 1 more time(s).')
-    o.with_retry_on_throttling(:max_retries => 1, :retry_delay => 1) do
+    o.stub(:on_throttled)
+    o.should_receive(:on_throttled).twice
+    o.with_retry_on_throttling(:max_retries => 1) do
         raise ::Fog::Compute::AWS::Error.new('RequestLimitExceeded => Request limit exceeded.')
       end rescue nil
   end
