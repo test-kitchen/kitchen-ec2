@@ -16,6 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require 'kitchen/driver/retry'
+
 require 'benchmark'
 require 'json'
 require 'fog'
@@ -29,6 +31,8 @@ module Kitchen
     #
     # @author Fletcher Nichol <fnichol@nichol.ca>
     class Ec2 < Kitchen::Driver::SSHBase
+
+      include Kitchen::Retry
 
       default_config :region,             'us-east-1'
       default_config :availability_zone,  'us-east-1b'
@@ -84,8 +88,10 @@ module Kitchen
       def destroy(state)
         return if state[:server_id].nil?
 
-        server = connection.servers.get(state[:server_id])
-        server.destroy unless server.nil?
+        with_retry_on_throttling do
+          server = connection.servers.get(state[:server_id])
+          server.destroy unless server.nil?
+        end
         info("EC2 instance <#{state[:server_id]}> destroyed.")
         state.delete(:server_id)
         state.delete(:hostname)
@@ -115,18 +121,19 @@ module Kitchen
 
       def create_server
         debug_server_config
-
-        connection.servers.create(
-          :availability_zone         => config[:availability_zone],
-          :security_group_ids        => config[:security_group_ids],
-          :tags                      => config[:tags],
-          :flavor_id                 => config[:flavor_id],
-          :ebs_optimized             => config[:ebs_optimized],
-          :image_id                  => config[:image_id],
-          :key_name                  => config[:aws_ssh_key_id],
-          :subnet_id                 => config[:subnet_id],
-          :iam_instance_profile_name => config[:iam_profile_name],
-        )
+        with_retry_on_throttling do
+          connection.servers.create(
+            :availability_zone         => config[:availability_zone],
+            :security_group_ids        => config[:security_group_ids],
+            :tags                      => config[:tags],
+            :flavor_id                 => config[:flavor_id],
+            :ebs_optimized             => config[:ebs_optimized],
+            :image_id                  => config[:image_id],
+            :key_name                  => config[:aws_ssh_key_id],
+            :subnet_id                 => config[:subnet_id],
+            :iam_instance_profile_name => config[:iam_profile_name],
+          )
+        end
       end
 
       def debug_server_config

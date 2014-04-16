@@ -1,10 +1,11 @@
+require 'kitchen/driver/retry'
 require 'kitchen/driver/ec2'
 require 'kitchen/provisioner/dummy'
 
 describe Kitchen::Driver::Ec2 do
 
     let(:config) do
-      {}
+      { :aws_ssh_key_id => 'foo', :aws_secret_access_key=>'foo',:aws_access_key_id=> 'foo'}
     end
 
     let(:state) do
