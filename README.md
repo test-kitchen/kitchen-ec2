@@ -99,7 +99,6 @@ or `nil` otherwise.
 
 **Required** name of your ebs device, for example: `/dev/sda`
 
-
 ### endpoint
 
 The API endpoint for executing EC2 commands.
@@ -184,6 +183,12 @@ The default will be determined by the Platform name, if a default exists (see
 [amis.json][amis_json]). If a default cannot be computed, then the default is
 `"root"`.
 
+### <a name="config-iam-profile-name"></a> iam\_profile\_name
+
+The EC2 IAM profile name to use.
+
+The default is `nil`.
+
 ## <a name="example"></a> Example
 
 The following could be used in a `.kitchen.yml` or in a `.kitchen.local.yml`
@@ -202,9 +207,7 @@ driver:
   availability_zone: us-east-1b
   require_chef_omnibus: true
   subnet_id: subnet-6d6...
-  ebs_volume_size: 6,
-  ebs_delete_on_termination: 'true'
-  ebs_device_name: '/dev/sda'
+  iam_profile_name: chef-client
 
 platforms:
   - name: ubuntu-12.04
