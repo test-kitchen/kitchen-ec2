@@ -87,6 +87,19 @@ or `nil` otherwise.
 The default will be read from the `AWS_SSH_KEY_ID` environment variable if set,
 or `nil` otherwise.
 
+### <a name="config-ebs_volume_size"></a> ebs\_volume\_size
+
+**Required** Size of ebs volume in GB.
+
+### <a name="config-ebs_delete_on_termination"></a> ebs\_delete\_on\_termination
+
+**Required** `true` if you want ebs volumes to get deleted automatically after instance is terminated, `false` otherwise
+
+### <a name="config-ebs_device_name"></a> ebs\_device\_name
+
+**Required** name of your ebs device, for example: `/dev/sda`
+
+
 ### endpoint
 
 The API endpoint for executing EC2 commands.
@@ -171,12 +184,6 @@ The default will be determined by the Platform name, if a default exists (see
 [amis.json][amis_json]). If a default cannot be computed, then the default is
 `"root"`.
 
-### <a name="config-iam-profile-name"></a> iam\_profile\_name
-
-The EC2 IAM profile name to use.
-
-The default is `nil`.
-
 ## <a name="example"></a> Example
 
 The following could be used in a `.kitchen.yml` or in a `.kitchen.local.yml`
@@ -195,7 +202,9 @@ driver:
   availability_zone: us-east-1b
   require_chef_omnibus: true
   subnet_id: subnet-6d6...
-  iam_profile_name: chef-client
+  ebs_volume_size: 6,
+  ebs_delete_on_termination: 'true'
+  ebs_device_name: '/dev/sda'
 
 platforms:
   - name: ubuntu-12.04
