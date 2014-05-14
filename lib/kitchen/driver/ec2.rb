@@ -127,6 +127,11 @@ module Kitchen
           :key_name                  => config[:aws_ssh_key_id],
           :subnet_id                 => config[:subnet_id],
           :iam_instance_profile_name => config[:iam_profile_name],
+          block_device_mapping: [{
+            'Ebs.VolumeSize' => config[:ebs_volume_size],
+            'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
+            'DeviceName' => config[:ebs_device_name]
+          }]
         )
       end
 

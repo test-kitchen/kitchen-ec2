@@ -87,6 +87,18 @@ or `nil` otherwise.
 The default will be read from the `AWS_SSH_KEY_ID` environment variable if set,
 or `nil` otherwise.
 
+### <a name="config-ebs_volume_size"></a> ebs\_volume\_size
+
+**Required** Size of ebs volume in GB.
+
+### <a name="config-ebs_delete_on_termination"></a> ebs\_delete\_on\_termination
+
+**Required** `true` if you want ebs volumes to get deleted automatically after instance is terminated, `false` otherwise
+
+### <a name="config-ebs_device_name"></a> ebs\_device\_name
+
+**Required** name of your ebs device, for example: `/dev/sda`
+
 ### endpoint
 
 The API endpoint for executing EC2 commands.
