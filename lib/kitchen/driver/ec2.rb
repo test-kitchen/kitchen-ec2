@@ -65,10 +65,10 @@ module Kitchen
       required_config :aws_secret_access_key
       required_config :aws_ssh_key_id
       required_config :image_id
- 
+
       def initialize(config = {})
         super
-        @hostname_refreshed = false 
+        @hostname_refreshed = false
       end
 
       def create(state)
@@ -179,9 +179,10 @@ module Kitchen
           server.dns_name || server.public_ip_address || server.private_ip_address
         end
       end
-      
+
       # At most once per driver lifetime, use the ec2 instance identity to find out the hostname/ip
-      # Motivation: for converge/verify hack cycles, developer may have stopped/started the EC2 instance eg. overnight
+      # Motivation: for converge/verify hack cycles, developer may have stopped/started the EC2
+      # instance eg. overnight
       def refresh_host_if_needed(state)
         return if @hostname_refreshed || state[:server_id].nil?
         server = connection.servers.get(state[:server_id])
