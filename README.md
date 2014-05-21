@@ -60,6 +60,17 @@ For specific default values, please consult [amis.json][amis_json].
 
 ## <a name="config"></a> Configuration
 
+### <a name="config-associate-public-ap"></a> associate\_public\_ip
+
+Instances created within a [Virtual Private Cloud (VPC)][vpc_docs] will not
+automatically have a public IP address allocated. Set this option to `true` to
+allocate a public IP and associate it with the launched instance.
+
+Note that this setting has no effect on instances launched into EC2-Classic
+(i.e., instances not launched into a VPC).
+
+The default is `false`.
+
 ### <a name="config-az"></a> availability\_zone
 
 **Required** The AWS [availability zone][region_docs] to use.
@@ -283,3 +294,4 @@ Apache 2.0 (see [LICENSE][license])
 [kitchenci]:        http://kitchen.ci/
 [region_docs]:      http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
 [subnet_docs]:      http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
+[vpc_docs]:         http://docs.aws.amazon.com/AmazonVPC/latest/GettingStartedGuide/ExerciseOverview.html
