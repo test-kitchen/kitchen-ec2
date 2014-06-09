@@ -58,7 +58,8 @@
       "ubuntu-13.10": "ami-a65393ce",
       "ubuntu-14.04": "ami-4a915c22",
       "centos-6.4": "ami-bf5021d6",
-      "debian-7.1.0": "ami-50d9a439"
+      "debian-7.1.0": "ami-50d9a439",
+      "windows-2008R2-SP1": "ami-247e874c"
     },
     "us-west-1": {
       "ubuntu-10.04": "ami-848ba2c1",
@@ -89,7 +90,8 @@
     "ubuntu-13.10": "ubuntu",
     "ubuntu-14.04": "ubuntu",
     "centos-6.4": "root",
-    "debian-7.1.0": "admin"
+    "debian-7.1.0": "admin",
+    "windows-2008R2-SP1": "Administrator"
   },
   "references": {
     "ubuntu": "http://uec-images.ubuntu.com/query/",
