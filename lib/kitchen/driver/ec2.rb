@@ -30,13 +30,14 @@ module Kitchen
     # @author Fletcher Nichol <fnichol@nichol.ca>
     class Ec2 < Kitchen::Driver::SSHBase
 
-      default_config :region,             'us-east-1'
-      default_config :availability_zone,  'us-east-1b'
-      default_config :flavor_id,          'm1.small'
-      default_config :ebs_optimized,      false
-      default_config :security_group_ids, ['default']
-      default_config :tags,               { 'created-by' => 'test-kitchen' }
-      default_config :iam_profile_name,   nil
+      default_config :region,              'us-east-1'
+      default_config :availability_zone,   'us-east-1b'
+      default_config :flavor_id,           'm1.small'
+      default_config :ebs_optimized,       false
+      default_config :security_group_ids,  ['default']
+      default_config :tags,                { 'created-by' => 'test-kitchen' }
+      default_config :iam_profile_name,    nil
+      default_config :associate_public_ip, false
       default_config :aws_access_key_id do |driver|
         ENV['AWS_ACCESS_KEY'] || ENV['AWS_ACCESS_KEY_ID']
       end
@@ -118,6 +119,7 @@ module Kitchen
         debug_server_config
 
         connection.servers.create(
+          :associate_public_ip       => config[:associate_public_ip],
           :availability_zone         => config[:availability_zone],
           :security_group_ids        => config[:security_group_ids],
           :tags                      => config[:tags],
@@ -132,6 +134,7 @@ module Kitchen
 
       def debug_server_config
         debug("ec2:region '#{config[:region]}'")
+        debug("ec2:associate_public_ip '#{config[:associate_public_ip]}'")
         debug("ec2:availability_zone '#{config[:availability_zone]}'")
         debug("ec2:flavor_id '#{config[:flavor_id]}'")
         debug("ec2:ebs_optimized '#{config[:ebs_optimized]}'")
