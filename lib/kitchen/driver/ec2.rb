@@ -61,6 +61,10 @@ module Kitchen
 
       default_config :interface, nil
 
+      default_config :associate_public_ip do |driver|
+        driver.default_public_ip_association
+      end
+
       required_config :aws_access_key_id
       required_config :aws_secret_access_key
       required_config :aws_ssh_key_id
@@ -101,6 +105,10 @@ module Kitchen
         amis['usernames'][instance.platform.name] || 'root'
       end
 
+      def default_public_ip_association
+        !!config[:subnet_id]
+      end
+
       private
 
       def connection
@@ -127,6 +135,7 @@ module Kitchen
           :key_name                  => config[:aws_ssh_key_id],
           :subnet_id                 => config[:subnet_id],
           :iam_instance_profile_name => config[:iam_profile_name],
+          :associate_public_ip       => config[:associate_public_ip]
         )
       end
 
@@ -141,6 +150,7 @@ module Kitchen
         debug("ec2:key_name '#{config[:aws_ssh_key_id]}'")
         debug("ec2:subnet_id '#{config[:subnet_id]}'")
         debug("ec2:iam_profile_name '#{config[:iam_profile_name]}'")
+        debug("ec2:associate_public_ip '#{config[:associate_public_ip]}'")
       end
 
       def amis
