@@ -60,7 +60,10 @@ module Kitchen
       end
 
       default_config :interface, nil
-      default_config :associate_public_ip, false
+
+      default_config :associate_public_ip do |driver|
+        driver.default_public_ip_association
+      end
 
       required_config :aws_access_key_id
       required_config :aws_secret_access_key
@@ -100,6 +103,10 @@ module Kitchen
 
       def default_username
         amis['usernames'][instance.platform.name] || 'root'
+      end
+
+      def default_public_ip_association
+        !!config[:subnet_id]
       end
 
       private
