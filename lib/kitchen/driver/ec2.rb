@@ -28,7 +28,7 @@ module Kitchen
     # Amazon EC2 driver for Test Kitchen.
     #
     # @author Fletcher Nichol <fnichol@nichol.ca>
-    class Ec2 < Kitchen::Driver::SSHBase
+    class Ec2 < Kitchen::Driver::Base
 
       default_config :region,             'us-east-1'
       default_config :availability_zone,  'us-east-1b'
