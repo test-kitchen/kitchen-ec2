@@ -38,6 +38,7 @@ module Kitchen
       default_config :tags,               { 'created-by' => 'test-kitchen' }
       default_config :iam_profile_name,   nil
       default_config :price,   nil
+      default_config :root_device_size,   nil
       default_config :aws_access_key_id do |driver|
         ENV['AWS_ACCESS_KEY'] || ENV['AWS_ACCESS_KEY_ID']
       end
@@ -144,6 +145,43 @@ module Kitchen
         )
       end
 
+      def block_device_mapping
+        block_device_mapping = []
+        if config[:root_device_size]
+          image = connection.images.get(config[:image_id])
+          mapping = {}
+          name_mapping = {
+            'deviceName' => 'DeviceName',
+            'virtualName' => 'VirtualName',
+            'snapshotId' => 'Ebs.SnapshotId',
+            'volumeSize' => 'Ebs.VolumeSize',
+            'deleteOnTermination' => 'Ebs.DeleteOnTermination',
+          }
+          image.block_device_mapping.each do |image_mapping|
+            mapping = {}
+            # create block device mapping from image's values
+            name_mapping.each do |key, value|
+              if image_mapping[key]
+                mapping[value] = image_mapping[key]
+              end
+            end
+            # overwrite the volume size if it is the root device
+            if mapping['DeviceName'] == image.root_device_name
+              mapping['Ebs.VolumeSize'] = config[:root_device_size]
+            end
+            block_device_mapping << mapping
+          end
+        end
+        if config[:ebs_volume_size] && config[:ebs_device_name]
+          block_device_mapping << {
+            'Ebs.VolumeSize' => config[:ebs_volume_size],
+            'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
+            'DeviceName' => config[:ebs_device_name]
+          }
+        end
+        block_device_mapping
+      end
+
       def create_server
         debug_server_config
 
@@ -158,11 +196,7 @@ module Kitchen
           :subnet_id                 => config[:subnet_id],
           :iam_instance_profile_name => config[:iam_profile_name],
           :associate_public_ip       => config[:associate_public_ip],
-          :block_device_mapping      => [{
-            'Ebs.VolumeSize' => config[:ebs_volume_size],
-            'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
-            'DeviceName' => config[:ebs_device_name]
-          }]
+          :block_device_mapping      => block_device_mapping
         )
       end
 
@@ -190,6 +224,7 @@ module Kitchen
         debug("ec2:flavor_id '#{config[:flavor_id]}'")
         debug("ec2:ebs_optimized '#{config[:ebs_optimized]}'")
         debug("ec2:image_id '#{config[:image_id]}'")
+        debug("ec2:root_device_size '#{config[:root_device_size]}'")
         debug("ec2:security_group_ids '#{config[:security_group_ids]}'")
         debug("ec2:tags '#{config[:tags]}'")
         debug("ec2:key_name '#{config[:aws_ssh_key_id]}'")
