@@ -33,8 +33,9 @@ platforms:
   - name: ubuntu-13.04
   - name: ubuntu-13.10
   - name: ubuntu-14.04
-  - name: centos-6.4
-  - name: debian-7.1.0
+  - name: centos-6.5
+  - name: fedora-20
+  - name: debian-7.6
 ```
 
 This will effectively generate a configuration similar to:
@@ -51,9 +52,9 @@ platforms:
       image_id: ami-2f115c46
       username: ubuntu
   # ...
-  - name: centos-6.4
+  - name: centos-6.5
     driver:
-      image_id: ami-bf5021d6
+      image_id: ami-8997afe0
       username: root
   # ...
 ```
