@@ -8,6 +8,7 @@
       "ubuntu-13.10": "ami-45f1a744",
       "ubuntu-14.04": "ami-955c0c94",
       "centos-6.4": "ami-9ffa709e",
+      "fedora-20": "ami-9583fd94",
       "debian-7.1.0": "ami-f1f064f0"
     },
     "ap-southeast-1": {
@@ -18,6 +19,7 @@
       "ubuntu-13.10": "ami-02e6b850",
       "ubuntu-14.04": "ami-9a7c25c8",
       "centos-6.4": "ami-46f5bb14",
+      "fedora-20": "ami-6ceebe3e",
       "debian-7.1.0": "ami-fe8ac3ac"
     },
     "ap-southeast-2": {
@@ -28,6 +30,7 @@
       "ubuntu-13.10": "ami-e54423df",
       "ubuntu-14.04": "ami-f3b1d6c9",
       "centos-6.4": "ami-9352c1a9",
+      "fedora-20": "ami-eba038d1",
       "debian-7.1.0": "ami-4e099a74"
     },
     "eu-west-1": {
@@ -38,6 +41,7 @@
       "ubuntu-13.10": "ami-39eb3f4e",
       "ubuntu-14.04": "ami-c112c5b6",
       "centos-6.4": "ami-75190b01",
+      "fedora-20": "ami-a5ad56d2",
       "debian-7.1.0": "ami-954559e1"
     },
     "sa-east-1": {
@@ -48,6 +52,7 @@
       "ubuntu-13.10": "ami-076cc21a",
       "ubuntu-14.04": "ami-052b8518",
       "centos-6.4": "ami-a665c0bb",
+      "fedora-20": "ami-2345e73e",
       "debian-7.1.0": "ami-b03590ad"
     },
     "us-east-1": {
@@ -58,6 +63,7 @@
       "ubuntu-13.10": "ami-a65393ce",
       "ubuntu-14.04": "ami-4a915c22",
       "centos-6.4": "ami-bf5021d6",
+      "fedora-20": "ami-21362b48",
       "debian-7.1.0": "ami-50d9a439"
     },
     "us-west-1": {
@@ -68,6 +74,7 @@
       "ubuntu-13.10": "ami-bb2a2afe",
       "ubuntu-14.04": "ami-d99a9a9c",
       "centos-6.4": "ami-5d456c18",
+      "fedora-20": "ami-f8f1c8bd",
       "debian-7.1.0": "ami-1a9bb25f"
     },
     "us-west-2": {
@@ -78,6 +85,7 @@
       "ubuntu-13.10": "ami-c18ff1f1",
       "ubuntu-14.04": "ami-b7720b87",
       "centos-6.4": "ami-b3bf2f83",
+      "fedora-20": "ami-cc8de6fc",
       "debian-7.1.0": "ami-158a1925"
     }
   },
@@ -89,11 +97,13 @@
     "ubuntu-13.10": "ubuntu",
     "ubuntu-14.04": "ubuntu",
     "centos-6.4": "root",
+    "fedora-20": "fedora",
     "debian-7.1.0": "admin"
   },
   "references": {
     "ubuntu": "http://uec-images.ubuntu.com/query/",
     "debian": "https://wiki.debian.org/Cloud/AmazonEC2Image",
     "centos": "http://wiki.centos.org/Cloud/AWS"
+    "fedora": "http://fedoraproject.org/get-fedora#clouds"
   }
 }
