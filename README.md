@@ -68,6 +68,8 @@ platforms:
     image_id: ami-96a818fe
 ```
 
+image_id's have a format like ami-748e2903. The image_id values appear next to the image names when you select 'Launch Instance' from the AWS EC2 console. You can also see the list from the AWS CLI ````aws ec2 describe-images````.
+
 #### `image_search`
 
 `image_search` lets you specify a series of key/value pairs to search for the
