@@ -16,7 +16,11 @@ will need access to an [AWS][aws_site] account.
 
 ## <a name="installation"></a> Installation and Setup
 
-Please read the [Driver usage][driver_usage] page for more details.
+To your Gemfile, add the following line:
+````ruby
+gem 'kitchen-ec2'
+```
+Then run `bundle install`.
 
 ## <a name="default-config"></a> Default Configuration
 
