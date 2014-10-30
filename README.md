@@ -110,6 +110,12 @@ The AWS [session token][credentials_docs] to use.
 The default will be read from the `AWS_SESSION_TOKEN` environment variable if set,
 or `nil` otherwise.
 
+### <a name="config-ebs_volume_type"></a> ebs\_volume\_type
+
+Type of EBS volume. See [Amazon EBS Volume Types](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html) to find out more about volume types.
+
+The default is `"standard"`.
+
 ### <a name="config-ebs_volume_size"></a> ebs\_volume\_size
 
 **Required** Size of ebs volume in GB.
@@ -250,6 +256,7 @@ driver:
   iam_profile_name: chef-client
   ssh_timeout: 10
   ssh_retries: 5
+  ebs_volume_type: gp2
   ebs_volume_size: 6,
   ebs_delete_on_termination: 'true'
   ebs_device_name: '/dev/sda'
