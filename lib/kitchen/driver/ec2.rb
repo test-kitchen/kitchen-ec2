@@ -72,6 +72,8 @@ module Kitchen
       required_config :aws_ssh_key_id
       required_config :image_id
 
+      default_config :block_device_mappings, nil
+
       def create(state)
         return if state[:server_id]
 
@@ -158,11 +160,7 @@ module Kitchen
           :subnet_id                 => config[:subnet_id],
           :iam_instance_profile_name => config[:iam_profile_name],
           :associate_public_ip       => config[:associate_public_ip],
-          :block_device_mapping      => [{
-            'Ebs.VolumeSize' => config[:ebs_volume_size],
-            'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
-            'DeviceName' => config[:ebs_device_name]
-          }]
+          :block_device_mapping      => block_device_mappings
         )
       end
 
@@ -243,6 +241,19 @@ module Kitchen
           )
         end
         connection.servers.get(spot.instance_id)
+      end
+
+      def block_device_mappings
+        # Load block device mappings from config and add to default
+        bdms = [{
+          'Ebs.VolumeSize' => config[:ebs_volume_size],
+          'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
+          'DeviceName' => config[:ebs_device_name]
+        }]
+        config[:block_device_mappings].each do |k,v|
+          bdms << v
+        end unless config[:block_device_mappings].nil?
+        bdms
       end
     end
   end
