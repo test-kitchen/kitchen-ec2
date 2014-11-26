@@ -67,6 +67,8 @@ module Kitchen
       default_config :ssh_timeout, 1
       default_config :ssh_retries, 3
 
+      default_config :user_data, nil
+
       required_config :aws_access_key_id
       required_config :aws_secret_access_key
       required_config :aws_ssh_key_id
@@ -158,6 +160,7 @@ module Kitchen
           :subnet_id                 => config[:subnet_id],
           :iam_instance_profile_name => config[:iam_profile_name],
           :associate_public_ip       => config[:associate_public_ip],
+          :user_data                 => config[:user_data],
           :block_device_mapping      => [{
             'Ebs.VolumeSize' => config[:ebs_volume_size],
             'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
@@ -180,7 +183,8 @@ module Kitchen
           :subnet_id                 => config[:subnet_id],
           :iam_instance_profile_name => config[:iam_profile_name],
           :price                     => config[:price],
-          :instance_count            => config[:instance_count]
+          :instance_count            => config[:instance_count],
+          :user_data                 => config[:user_data],
         )
       end
 
@@ -199,6 +203,7 @@ module Kitchen
         debug("ec2:ssh_timeout '#{config[:ssh_timeout]}'")
         debug("ec2:ssh_retries '#{config[:ssh_retries]}'")
         debug("ec2:spot_price'#{config[:price]}'")
+        debug("ec2:user_data'#{config[:user_data]}'")
       end
 
       def amis
