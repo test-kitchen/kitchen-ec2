@@ -209,6 +209,11 @@ The Hash of EC tag name/value pairs which will be applied to the instance.
 
 The default is `{ "created-by" => "test-kitchen" }`.
 
+### <a name="config-user_data"></a> user_data
+
+A string that will be included as the User Data value during the instance creation.
+This data can be retrieved at http://169.254.169.254/latest/user-data from the instance.
+
 ### <a name="config-username"></a> username
 
 The SSH username that will be used to communicate with the instance.
@@ -253,6 +258,7 @@ driver:
   ebs_volume_size: 6,
   ebs_delete_on_termination: 'true'
   ebs_device_name: '/dev/sda'
+  user_data: "foo = bar"
 
 platforms:
   - name: ubuntu-12.04
