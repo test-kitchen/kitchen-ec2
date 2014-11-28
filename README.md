@@ -217,6 +217,7 @@ The default will be determined by the Platform name, if a default exists (see
 [amis.json][amis_json]). If a default cannot be computed, then the default is
 `"root"`.
 
+<<<<<<< HEAD
 ### <a name="config-user_data"></a> user_data
 
 The user_data script or the path to a script to feed the instance.
@@ -226,6 +227,8 @@ chef!
 
 The default is unset, or `nil`.
 
+=======
+>>>>>>> test-kitchen/master
 ### <a name="config-iam-profile-name"></a> iam\_profile\_name
 
 The EC2 IAM profile name to use.
