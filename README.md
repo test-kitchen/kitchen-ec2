@@ -31,6 +31,8 @@ platforms:
   - name: ubuntu-12.04
   - name: ubuntu-12.10
   - name: ubuntu-13.04
+  - name: ubuntu-13.10
+  - name: ubuntu-14.04
   - name: centos-6.4
   - name: debian-7.1.0
 ```
@@ -60,6 +62,20 @@ For specific default values, please consult [amis.json][amis_json].
 
 ## <a name="config"></a> Configuration
 
+### <a name="config-associate-public-ip"></a> associate\_public\_ip
+
+AWS does not automatically allocate public IP addresses for instances created
+within non-default [subnets][subnet_docs]. Set this option to `true` to force
+allocation of a public IP and associate it with the launched instance.
+
+If you set this option to `false` when launching into a non-default
+[subnet][subnet_docs], Test Kitchen will be unable to communicate with the
+instance unless you have a VPN connection to your
+[Virtual Private Cloud][vpc_docs].
+
+The default is `true` if you have configured a [subnet_id](#config-subnet-id),
+or `false` otherwise.
+
 ### <a name="config-az"></a> availability\_zone
 
 **Required** The AWS [availability zone][region_docs] to use.
@@ -86,6 +102,25 @@ or `nil` otherwise.
 
 The default will be read from the `AWS_SSH_KEY_ID` environment variable if set,
 or `nil` otherwise.
+
+### <a name="config-aws-session-token"></a> aws\_session\_token
+
+The AWS [session token][credentials_docs] to use.
+
+The default will be read from the `AWS_SESSION_TOKEN` environment variable if set,
+or `nil` otherwise.
+
+### <a name="config-ebs_volume_size"></a> ebs\_volume\_size
+
+**Required** Size of ebs volume in GB.
+
+### <a name="config-ebs_delete_on_termination"></a> ebs\_delete\_on\_termination
+
+**Required** `true` if you want ebs volumes to get deleted automatically after instance is terminated, `false` otherwise
+
+### <a name="config-ebs_device_name"></a> ebs\_device\_name
+
+**Required** name of your ebs device, for example: `/dev/sda`
 
 ### endpoint
 
@@ -128,7 +163,7 @@ The SSH port number to be used when communicating with the instance.
 
 The default is `22`.
 
-### < name="interface"></a> interface
+### <a name="interface"></a> interface
 
 The place from which to derive the hostname for communicating with the instance.  May be `dns`, `public` or `private`.  If this is unset, the driver will derive the hostname by failing back in the following order:
 
@@ -137,7 +172,6 @@ The place from which to derive the hostname for communicating with the instance.
 3. Private IP Address
 
 The default is unset.
-
 
 ### <a name="config-region"></a> region
 
@@ -150,6 +184,18 @@ The default is `"us-east-1"`.
 Path to the private SSH key used to connect to the instance.
 
 The default is unset, or `nil`.
+
+### <a name="config-ssh-timeout"></a> ssh\_timeout
+
+The number of seconds to sleep before trying to SSH again.
+
+The default is `1`.
+
+### <a name="config-ssh-retries"></a> ssh\_retries
+
+The number of times to retry SSH-ing into the instance.
+
+The default is `3`.
 
 ### <a name="config-subnet-id"></a> subnet\_id
 
@@ -171,6 +217,27 @@ The default will be determined by the Platform name, if a default exists (see
 [amis.json][amis_json]). If a default cannot be computed, then the default is
 `"root"`.
 
+### <a name="config-user_data"></a> user_data
+
+The user_data script or the path to a script to feed the instance.
+Use bash to install dependencies or download artifacts before chef runs.
+This is just for some cases. If you can do the stuff with chef, then do it with
+chef!
+
+The default is unset, or `nil`.
+
+### <a name="config-iam-profile-name"></a> iam\_profile\_name
+
+The EC2 IAM profile name to use.
+
+The default is `nil`.
+
+### <a name="config-spot-instance"></a> price
+
+The price you bid in order to submit a spot request. An additionnal step will be required during the spot request process submission. If no price is set, it will use an on-demand instance.
+
+The default is `nil`.
+
 ## <a name="example"></a> Example
 
 The following could be used in a `.kitchen.yml` or in a `.kitchen.local.yml`
@@ -189,6 +256,12 @@ driver:
   availability_zone: us-east-1b
   require_chef_omnibus: true
   subnet_id: subnet-6d6...
+  iam_profile_name: chef-client
+  ssh_timeout: 10
+  ssh_retries: 5
+  ebs_volume_size: 6,
+  ebs_delete_on_termination: 'true'
+  ebs_device_name: '/dev/sda'
 
 platforms:
   - name: ubuntu-12.04
@@ -219,6 +292,7 @@ driver:
   region: us-east-1
   availability_zone: us-east-1b
   require_chef_omnibus: true
+  user_data: <%= File.expand_path('~/.chef/kitchen-user-data.sh') %>
 
 platforms:
   - name: ubuntu-12.04
@@ -276,3 +350,4 @@ Apache 2.0 (see [LICENSE][license])
 [kitchenci]:        http://kitchen.ci/
 [region_docs]:      http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
 [subnet_docs]:      http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
+[vpc_docs]:         http://docs.aws.amazon.com/AmazonVPC/latest/GettingStartedGuide/ExerciseOverview.html
