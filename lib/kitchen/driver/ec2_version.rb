@@ -17,9 +17,7 @@
 # limitations under the License.
 
 module Kitchen
-
   module Driver
-
     # Version string for EC2 Test Kitchen driver
     EC2_VERSION = '0.8.1.dev'
   end

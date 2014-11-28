@@ -22,32 +22,31 @@ require 'fog'
 require 'kitchen'
 
 module Kitchen
-
   module Driver
-
     # Amazon EC2 driver for Test Kitchen.
     #
     # @author Fletcher Nichol <fnichol@nichol.ca>
     class Ec2 < Kitchen::Driver::SSHBase
-
       default_config :region,             'us-east-1'
       default_config :availability_zone,  'us-east-1b'
       default_config :flavor_id,          'm1.small'
       default_config :ebs_optimized,      false
       default_config :security_group_ids, ['default']
-      default_config :tags,               { 'created-by' => 'test-kitchen' }
+      default_config :tags,                'created-by' => 'test-kitchen'
+      default_config :user_data,          nil
       default_config :iam_profile_name,   nil
       default_config :price,   nil
-      default_config :aws_access_key_id do |driver|
+
+      default_config :aws_access_key_id do |_driver|
         ENV['AWS_ACCESS_KEY'] || ENV['AWS_ACCESS_KEY_ID']
       end
-      default_config :aws_secret_access_key do |driver|
+      default_config :aws_secret_access_key do |_driver|
         ENV['AWS_SECRET_KEY'] || ENV['AWS_SECRET_ACCESS_KEY']
       end
-      default_config :aws_session_token do |driver|
+      default_config :aws_session_token do |_driver|
         ENV['AWS_SESSION_TOKEN'] || ENV['AWS_TOKEN']
       end
-      default_config :aws_ssh_key_id do |driver|
+      default_config :aws_ssh_key_id do |_driver|
         ENV['AWS_SSH_KEY_ID']
       end
       default_config :image_id do |driver|
@@ -67,6 +66,13 @@ module Kitchen
       default_config :ssh_timeout, 1
       default_config :ssh_retries, 3
 
+      default_config :associate_public_ip do |driver|
+        driver.default_public_ip_association
+      end
+
+      default_config :ssh_timeout, 1
+      default_config :ssh_retries, 3
+
       required_config :aws_access_key_id
       required_config :aws_secret_access_key
       required_config :aws_ssh_key_id
@@ -76,32 +82,34 @@ module Kitchen
         return if state[:server_id]
 
         info("Creating <#{state[:server_id]}>...")
-        info("If you are not using an account that qualifies under the AWS")
-        info("free-tier, you may be charged to run these suites. The charge")
-        info("should be minimal, but neither Test Kitchen nor its maintainers")
-        info("are responsible for your incurred costs.")
+        info('If you are not using an account that qualifies under the AWS')
+        info('free-tier, you may be charged to run these suites. The charge')
+        info('should be minimal, but neither Test Kitchen nor its maintainers')
+        info('are responsible for your incurred costs.')
 
         if config[:price]
           # Spot instance when a price is set
           server = submit_spot
         else
-           # On-demand instance
+          # On-demand instance
           server = create_server
         end
 
         state[:server_id] = server.id
         info("EC2 instance <#{state[:server_id]}> created.")
+
         server.wait_for do
           print '.'
           # Euca instances often report ready before they have an IP
           ready? && !public_ip_address.nil? && public_ip_address != '0.0.0.0'
         end
+
         print '(server ready)'
         state[:hostname] = hostname(server)
-        wait_for_sshd(state[:hostname], config[:username], {
-          :ssh_timeout => config[:ssh_timeout],
-          :ssh_retries => config[:ssh_retries]
-        })
+        wait_for_sshd(state[:hostname], config[:username],
+          ssh_timeout: config[:ssh_timeout],
+          ssh_retries: config[:ssh_retries]
+        )
         print "(ssh ready)\n"
         debug("ec2:create '#{state[:hostname]}'")
       rescue Fog::Errors::Error, Excon::Errors::Error => ex
@@ -135,12 +143,12 @@ module Kitchen
 
       def connection
         Fog::Compute.new(
-          :provider               => :aws,
-          :aws_access_key_id      => config[:aws_access_key_id],
-          :aws_secret_access_key  => config[:aws_secret_access_key],
-          :aws_session_token      => config[:aws_session_token],
-          :region                 => config[:region],
-          :endpoint               => config[:endpoint],
+          provider: :aws,
+          aws_access_key_id: config[:aws_access_key_id],
+          aws_secret_access_key: config[:aws_secret_access_key],
+          aws_session_token: config[:aws_session_token],
+          region: config[:region],
+          endpoint: config[:endpoint]
         )
       end
 
@@ -148,17 +156,22 @@ module Kitchen
         debug_server_config
 
         connection.servers.create(
-          :availability_zone         => config[:availability_zone],
-          :security_group_ids        => config[:security_group_ids],
-          :tags                      => config[:tags],
-          :flavor_id                 => config[:flavor_id],
-          :ebs_optimized             => config[:ebs_optimized],
-          :image_id                  => config[:image_id],
-          :key_name                  => config[:aws_ssh_key_id],
-          :subnet_id                 => config[:subnet_id],
-          :iam_instance_profile_name => config[:iam_profile_name],
-          :associate_public_ip       => config[:associate_public_ip],
-          :block_device_mapping      => [{
+          availability_zone: config[:availability_zone],
+          security_group_ids: config[:security_group_ids],
+          tags: config[:tags],
+          flavor_id: config[:flavor_id],
+          ebs_optimized: config[:ebs_optimized],
+          image_id: config[:image_id],
+          key_name: config[:aws_ssh_key_id],
+          subnet_id: config[:subnet_id],
+          user_data: (config[:user_data].nil ? nil :
+            (File.file?(config[:user_data]) ?
+              File.read(config[:user_data]) : config[:user_data]
+            )
+          ),
+          iam_instance_profile_name: config[:iam_profile_name],
+          associate_public_ip: config[:associate_public_ip],
+          block_device_mapping: [{
             'Ebs.VolumeSize' => config[:ebs_volume_size],
             'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
             'DeviceName' => config[:ebs_device_name]
@@ -170,17 +183,22 @@ module Kitchen
         debug_server_config
 
         connection.spot_requests.create(
-          :availability_zone         => config[:availability_zone],
-          :security_group_ids        => config[:security_group_ids],
-          :tags                      => config[:tags],
-          :flavor_id                 => config[:flavor_id],
-          :ebs_optimized             => config[:ebs_optimized],
-          :image_id                  => config[:image_id],
-          :key_name                  => config[:aws_ssh_key_id],
-          :subnet_id                 => config[:subnet_id],
-          :iam_instance_profile_name => config[:iam_profile_name],
-          :price                     => config[:price],
-          :instance_count            => config[:instance_count]
+          availability_zone: config[:availability_zone],
+          security_group_ids: config[:security_group_ids],
+          tags: config[:tags],
+          flavor_id: config[:flavor_id],
+          ebs_optimized: config[:ebs_optimized],
+          image_id: config[:image_id],
+          key_name: config[:aws_ssh_key_id],
+          subnet_id: config[:subnet_id],
+          user_data: (config[:user_data].nil ? nil :
+            (File.file?(config[:user_data]) ?
+              File.read(config[:user_data]) : config[:user_data]
+            )
+          ),
+          iam_instance_profile_name: config[:iam_profile_name],
+          price: config[:price],
+          instance_count: config[:instance_count]
         )
       end
 
@@ -194,6 +212,7 @@ module Kitchen
         debug("ec2:tags '#{config[:tags]}'")
         debug("ec2:key_name '#{config[:aws_ssh_key_id]}'")
         debug("ec2:subnet_id '#{config[:subnet_id]}'")
+        debug("ec2:user_data '#{config[:user_data]}'")
         debug("ec2:iam_profile_name '#{config[:iam_profile_name]}'")
         debug("ec2:associate_public_ip '#{config[:associate_public_ip]}'")
         debug("ec2:ssh_timeout '#{config[:ssh_timeout]}'")
@@ -204,7 +223,7 @@ module Kitchen
       def amis
         @amis ||= begin
           json_file = File.join(File.dirname(__FILE__),
-            %w{.. .. .. data amis.json})
+            %w(.. .. .. data amis.json))
           JSON.load(IO.read(json_file))
         end
       end
@@ -220,7 +239,7 @@ module Kitchen
       def hostname(server)
         if config[:interface]
           method = interface_types.fetch(config[:interface]) do
-            raise Kitchen::UserError, 'Invalid interface'
+            fail Kitchen::UserError, 'Invalid interface'
           end
           server.send(method)
         else

@@ -217,6 +217,18 @@ The default will be determined by the Platform name, if a default exists (see
 [amis.json][amis_json]). If a default cannot be computed, then the default is
 `"root"`.
 
+<<<<<<< HEAD
+### <a name="config-user_data"></a> user_data
+
+The user_data script or the path to a script to feed the instance.
+Use bash to install dependencies or download artifacts before chef runs.
+This is just for some cases. If you can do the stuff with chef, then do it with
+chef!
+
+The default is unset, or `nil`.
+
+=======
+>>>>>>> test-kitchen/master
 ### <a name="config-iam-profile-name"></a> iam\_profile\_name
 
 The EC2 IAM profile name to use.
@@ -283,6 +295,7 @@ driver:
   region: us-east-1
   availability_zone: us-east-1b
   require_chef_omnibus: true
+  user_data: <%= File.expand_path('~/.chef/kitchen-user-data.sh') %>
 
 platforms:
   - name: ubuntu-12.04

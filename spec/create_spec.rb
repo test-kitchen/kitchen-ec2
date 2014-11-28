@@ -3,44 +3,44 @@ require 'kitchen/provisioner/dummy'
 
 describe Kitchen::Driver::Ec2 do
 
-    let(:config) do
-      {
-        aws_ssh_key_id: 'larry',
-        aws_access_key_id: 'secret',
-        aws_secret_access_key: 'moarsecret'
-      }
-    end
+  let(:config) do
+    {
+      aws_ssh_key_id: 'larry',
+      aws_access_key_id: 'secret',
+      aws_secret_access_key: 'moarsecret'
+    }
+  end
 
-    let(:state) do
-      {}
-    end
+  let(:state) do
+    {}
+  end
 
-    let(:server) do
-      double(:id => "123",
-             :wait_for => nil,
-             :dns_name => "server.example.com",
-             :private_ip_address => '172.13.16.11',
-             :public_ip_address => '213.225.123.134')
-    end
+  let(:server) do
+    double(id: '123',
+           wait_for: nil,
+           dns_name: 'server.example.com',
+           private_ip_address: '172.13.16.11',
+           public_ip_address: '213.225.123.134')
+  end
 
-    let(:instance) do
-      Kitchen::Instance.new(:platform => double(:name => "centos-6.4"),
-                            :suite => double(:name => "default"),
-                            :driver => driver,
-                            :provisioner => Kitchen::Provisioner::Dummy.new({}),
-                            :busser => double("busser"),
-                            :state_file => double("state_file"))
-    end
+  let(:instance) do
+    Kitchen::Instance.new(platform: double(name: 'centos-6.4'),
+                          suite: double(name: 'default'),
+                          driver: driver,
+                          provisioner: Kitchen::Provisioner::Dummy.new({}),
+                          busser: double('busser'),
+                          state_file: double('state_file'))
+  end
 
-    let(:driver) do
-      Kitchen::Driver::Ec2.new(config)
-    end
+  let(:driver) do
+    Kitchen::Driver::Ec2.new(config)
+  end
 
-    before do
-      instance
-      allow(driver).to receive(:create_server).and_return(server)
-      allow(driver).to receive(:wait_for_sshd)
-    end
+  before do
+    instance
+    allow(driver).to receive(:create_server).and_return(server)
+    allow(driver).to receive(:wait_for_sshd)
+  end
 
   context 'Interface is set in config' do
 
@@ -72,11 +72,11 @@ describe Kitchen::Driver::Ec2 do
   context 'Interface is derived automatically' do
 
     let(:server) do
-      double(:id => "123",
-             :wait_for => nil,
-             :dns_name => nil,
-             :private_ip_address => nil,
-             :public_ip_address => nil)
+      double(id: '123',
+             wait_for: nil,
+             dns_name: nil,
+             private_ip_address: nil,
+             public_ip_address: nil)
     end
 
     it 'sets hostname to DNS value if DNS value exists' do
