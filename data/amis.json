@@ -8,7 +8,10 @@
       "ubuntu-13.10": "ami-45f1a744",
       "ubuntu-14.04": "ami-955c0c94",
       "centos-6.4": "ami-9ffa709e",
-      "debian-7.1.0": "ami-f1f064f0"
+      "debian-7.1.0": "ami-f1f064f0",
+      "windows-2012r2": "ami-b67e73b7",
+      "windows-2008r2": "ami-e67e73e7"
+
     },
     "ap-southeast-1": {
       "ubuntu-10.04": "ami-34713866",
@@ -18,7 +21,9 @@
       "ubuntu-13.10": "ami-02e6b850",
       "ubuntu-14.04": "ami-9a7c25c8",
       "centos-6.4": "ami-46f5bb14",
-      "debian-7.1.0": "ami-fe8ac3ac"
+      "debian-7.1.0": "ami-fe8ac3ac",
+      "windows-2012r2": "ami-91f4d8c3",
+      "windows-2008r2": "ami-b9f4d8eb"
     },
     "ap-southeast-2": {
       "ubuntu-10.04": "ami-2f009315",
@@ -28,7 +33,9 @@
       "ubuntu-13.10": "ami-e54423df",
       "ubuntu-14.04": "ami-f3b1d6c9",
       "centos-6.4": "ami-9352c1a9",
-      "debian-7.1.0": "ami-4e099a74"
+      "debian-7.1.0": "ami-4e099a74",
+      "windows-2012r2": "ami-356d050f",
+      "windows-2008r2": "ami-096d0533"
     },
     "eu-west-1": {
       "ubuntu-10.04": "ami-bbadb0cf",
@@ -38,7 +45,10 @@
       "ubuntu-13.10": "ami-39eb3f4e",
       "ubuntu-14.04": "ami-c112c5b6",
       "centos-6.4": "ami-75190b01",
-      "debian-7.1.0": "ami-954559e1"
+      "debian-7.1.0": "ami-954559e1",
+      "windows-2012r2": "ami-1e03bf69",
+      "windows-2008r2": "ami-c003bfb7"
+
     },
     "sa-east-1": {
       "ubuntu-10.04": "ami-962c898b",
@@ -48,7 +58,10 @@
       "ubuntu-13.10": "ami-076cc21a",
       "ubuntu-14.04": "ami-052b8518",
       "centos-6.4": "ami-a665c0bb",
-      "debian-7.1.0": "ami-b03590ad"
+      "debian-7.1.0": "ami-b03590ad",
+      "windows-2012r2": "ami-017ccc1c",
+      "windows-2008r2": "ami-5d7ccc40"
+
     },
     "us-east-1": {
       "ubuntu-10.04": "ami-1ab3ce73",
@@ -59,8 +72,8 @@
       "ubuntu-14.04": "ami-4a915c22",
       "centos-6.4": "ami-bf5021d6",
       "debian-7.1.0": "ami-50d9a439",
-      "windows-2008R2": "ami-2ae02342",
-      "windows-2012R2": "ami-9ade1df2"
+      "windows-2012r2": "ami-c4fe9aac",
+      "windows-2008r2": "ami-f8ff9b90"
     },
     "us-west-1": {
       "ubuntu-10.04": "ami-848ba2c1",
@@ -70,7 +83,9 @@
       "ubuntu-13.10": "ami-bb2a2afe",
       "ubuntu-14.04": "ami-d99a9a9c",
       "centos-6.4": "ami-5d456c18",
-      "debian-7.1.0": "ami-1a9bb25f"
+      "debian-7.1.0": "ami-1a9bb25f",
+      "windows-2012r2": "ami-cfa5b68a",
+      "windows-2008r2": "ami-8ba5b6ce"
     },
     "us-west-2": {
       "ubuntu-10.04": "ami-f19407c1",
@@ -80,7 +95,10 @@
       "ubuntu-13.10": "ami-c18ff1f1",
       "ubuntu-14.04": "ami-b7720b87",
       "centos-6.4": "ami-b3bf2f83",
-      "debian-7.1.0": "ami-158a1925"
+      "debian-7.1.0": "ami-158a1925",
+      "windows-2012r2": "ami-29d18719",
+      "windows-2008r2": "ami-57d18767"
+
     }
   },
   "usernames": {
@@ -92,12 +110,8 @@
     "ubuntu-14.04": "ubuntu",
     "centos-6.4": "root",
     "debian-7.1.0": "admin",
-    "windows-2008R2": "chef",
-    "windows-2012R2": "chef"
-  },
-  "passwords": {
-    "windows-2008R2": "chef",
-    "windows-2012R2": "chef"
+    "windows-2008r2": "administrator",
+    "windows-2012r2": "administrator"
   },
   "references": {
     "ubuntu": "http://uec-images.ubuntu.com/query/",
