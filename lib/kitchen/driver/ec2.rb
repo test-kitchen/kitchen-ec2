@@ -101,6 +101,8 @@ module Kitchen
         state[:server_id] = server.id
 
         info("EC2 instance <#{state[:server_id]}> created.")
+        
+        #Server preparation
         server.wait_for do
           print '.'
           # Euca instances often report ready before they have an IP
@@ -190,6 +192,7 @@ module Kitchen
       def create_server
         debug_server_config
 
+        debug('Creating EC2 Instance..')
         connection.servers.create(
           :availability_zone         => config[:availability_zone],
           :security_group_ids        => config[:security_group_ids],
@@ -300,13 +303,13 @@ module Kitchen
       def windows_password state
         enc = connection.get_password_data(state[:server_id]).data[:body]["passwordData"].strip!
         enc = Base64.decode64(enc)
-        rsa = OpenSSL::PKey::RSA.new File.read config[:ssh_key]
+        rsa = OpenSSL::PKey::RSA.new aws_private_key
         rsa.private_decrypt(enc) if !enc.nil? and enc != ''
       rescue NoMethodError
         debug('Unable to fetch encrypted password')
         return ''
       rescue TypeError
-        debug('Unable to decrypt password with SSH_KEY')
+        debug('Unable to decrypt password with AWS_PRIVATE_KEY')
         return ''
       end
 
@@ -333,7 +336,9 @@ module Kitchen
         )
       end
 
+      # Debug helper to display applied configuration
       def debug_server_config
+        debug('EC2 Server Configuration')
         debug("ec2:region '#{config[:region]}'")
         debug("ec2:availability_zone '#{config[:availability_zone]}'")
         debug("ec2:flavor_id '#{config[:flavor_id]}'")
@@ -380,6 +385,15 @@ module Kitchen
           server.send(method)
         else
           server.dns_name || server.public_ip_address || server.private_ip_address
+        end
+      end
+
+      # Get AWS Private Key
+      def aws_private_key
+        begin
+          ENV['AWS_PRIVATE_KEY'] || ENV['AWS_SSH_KEY'] || (File.read config[:ssh_key])
+        rescue
+          debug('SSH_KEY_RAW and SSH_KEY is not set.')
         end
       end
 
