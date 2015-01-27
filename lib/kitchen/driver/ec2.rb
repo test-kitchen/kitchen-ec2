@@ -95,7 +95,9 @@ module Kitchen
         server.wait_for do
           print '.'
           # Euca instances often report ready before they have an IP
-          ready? && (!public_ip_address.nil? || !private_ip_address.nil?) && (public_ip_address != '0.0.0.0' || private_ip_address != '0.0.0.0')
+          is_nil = !public_ip_address.nil? || !private_ip_address.nil?
+          is_zeroes = public_ip_address != '0.0.0.0' || private_ip_address != '0.0.0.0'
+          ready? && is_nil && is_zeroes
         end
         print '(server ready)'
         state[:hostname] = hostname(server)
