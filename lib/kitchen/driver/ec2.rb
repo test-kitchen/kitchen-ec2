@@ -75,7 +75,6 @@ module Kitchen
 
       def create(state)
         return if state[:server_id]
-
         info("Creating <#{state[:server_id]}>...")
         info("If you are not using an account that qualifies under the AWS")
         info("free-tier, you may be charged to run these suites. The charge")
@@ -103,8 +102,7 @@ module Kitchen
         state[:hostname] = hostname(server)
         wait_for_sshd(state[:hostname], config[:username], {
           :ssh_timeout => config[:ssh_timeout],
-          :ssh_retries => config[:ssh_retries]
-        })
+          :ssh_retries => config[:ssh_retries] })
         print "(ssh ready)\n"
         debug("ec2:create '#{state[:hostname]}'")
       rescue Fog::Errors::Error, Excon::Errors::Error => ex
