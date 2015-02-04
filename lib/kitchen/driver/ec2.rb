@@ -256,7 +256,8 @@ module Kitchen
       end
       def create_ec2_json(state)
         Kitchen::SSH.new(*build_ssh_args(state)) do |conn| #( credit: https://github.com/dtoubelis )
-          run_remote("mkdir -p /etc/chef/ohai/hints; touch /etc/chef/ohai/hints/ec2.json", conn)
+          run_remote("sudo mkdir -p /etc/chef/ohai/hints;sudo touch /etc/chef/ohai/hints/ec2.json",
+            conn)
         end
       end
     end
