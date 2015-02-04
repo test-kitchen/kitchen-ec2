@@ -100,7 +100,7 @@ module Kitchen
         wait_for_sshd(state[:hostname], config[:username], {
           :ssh_timeout => config[:ssh_timeout],
           :ssh_retries => config[:ssh_retries] })
-        create_ec2_json
+        create_ec2_json(state)
         print "(ssh ready)\n"
         debug("ec2:create '#{state[:hostname]}'")
       rescue Fog::Errors::Error, Excon::Errors::Error => ex
@@ -254,7 +254,7 @@ module Kitchen
         end
         connection.servers.get(spot.instance_id)
       end
-      def create_ec2_json
+      def create_ec2_json(state)
         Kitchen::SSH.new(*build_ssh_args(state)) do |conn| #( credit: https://github.com/dtoubelis )
           run_remote("mkdir -p /etc/chef/ohai/hints; touch /etc/chef/ohai/hints/ec2.json", conn)
         end
