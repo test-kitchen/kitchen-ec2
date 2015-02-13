@@ -12,6 +12,7 @@ require "finstyle"
 require "rubocop/rake_task"
 RuboCop::RakeTask.new(:style) do |task|
   task.options << "--display-cop-names"
+  task.options << "--auto-correct"
 end
 
 require "cane/rake_task"
