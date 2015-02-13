@@ -39,7 +39,7 @@ module Kitchen
       default_config :tags,               { 'created-by' => 'test-kitchen' }
       default_config :user_data,          nil
       default_config :iam_profile_name,   nil
-      default_config :price,   nil
+      default_config :price,              nil
       default_config :aws_access_key_id do |driver|
         ENV['AWS_ACCESS_KEY'] || ENV['AWS_ACCESS_KEY_ID']
       end
@@ -84,6 +84,10 @@ module Kitchen
         state[:password] = config[:password] if config[:password]
         state[:username] = config[:username] if config[:username]
 
+        # TODO are these used by the transport yet?
+        state[:ssh_timeout] = config[:ssh_timeout]
+        state[:ssh_retries] = config[:ssh_retries]
+
         info("Creating <#{state[:server_id]}>...")
         info("If you are not using an account that qualifies under the AWS")
         info("free-tier, you may be charged to run these suites. The charge")
@@ -95,7 +99,7 @@ module Kitchen
           server = submit_spot
         else
            # On-demand instance
-          server = create_server
+          server = submit_server
         end
 
         state[:server_id] = server.id
@@ -111,7 +115,6 @@ module Kitchen
         print '(Server Ready)'
         state[:hostname] = hostname(server)
 
-        # TODO :ssh_timeout and :ssh_retries
         #Windows preparartion
         if transport.name.casecmp('winrm') == 0
           debug("Waiting for Windows")
@@ -189,104 +192,134 @@ module Kitchen
       end
 
       # Fog AWS helper for creating the instance
-      def create_server
+      def submit_server
         debug_server_config
 
         debug('Creating EC2 Instance..')
-        connection.servers.create(
-          :availability_zone         => config[:availability_zone],
-          :security_group_ids        => config[:security_group_ids],
-          :tags                      => config[:tags],
-          :flavor_id                 => config[:flavor_id],
-          :ebs_optimized             => config[:ebs_optimized],
-          :image_id                  => config[:image_id],
-          :key_name                  => config[:aws_ssh_key_id],
-          :subnet_id                 => config[:subnet_id],
-          :iam_instance_profile_name => config[:iam_profile_name],
-          :associate_public_ip       => config[:associate_public_ip],
-          :user_data                 => (config[:user_data].nil? ? nil :
-            (File.file?(config[:user_data]) ?
-              File.read(config[:user_data]) : config[:user_data]
-            )
-          ),
-          :block_device_mapping      => [{
-            'Ebs.VolumeSize' => config[:ebs_volume_size],
-            'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
-            'DeviceName' => config[:ebs_device_name]
-          }]
-        )
+        connection.servers.create(common_ec2_instance)
       end
 
-      # TODO add winrm_config to user_data
+      def request_spot
+        debug_server_config
+
+        debug('Creating EC2 Spot Instance..')
+        instance = common_ec2_instance
+        instance[:price] = config[:price]
+        instance[:instance_count] = config[:instance_count]
+        connection.spot_requests.create(instance)
+      end
+
+      def submit_spot
+        spot = request_spot
+        info("Spot instance <#{spot.id}> requested.")
+        info("Spot price is <#{spot.price}>.")
+        spot.wait_for { print '.'; spot.state == 'active' }
+        print '(spot active)'
+
+        # tag assignation on the instance.
+        if config[:tags]
+          connection.create_tags(
+              spot.instance_id,
+              spot.tags
+          )
+        end
+        connection.servers.get(spot.instance_id)
+      end
+
+      def common_ec2_instance
+        {
+            :availability_zone         => config[:availability_zone],
+            :groups                    => config[:security_group_ids],
+            :tags                      => config[:tags],
+            :flavor_id                 => config[:flavor_id],
+            :ebs_optimized             => config[:ebs_optimized],
+            :image_id                  => config[:image_id],
+            :key_name                  => config[:aws_ssh_key_id],
+            :subnet_id                 => config[:subnet_id],
+            :iam_instance_profile_name => config[:iam_profile_name],
+            :associate_public_ip       => config[:associate_public_ip],
+            :user_data                 => prepared_user_data,
+            :block_device_mapping      => [{
+              'Ebs.VolumeSize' => config[:ebs_volume_size],
+              'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
+              'DeviceName' => config[:ebs_device_name]
+            }]
+        }
+      end
+
       # Method for preparing user_data for enabling PS Remoting if the selected
       # transport method is WinRM
-
       def prepared_user_data
-        if transport.name.casecmp('winrm') == 0
-          debug("Injecting WinRM config to EC2 user_data")
-
-          #Preparing custom static admin user if we defined something other than Administrator
-          customAdminScript = ''
-          if config[:username].casecmp('Administrator') != 0
-            debug('Injecting custom Local Administrator:')
-            debug("username '#{config[:username]}'")
-            debug("password '#{config[:password]}'")
-
-            customAdminScript = <<-EOH.gsub(/^ {10}/, '')
-            "Disabling Complex Passwords" >> $logfile
-            $seccfg = [IO.Path]::GetTempFileName()
-            & secedit.exe /export /cfg $seccfg >> $logfile
-            (Get-Content $seccfg) | Foreach-Object {$_ -replace "PasswordComplexity\\s*=\\s*1", "PasswordComplexity = 0"} | Set-Content $seccfg
-            & secedit.exe /configure /db $env:windir\\security\\new.sdb /cfg $seccfg /areas SECURITYPOLICY >> $logfile
-            & cp $seccfg "c:\\"
-            & del $seccfg
-
-            $username="#{config[:username]}"
-            $password="#{config[:password]}"
-
-            "Creating static user: $username" >> $logfile
-            & net.exe user /y /add $username $password >> $logfile
-
-            "Adding $username to Administrators" >> $logfile
-            & net.exe localgroup Administrators /add $username >> $logfile
-
-            EOH
+        # If user_data is a file reference, lets read it as such
+        unless config[:user_data].nil?
+          if File.file?(config[:user_data])
+            config[:user_data] = File.read(config[:user_data])
           end
 
-          # Returning the fully constructed PowerShell script to user_data
-          return <<-EOH.gsub(/^ {10}/, '')
-          <powershell>
-          $logfile="C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log"
+          if transport.name.casecmp('winrm') == 0
+            debug("Injecting WinRM config to EC2 user_data")
 
-          #PS Remoting and & winrm.cmd basic config
-          Enable-PSRemoting -Force -SkipNetworkProfileCheck
-          & winrm.cmd quickconfig -q >> $logfile
-          & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
-          & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="512"}' >> $logfile
-          & winrm.cmd set winrm/config/winrs '@{MaxShellsPerUser="50"}' >> $logfile
+            #Preparing custom static admin user if we defined something other than Administrator
+            customAdminScript = ''
+            if config[:username].casecmp('Administrator') != 0
+              debug('Injecting custom Local Administrator:')
+              debug("username '#{config[:username]}'")
+              debug("password '#{config[:password]}'")
 
-          #Client settings
-          & winrm.cmd set winrm/config/client/auth '@{Basic="true"}' >> $logfile
+              customAdminScript = <<-EOH.gsub(/^ {10}/, '')
+              "Disabling Complex Passwords" >> $logfile
+              $seccfg = [IO.Path]::GetTempFileName()
+              & secedit.exe /export /cfg $seccfg >> $logfile
+              (Get-Content $seccfg) | Foreach-Object {$_ -replace "PasswordComplexity\\s*=\\s*1", "PasswordComplexity = 0"} | Set-Content $seccfg
+              & secedit.exe /configure /db $env:windir\\security\\new.sdb /cfg $seccfg /areas SECURITYPOLICY >> $logfile
+              & cp $seccfg "c:\\"
+              & del $seccfg
 
-          #Server settings
-          & winrm.cmd set winrm/config/service/auth '@{Basic="true"}' >> $logfile
-          & winrm.cmd set winrm/config/service '@{AllowUnencrypted="true"}' >> $logfile
-          & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
+              $username="#{config[:username]}"
+              $password="#{config[:password]}"
 
-          #Firewall Config
-          & netsh.exe advfirewall set publicprofile state off  >> $logfile
-          & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
+              "Creating static user: $username" >> $logfile
+              & net.exe user /y /add $username $password >> $logfile
 
-          #{customAdminScript}
+              "Adding $username to Administrators" >> $logfile
+              & net.exe localgroup Administrators /add $username >> $logfile
 
-          #{config[:user_data]}
+              EOH
+            end
 
-          </powershell>
-          EOH
-        else
-          return config[:user_data] if !config[:user_data].nil?
+            # Returning the fully constructed PowerShell script to user_data
+            config[:user_data] = <<-EOH.gsub(/^ {12}/, '')
+            <powershell>
+            $logfile="C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log"
+
+            #PS Remoting and & winrm.cmd basic config
+            Enable-PSRemoting -Force -SkipNetworkProfileCheck
+            & winrm.cmd quickconfig -q >> $logfile
+            & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
+            & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="512"}' >> $logfile
+            & winrm.cmd set winrm/config/winrs '@{MaxShellsPerUser="50"}' >> $logfile
+
+            #Client settings
+            & winrm.cmd set winrm/config/client/auth '@{Basic="true"}' >> $logfile
+
+            #Server settings
+            & winrm.cmd set winrm/config/service/auth '@{Basic="true"}' >> $logfile
+            & winrm.cmd set winrm/config/service '@{AllowUnencrypted="true"}' >> $logfile
+            & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
+
+            #Firewall Config
+            & netsh.exe advfirewall set publicprofile state off  >> $logfile
+            & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
+
+            #{customAdminScript}
+
+            #{config[:user_data]}
+
+            </powershell>
+            EOH
+          end
         end
-        return ''
+        config[:user_data]
       end
 
       # Helper method to check whether Amazon reported a server Ready
@@ -311,29 +344,6 @@ module Kitchen
       rescue TypeError
         debug('Unable to decrypt password with AWS_PRIVATE_KEY')
         return ''
-      end
-
-      def request_spot
-        debug_server_config
-
-        connection.spot_requests.create(
-          :availability_zone         => config[:availability_zone],
-          :groups                    => config[:security_group_ids],
-          :tags                      => config[:tags],
-          :flavor_id                 => config[:flavor_id],
-          :ebs_optimized             => config[:ebs_optimized],
-          :image_id                  => config[:image_id],
-          :key_name                  => config[:aws_ssh_key_id],
-          :subnet_id                 => config[:subnet_id],
-          :iam_instance_profile_name => config[:iam_profile_name],
-          :user_data                 => (config[:user_data].nil? ? nil :
-            (File.file?(config[:user_data]) ?
-              File.read(config[:user_data]) : config[:user_data]
-            )
-          ),
-          :price                     => config[:price],
-          :instance_count            => config[:instance_count]
-        )
       end
 
       # Debug helper to display applied configuration
@@ -393,26 +403,10 @@ module Kitchen
         begin
           ENV['AWS_PRIVATE_KEY'] || ENV['AWS_SSH_KEY'] || (File.read config[:ssh_key])
         rescue
-          debug('SSH_KEY_RAW and SSH_KEY is not set.')
+          debug('AWS_PRIVATE_KEY and AWS_SSH_KEY are not set.')
         end
       end
 
-      def submit_spot
-        spot = request_spot
-        info("Spot instance <#{spot.id}> requested.")
-        info("Spot price is <#{spot.price}>.")
-        spot.wait_for { print '.'; spot.state == 'active' }
-        print '(spot active)'
-
-        # tag assignation on the instance.
-        if config[:tags]
-          connection.create_tags(
-            spot.instance_id,
-            spot.tags
-          )
-        end
-        connection.servers.get(spot.instance_id)
-      end
     end
   end
 end

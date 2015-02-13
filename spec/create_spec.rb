@@ -39,7 +39,7 @@ describe Kitchen::Driver::Ec2 do
 
     before do
       instance
-      allow(driver).to receive(:create_server).and_return(server)
+      allow(driver).to receive(:submit_server).and_return(server)
       allow(driver).to receive(:wait_for_sshd)
     end
 
