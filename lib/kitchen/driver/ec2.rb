@@ -75,13 +75,11 @@ module Kitchen
 
       def create(state)
         return if state[:server_id]
-
         info("Creating <#{state[:server_id]}>...")
         info("If you are not using an account that qualifies under the AWS")
         info("free-tier, you may be charged to run these suites. The charge")
         info("should be minimal, but neither Test Kitchen nor its maintainers")
         info("are responsible for your incurred costs.")
-
         if config[:price]
           # Spot instance when a price is set
           server = submit_spot
@@ -89,20 +87,20 @@ module Kitchen
            # On-demand instance
           server = create_server
         end
-
         state[:server_id] = server.id
         info("EC2 instance <#{state[:server_id]}> created.")
         server.wait_for do
-          print '.'
-          # Euca instances often report ready before they have an IP
-          ready? && !public_ip_address.nil? && public_ip_address != '0.0.0.0'
+          print '.'  # Euca instances often report ready before they have an IP
+          is_nil = !public_ip_address.nil? || !private_ip_address.nil?
+          is_zeroes = public_ip_address != '0.0.0.0' || private_ip_address != '0.0.0.0'
+          ready? && is_nil && is_zeroes
         end
         print '(server ready)'
         state[:hostname] = hostname(server)
         wait_for_sshd(state[:hostname], config[:username], {
           :ssh_timeout => config[:ssh_timeout],
-          :ssh_retries => config[:ssh_retries]
-        })
+          :ssh_retries => config[:ssh_retries] })
+        create_ec2_json(state)
         print "(ssh ready)\n"
         debug("ec2:create '#{state[:hostname]}'")
       rescue Fog::Errors::Error, Excon::Errors::Error => ex
@@ -255,6 +253,12 @@ module Kitchen
           )
         end
         connection.servers.get(spot.instance_id)
+      end
+      def create_ec2_json(state)
+        Kitchen::SSH.new(*build_ssh_args(state)) do |conn| #( credit: https://github.com/dtoubelis )
+          run_remote("sudo mkdir -p /etc/chef/ohai/hints;sudo touch /etc/chef/ohai/hints/ec2.json",
+            conn)
+        end
       end
     end
   end
