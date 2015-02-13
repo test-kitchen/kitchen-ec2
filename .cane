@@ -1,2 +1,3 @@
 --style-measure 100
 --abc-max 20
+--abc-exclude Kitchen::Driver::Ec2#create

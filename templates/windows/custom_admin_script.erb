@@ -1,0 +1,16 @@
+"Disabling Complex Passwords" >> $logfile
+$seccfg = [IO.Path]::GetTempFileName()
+& secedit.exe /export /cfg $seccfg >> $logfile
+(Get-Content $seccfg) | Foreach-Object {$_ -replace "PasswordComplexity\\s*=\\s*1", "PasswordComplexity = 0"} | Set-Content $seccfg
+& secedit.exe /configure /db $env:windir\\security\\new.sdb /cfg $seccfg /areas SECURITYPOLICY >> $logfile
+& cp $seccfg "c:\\"
+& del $seccfg
+
+$username="<%= config[:username] %>"
+$password="<%= config[:password] %>"
+
+"Creating static user: $username" >> $logfile
+& net.exe user /y /add $username $password >> $logfile
+
+"Adding $username to Administrators" >> $logfile
+& net.exe localgroup Administrators /add $username >> $logfile

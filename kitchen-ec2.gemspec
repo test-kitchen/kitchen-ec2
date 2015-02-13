@@ -18,11 +18,11 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_dependency 'test-kitchen'
-  gem.add_dependency 'fog'
+  gem.add_dependency "test-kitchen"
+  gem.add_dependency "fog"
 
-  gem.add_development_dependency 'rspec'
-  gem.add_development_dependency 'cane'
-  gem.add_development_dependency 'tailor'
-  gem.add_development_dependency 'countloc'
+  gem.add_development_dependency "rspec",     "~> 3.2"
+  gem.add_development_dependency "finstyle",  "1.4.0"
+  gem.add_development_dependency "cane",      "2.6.2"
+  gem.add_development_dependency "countloc",  "~> 0.4"
 end

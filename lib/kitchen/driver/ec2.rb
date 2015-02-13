@@ -20,6 +20,8 @@ require 'benchmark'
 require 'json'
 require 'fog'
 require 'kitchen'
+require 'erb'
+require 'thor/actions/file_manipulation'
 
 module Kitchen
 
@@ -30,6 +32,7 @@ module Kitchen
     #
     # @author Fletcher Nichol <fnichol@nichol.ca>
     class Ec2 < Kitchen::Driver::Base
+      include Thor::Actions
 
       default_config :region,             'us-east-1'
       default_config :availability_zone,  'us-east-1b'
@@ -105,7 +108,7 @@ module Kitchen
         state[:server_id] = server.id
 
         info("EC2 instance <#{state[:server_id]}> created.")
-        
+
         #Server preparation
         server.wait_for do
           print '.'
@@ -260,63 +263,17 @@ module Kitchen
             debug("Injecting WinRM config to EC2 user_data")
 
             #Preparing custom static admin user if we defined something other than Administrator
-            customAdminScript = ''
             if config[:username].casecmp('Administrator') != 0
               debug('Injecting custom Local Administrator:')
               debug("username '#{config[:username]}'")
               debug("password '#{config[:password]}'")
 
-              customAdminScript = <<-EOH.gsub(/^ {10}/, '')
-              "Disabling Complex Passwords" >> $logfile
-              $seccfg = [IO.Path]::GetTempFileName()
-              & secedit.exe /export /cfg $seccfg >> $logfile
-              (Get-Content $seccfg) | Foreach-Object {$_ -replace "PasswordComplexity\\s*=\\s*1", "PasswordComplexity = 0"} | Set-Content $seccfg
-              & secedit.exe /configure /db $env:windir\\security\\new.sdb /cfg $seccfg /areas SECURITYPOLICY >> $logfile
-              & cp $seccfg "c:\\"
-              & del $seccfg
-
-              $username="#{config[:username]}"
-              $password="#{config[:password]}"
-
-              "Creating static user: $username" >> $logfile
-              & net.exe user /y /add $username $password >> $logfile
-
-              "Adding $username to Administrators" >> $logfile
-              & net.exe localgroup Administrators /add $username >> $logfile
-
-              EOH
+              custom_admin_script = open_template("custom_admin_script.erb")
+              custom_admin_script = custom_admin_script.run(binding)
             end
 
             # Returning the fully constructed PowerShell script to user_data
-            config[:user_data] = <<-EOH.gsub(/^ {12}/, '')
-            <powershell>
-            $logfile="C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log"
-
-            #PS Remoting and & winrm.cmd basic config
-            Enable-PSRemoting -Force -SkipNetworkProfileCheck
-            & winrm.cmd quickconfig -q >> $logfile
-            & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
-            & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="512"}' >> $logfile
-            & winrm.cmd set winrm/config/winrs '@{MaxShellsPerUser="50"}' >> $logfile
-
-            #Client settings
-            & winrm.cmd set winrm/config/client/auth '@{Basic="true"}' >> $logfile
-
-            #Server settings
-            & winrm.cmd set winrm/config/service/auth '@{Basic="true"}' >> $logfile
-            & winrm.cmd set winrm/config/service '@{AllowUnencrypted="true"}' >> $logfile
-            & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
-
-            #Firewall Config
-            & netsh.exe advfirewall set publicprofile state off  >> $logfile
-            & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
-
-            #{customAdminScript}
-
-            #{config[:user_data]}
-
-            </powershell>
-            EOH
+            config[:user_data] = open_template("user_data.ps1.erb").run(binding)
           end
         end
         config[:user_data]
@@ -405,6 +362,12 @@ module Kitchen
         rescue
           debug('AWS_PRIVATE_KEY and AWS_SSH_KEY are not set.')
         end
+      end
+
+      # TODO is this the right way to do this?
+      def open_template(name)
+        @template_dir ||= File.expand_path(File.join(__dir__, "../../templates/windows"))
+        ERB.new(File.read(File.join(@template_dir, name)))
       end
 
     end
