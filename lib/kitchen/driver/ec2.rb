@@ -34,6 +34,7 @@ module Kitchen
       default_config :availability_zone,  'us-east-1b'
       default_config :flavor_id,          'm1.small'
       default_config :ebs_optimized,      false
+      default_config :ebs_volume_type,    'standard'
       default_config :security_group_ids, ['default']
       default_config :tags,               { 'created-by' => 'test-kitchen' }
       default_config :user_data,          nil
@@ -166,6 +167,7 @@ module Kitchen
             )
           ),
           :block_device_mapping      => [{
+            'Ebs.VolumeType' => config[:ebs_volume_type],
             'Ebs.VolumeSize' => config[:ebs_volume_size],
             'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
             'DeviceName' => config[:ebs_device_name]
