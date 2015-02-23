@@ -45,6 +45,7 @@ describe Kitchen::Driver::Ec2 do
       instance
       allow(driver).to receive(:create_server).and_return(server)
       allow(driver).to receive(:wait_for_sshd)
+      allow(driver).to receive(:create_ec2_json)
     end
 
   context 'Interface is set in config' do
