@@ -7,7 +7,7 @@
 A [Test Kitchen][kitchenci] Driver for Amazon EC2.
 
 This driver uses the [fog gem][fog_gem] to provision and destroy EC2
-instances. Use Amazon's cloud for your infrastructure testing!
+instances. Use Amazon's cloud for your Linux and Windows infrastructure testing!
 
 ## <a name="requirements"></a> Requirements
 
@@ -21,7 +21,9 @@ Please read the [Driver usage][driver_usage] page for more details.
 ## <a name="default-config"></a> Default Configuration
 
 This driver can determine AMI and username login for a select number of
-platforms in each region. Currently, the following platform names are
+platforms in each region.
+
+For Windows instances the generated Administrator password is fetched automatically from Amazon EC2 with the same private key as we use for SSH logins to Linux. Currently, the following platform names are
 supported:
 
 ```ruby
@@ -35,6 +37,9 @@ platforms:
   - name: ubuntu-14.04
   - name: centos-6.4
   - name: debian-7.1.0
+  - name: windows-2008r2
+  - name: windows-2012r2
+
 ```
 
 This will effectively generate a configuration similar to:
@@ -173,6 +178,7 @@ The place from which to derive the hostname for communicating with the instance.
 
 The default is unset.
 
+
 ### <a name="config-region"></a> region
 
 **Required** The AWS [region][region_docs] to use.
@@ -211,11 +217,18 @@ The default is `{ "created-by" => "test-kitchen" }`.
 
 ### <a name="config-username"></a> username
 
-The SSH username that will be used to communicate with the instance.
+The SSH or WinRM username that will be used to communicate with the instance.
 
-The default will be determined by the Platform name, if a default exists (see
-[amis.json][amis_json]). If a default cannot be computed, then the default is
-`"root"`.
+The default will be determined by the Platform name, if a default exists (see   [amis.json][amis_json]). If a default cannot be computed, then the default is `"root"`.
+
+For Windows AMIs if the username is configured other then Administrator,
+kitchen-ec2 will create that user during the server creation with the specified
+static password.
+
+### <a name="config-password"></a> password
+
+WinRM static password  to be used for connecting to a Windows AMI with the
+configured static `username` other than Administrator.
 
 ### <a name="config-user_data"></a> user_data
 
@@ -262,6 +275,16 @@ driver:
   ebs_volume_size: 6,
   ebs_delete_on_termination: 'true'
   ebs_device_name: '/dev/sda'
+  tags:
+    Name: 'test-kitchen instance'
+    Environment: 'dev'
+
+provisioner:
+  name: chef_solo
+
+# Default transport is SSH, which should be overridden for Windows to winrm
+transport:
+  name: ssh
 
 platforms:
   - name: ubuntu-12.04
@@ -272,13 +295,19 @@ platforms:
     driver:
       image_id: ami-ef5ff086
       username: ec2-user
+  - name: windows-2012R2
+    transport:
+      name: winrm
+  - name: windows-2008R2
+    ransport:
+      name: winrm
+      max_threads: 4
 
 suites:
 # ...
 ```
 
-Both `.kitchen.yml` and `.kitchen.local.yml` files are pre-processed through
-ERB which can help to factor out secrets and credentials. For example:
+Both `.kitchen.yml` and `.kitchen.local.yml` files are pre-processed through ERB which can help to factor out secrets and credentials. For example:
 
 ```yaml
 ---
@@ -325,6 +354,7 @@ example:
 ## <a name="authors"></a> Authors
 
 Created and maintained by [Fletcher Nichol][author] (<fnichol@nichol.ca>)
+Windows AMI support added by [Salim Afiune][author] (<afiune@getchef.com>) and [Akos Murati][author] (<akos@murati.hu>)
 
 ## <a name="license"></a> License
 

@@ -1,3 +1,13 @@
+## 0.9.2 / 2015-01-27
+### New features
+* Adding support for AWS Private Key Pair from TeamCity through AWS_PRIVATE_KEY Environment variable
+
+## 0.9.1 / 2015-01-20
+### New features
+* Supports Amazon generated Windows Password
+* Improved WinRm provisioning through user_data
+
+
 ## 0.8.0 / 2014-02-11
 
 ### Bug fixes
