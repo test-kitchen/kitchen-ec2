@@ -69,8 +69,6 @@ module Kitchen
       default_config :associate_public_ip do |driver|
         driver.default_public_ip_association
       end
-      default_config :ssh_timeout, 1
-      default_config :ssh_retries, 3
 
       required_config :aws_access_key_id
       required_config :aws_secret_access_key
@@ -80,13 +78,8 @@ module Kitchen
       #Creating a new instance
       def create(state)
         return if state[:server_id]
-        state[:port] = default_port
         state[:password] = config[:password] if config[:password]
         state[:username] = config[:username] if config[:username]
-
-        # TODO are these used by the transport yet?
-        state[:ssh_timeout] = config[:ssh_timeout]
-        state[:ssh_retries] = config[:ssh_retries]
 
         info("Creating <#{state[:server_id]}>...")
         info("If you are not using an account that qualifies under the AWS")
@@ -116,7 +109,7 @@ module Kitchen
         state[:hostname] = hostname(server)
 
         #Windows preparartion
-        if transport.name.casecmp('winrm') == 0
+        if driver.windows_os?
           debug("Waiting for Windows")
           $stdout.sync = true
           while !windows_ready?(state)
@@ -137,9 +130,7 @@ module Kitchen
         debug("Credentials: #{state[:username]} #{state[:password]}")
 
         debug("Waiting for transport")
-        transport.connection(state) do |c|
-          c.wait_for_connection
-        end
+        instance.transport.connection(state).wait_until_ready
         print '(Transport Ready)'
 
         debug("ec2:create '#{state[:hostname]}'")
@@ -181,6 +172,7 @@ module Kitchen
 
       # Fog AWS helper method for creating connection
       def connection
+        # TODO migrate off fog to aws sdk
         Fog::Compute.new(
           :provider               => :aws,
           :aws_access_key_id      => config[:aws_access_key_id],
@@ -196,54 +188,56 @@ module Kitchen
         debug_server_config
 
         debug('Creating EC2 Instance..')
-        connection.servers.create(common_ec2_instance)
-      end
-
-      def request_spot
-        debug_server_config
-
-        debug('Creating EC2 Spot Instance..')
-        instance = common_ec2_instance
-        instance[:price] = config[:price]
-        instance[:instance_count] = config[:instance_count]
-        connection.spot_requests.create(instance)
+        instance = connection.servers.create(common_ec2_instance)
+        info("Instance <#{instance.id}> requested.")
+        tag_instance(instance)
       end
 
       def submit_spot
-        spot = request_spot
-        info("Spot instance <#{spot.id}> requested.")
-        info("Spot price is <#{spot.price}>.")
-        spot.wait_for { print '.'; spot.state == 'active' }
-        print '(spot active)'
+        debug_server_config
+
+        debug('Creating EC2 Spot Instance..')
+        instance_data = common_ec2_instance
+        instance_data[:price] = config[:price]
+        instance_data[:instance_count] = config[:instance_count]
+        instance = connection.spot_requests.create(instance_data)
+        info("Spot instance <#{instance.id}> requested.")
+        info("Spot price is <#{instance.price}>.")
+        tag_instance(instance)
+      end
+
+      def tag_instance(instance)
+        instance.wait_for { print '.'; instance.state == 'active' }
+        print '(instance active)'
 
         # tag assignation on the instance.
         if config[:tags]
           connection.create_tags(
-              spot.instance_id,
-              spot.tags
+              instance.instance_id,
+              instance.tags
           )
         end
-        connection.servers.get(spot.instance_id)
+        connection.servers.get(instance.instance_id)
       end
 
       def common_ec2_instance
         {
-            :availability_zone         => config[:availability_zone],
-            :groups                    => config[:security_group_ids],
-            :tags                      => config[:tags],
-            :flavor_id                 => config[:flavor_id],
-            :ebs_optimized             => config[:ebs_optimized],
-            :image_id                  => config[:image_id],
-            :key_name                  => config[:aws_ssh_key_id],
-            :subnet_id                 => config[:subnet_id],
-            :iam_instance_profile_name => config[:iam_profile_name],
-            :associate_public_ip       => config[:associate_public_ip],
-            :user_data                 => prepared_user_data,
-            :block_device_mapping      => [{
-              'Ebs.VolumeSize' => config[:ebs_volume_size],
-              'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
-              'DeviceName' => config[:ebs_device_name]
-            }]
+          :availability_zone         => config[:availability_zone],
+          :groups                    => config[:security_group_ids],
+          :tags                      => config[:tags],
+          :flavor_id                 => config[:flavor_id],
+          :ebs_optimized             => config[:ebs_optimized],
+          :image_id                  => config[:image_id],
+          :key_name                  => config[:aws_ssh_key_id],
+          :subnet_id                 => config[:subnet_id],
+          :iam_instance_profile_name => config[:iam_profile_name],
+          :associate_public_ip       => config[:associate_public_ip],
+          :user_data                 => prepared_user_data,
+          :block_device_mapping      => [{
+            'Ebs.VolumeSize' => config[:ebs_volume_size],
+            'Ebs.DeleteOnTermination' => config[:ebs_delete_on_termination],
+            'DeviceName' => config[:ebs_device_name]
+          }]
         }
       end
 
@@ -256,7 +250,7 @@ module Kitchen
             config[:user_data] = File.read(config[:user_data])
           end
 
-          if transport.name.casecmp('winrm') == 0
+          if driver.winrm_transport?
             debug("Injecting WinRM config to EC2 user_data")
 
             #Preparing custom static admin user if we defined something other than Administrator
