@@ -128,6 +128,34 @@ describe Kitchen::Driver::Ec2 do
 
   end
 
+  describe '#iam_creds' do
+    let(:connection) { double(Fog::Compute) }
+    before do
+      allow(driver).to receive(:connection).and_return(connection)
+    end
+
+    context 'when use_iam_profile is not set' do
+      it 'returns an empty hash' do
+        expect(driver.iam_creds).to eq({})
+      end
+    end
+
+    context 'when use_iam_profile is set to true' do
+      let(:config) { { use_iam_profile: true } }
+
+      it 'calls fetch_credentials' do
+        allow_any_instance_of(Kitchen::Driver::Ec2)
+          .to receive(:fetch_credentials).and_return(true)
+
+        expect(driver)
+          .to receive(:fetch_credentials)
+          .with(use_iam_profile: true)
+
+        driver.iam_creds
+      end
+    end
+  end
+
   describe '#block_device_mappings' do
     let(:connection) { double(Fog::Compute) }
     let(:image) { double('Image', :root_device_name => 'name') }
