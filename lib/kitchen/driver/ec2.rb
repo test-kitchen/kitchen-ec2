@@ -29,8 +29,7 @@ module Kitchen
     #
     # @author Fletcher Nichol <fnichol@nichol.ca>
     class Ec2 < Kitchen::Driver::SSHBase
-
-      extend Fog::AWS::CredentialFetcher::ServiceMethods
+      include Fog::AWS::CredentialFetcher::ServiceMethods
       default_config :region,             'us-east-1'
       default_config :availability_zone,  'us-east-1b'
       default_config :flavor_id,          'm1.small'
@@ -41,6 +40,7 @@ module Kitchen
       default_config :private_ip_address, nil
       default_config :iam_profile_name,   nil
       default_config :price,   nil
+      default_config :use_iam_profile, false
       default_config :aws_access_key_id do |driver|
         ENV['AWS_ACCESS_KEY'] || ENV['AWS_ACCESS_KEY_ID'] || iam_creds[:aws_access_key_id]
       end
@@ -98,9 +98,9 @@ module Kitchen
         end
       end
 
-      def self.iam_creds
+      def iam_creds
         @iam_creds ||= begin
-          fetch_credentials(use_iam_profile:true)
+          config[:use_iam_profile] ? fetch_credentials(use_iam_profile: true) : {}
         rescue RuntimeError => e
           debug("fetch_credentials failed with exception #{e.message}:#{e.backtrace.join("\n")}")
           {}
