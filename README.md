@@ -298,9 +298,10 @@ driver:
   iam_profile_name: chef-client
   ssh_timeout: 10
   ssh_retries: 5
-  ebs_volume_size: 6,
-  ebs_delete_on_termination: true
-  ebs_device_name: '/dev/sda1'
+  block_device_mappings:
+    - ebs_device_name: /dev/sda1
+      ebs_volume_size: 20
+      ebs_delete_on_termination: true
   flavor_id: t2.micro
 
 platforms:
@@ -332,6 +333,10 @@ driver:
   region: us-east-1
   availability_zone: us-east-1b
   require_chef_omnibus: true
+  block_device_mappings:
+    - ebs_device_name: /dev/sda1
+      ebs_volume_size: 20
+      ebs_delete_on_termination: true
 
 platforms:
   - name: ubuntu-12.04
