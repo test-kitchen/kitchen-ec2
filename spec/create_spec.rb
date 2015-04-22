@@ -54,6 +54,7 @@ describe Kitchen::Driver::Ec2 do
       instance
       allow(driver).to receive(:create_server).and_return(server)
       allow(driver).to receive(:wait_for_sshd)
+      allow(driver).to receive(:create_ec2_json)
     end
 
     it 'derives hostname from DNS when specified in the .kitchen.yml' do

@@ -148,6 +148,7 @@ module Kitchen
           :ssh_retries => config[:ssh_retries]
         })
         print "(ssh ready)\n"
+        create_ec2_json(state)
         debug("ec2:create '#{state[:hostname]}'")
       rescue Fog::Errors::Error, Excon::Errors::Error => ex
         raise ActionFailed, ex.message
@@ -382,6 +383,15 @@ module Kitchen
 
         bdms
       end
+
+      # TODO Update this to use the new Transport logic when that is ready
+      def create_ec2_json(state)
+        Kitchen::SSH.new(*build_ssh_args(state)) do |conn|
+          run_remote("sudo mkdir -p /etc/chef/ohai/hints;sudo touch /etc/chef/ohai/hints/ec2.json",
+            conn)
+        end
+      end
+
     end
   end
 end
