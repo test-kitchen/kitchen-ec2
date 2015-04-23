@@ -190,6 +190,8 @@ The default will be determined by the `aws_region` chosen and the Platform
 name, if a default exists (see [amis.json][ami_json]). If a default cannot be
 computed, then the default is `nil`.
 
+image_id's have a format like ami-748e2903. The image_id values appear next to the image names when you select 'Launch Instance' from the AWS EC2 console. You can also see the list from the AWS CLI ````aws ec2 describe-images````.
+
 ### <a name="config-port"></a> port
 
 The SSH port number to be used when communicating with the instance.
