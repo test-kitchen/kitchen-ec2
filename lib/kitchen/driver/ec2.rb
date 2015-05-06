@@ -383,7 +383,7 @@ module Kitchen
       def tag_server(server)
         # tag assignation on the instance.
         config[:tags].each do |k, v|
-          server.tag(k, :value => v)
+          server.tag(k.to_s, :value => v)
         end
         server
       end
