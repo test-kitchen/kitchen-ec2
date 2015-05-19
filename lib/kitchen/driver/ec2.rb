@@ -61,7 +61,6 @@ module Kitchen
       default_config :username,            nil
       default_config :associate_public_ip, nil
 
-      required_config :aws_ssh_key_id
       required_config :image_id
 
       def self.validation_warn(driver, old_key, new_key)
