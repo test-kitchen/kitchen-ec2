@@ -345,15 +345,11 @@ module Kitchen
       # that interface to lookup hostname.  Otherwise, try ordered list of
       # options.
       #
-      def hostname(server, interface_type = nil)
-        if interface_type
-          interface_type = INTERFACE_TYPES.fetch(interface_type) do
+      def hostname(server, interface_type = 'private')
+        interface_type = INTERFACE_TYPES.fetch(interface_type) do
             raise Kitchen::UserError, "Invalid interface [#{interface_type}]"
           end
-          server.send(interface_type)
-        else
-          potential_hostname = server.send(INTERFACE_TYPES['private'])
-        end
+        server.send(interface_type)
       end
 
       def create_ec2_json(state)
