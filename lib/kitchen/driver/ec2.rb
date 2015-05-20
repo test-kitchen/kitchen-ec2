@@ -55,6 +55,7 @@ module Kitchen
       default_config :aws_secret_access_key, nil
       default_config :aws_session_token,  nil
       default_config :aws_ssh_key_id,     ENV["AWS_SSH_KEY_ID"]
+      default_config :interface,          nil
       default_config :image_id do |driver|
         driver.default_ami
       end
@@ -199,7 +200,7 @@ module Kitchen
           :delay => config[:retryable_sleep],
           :before_attempt => wait_log
         ) do |s|
-          hostname = hostname(s)
+          hostname = hostname(s, config[:interface])
           # Euca instances often report ready before they have an IP
           s.state.name == "running" && !hostname.nil? && hostname != "0.0.0.0"
         end
@@ -344,19 +345,11 @@ module Kitchen
       # that interface to lookup hostname.  Otherwise, try ordered list of
       # options.
       #
-      def hostname(server, interface_type = nil)
-        if interface_type
-          interface_type = INTERFACE_TYPES.fetch(interface_type) do
+      def hostname(server, interface_type = 'private')
+        interface_type = INTERFACE_TYPES.fetch(interface_type) do
             raise Kitchen::UserError, "Invalid interface [#{interface_type}]"
           end
-          server.send(interface_type)
-        else
-          potential_hostname = nil
-          INTERFACE_TYPES.values.each do |type|
-            potential_hostname ||= server.send(type)
-          end
-          potential_hostname
-        end
+        server.send(interface_type)
       end
 
       def create_ec2_json(state)
