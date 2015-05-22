@@ -19,6 +19,7 @@
 require "kitchen/driver/aws/instance_generator"
 require "kitchen/driver/aws/client"
 require "tempfile"
+require "base64"
 
 describe Kitchen::Driver::Aws::InstanceGenerator do
 
@@ -70,14 +71,15 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
 
       it "reads the file contents" do
-        expect(generator.prepared_user_data).to eq("foo\nbar")
+        expect(Base64.decode64(generator.prepared_user_data)).to eq("foo\nbar")
       end
 
       it "memoizes the file contents" do
-        expect(generator.prepared_user_data).to eq("foo\nbar")
+        decoded = Base64.decode64(generator.prepared_user_data)
+        expect(decoded).to eq("foo\nbar")
         tmp_file.write("other\nvalue")
         tmp_file.rewind
-        expect(generator.prepared_user_data).to eq("foo\nbar")
+        expect(decoded).to eq("foo\nbar")
       end
     end
   end
@@ -339,7 +341,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
             :subnet_id => "s-456"
           }],
           :security_group_ids => ["sg-789"],
-          :user_data => "foo"
+          :user_data => Base64.encode64("foo")
         )
       end
     end

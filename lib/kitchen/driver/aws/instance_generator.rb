@@ -17,6 +17,7 @@
 # limitations under the License.
 
 require "kitchen/logging"
+require "base64"
 
 module Kitchen
 
@@ -134,14 +135,15 @@ module Kitchen
 
         def prepared_user_data
           # If user_data is a file reference, lets read it as such
-          unless @user_data
-            if config[:user_data] && File.file?(config[:user_data])
+          return nil if config[:user_data].nil?
+          @user_data ||= begin
+            if File.file?(config[:user_data])
               @user_data = File.read(config[:user_data])
             else
               @user_data = config[:user_data]
             end
+            @user_data = Base64.encode64(@user_data)
           end
-          @user_data
         end
 
       end
