@@ -62,6 +62,7 @@ module Kitchen
       default_config :username,            nil
       default_config :associate_public_ip, nil
       default_config :interface,           nil
+      default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
 
       required_config :aws_ssh_key_id
       required_config :image_id
@@ -250,7 +251,8 @@ module Kitchen
           config[:shared_credentials_profile],
           config[:aws_access_key_id],
           config[:aws_secret_access_key],
-          config[:aws_session_token]
+          config[:aws_session_token],
+          config[:http_proxy]
         )
       end
 

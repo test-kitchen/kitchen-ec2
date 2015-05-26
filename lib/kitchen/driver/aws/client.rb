@@ -32,19 +32,21 @@ module Kitchen
       # @author Tyler Ball <tball@chef.io>
       class Client
 
-        def initialize(
+        def initialize( # rubocop:disable Metrics/ParameterLists
           region,
           profile_name = nil,
           access_key_id = nil,
           secret_access_key = nil,
-          session_token = nil
+          session_token = nil,
+          http_proxy = nil
         )
           creds = self.class.get_credentials(
             profile_name, access_key_id, secret_access_key, session_token
           )
           ::Aws.config.update(
             :region => region,
-            :credentials => creds
+            :credentials => creds,
+            :http_proxy => http_proxy
           )
         end
 
