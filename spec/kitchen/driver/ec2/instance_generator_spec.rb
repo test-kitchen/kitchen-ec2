@@ -19,6 +19,7 @@
 require "kitchen/driver/aws/instance_generator"
 require "kitchen/driver/aws/client"
 require "tempfile"
+require "base64"
 
 describe Kitchen::Driver::Aws::InstanceGenerator do
 
@@ -70,14 +71,15 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
 
       it "reads the file contents" do
-        expect(generator.prepared_user_data).to eq("foo\nbar")
+        expect(Base64.decode64(generator.prepared_user_data)).to eq("foo\nbar")
       end
 
       it "memoizes the file contents" do
-        expect(generator.prepared_user_data).to eq("foo\nbar")
+        decoded = Base64.decode64(generator.prepared_user_data)
+        expect(decoded).to eq("foo\nbar")
         tmp_file.write("other\nvalue")
         tmp_file.rewind
-        expect(generator.prepared_user_data).to eq("foo\nbar")
+        expect(decoded).to eq("foo\nbar")
       end
     end
   end
@@ -280,8 +282,91 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :key_name => nil,
           :subnet_id => nil,
           :private_ip_address => nil,
-          :network_interfaces => [{ :device_index => 0, :associate_public_ip_address => true }]
+          :network_interfaces => [{
+            :device_index => 0,
+            :associate_public_ip_address => true,
+            :delete_on_termination => true
+          }]
         )
+      end
+
+      context "and subnet is provided" do
+        let(:config) do
+          {
+            :associate_public_ip => true,
+            :subnet_id => "s-456"
+          }
+        end
+
+        it "adds a network_interfaces block" do
+          expect(generator.ec2_instance_data).to eq(
+            :placement => { :availability_zone => nil },
+            :instance_type => nil,
+            :ebs_optimized => nil,
+            :image_id => nil,
+            :key_name => nil,
+            :private_ip_address => nil,
+            :network_interfaces => [{
+              :device_index => 0,
+              :associate_public_ip_address => true,
+              :delete_on_termination => true,
+              :subnet_id => "s-456"
+            }]
+          )
+        end
+      end
+
+      context "and security_group_ids is provided" do
+        let(:config) do
+          {
+            :associate_public_ip => true,
+            :security_group_ids => ["sg-789"]
+          }
+        end
+
+        it "adds a network_interfaces block" do
+          expect(generator.ec2_instance_data).to eq(
+            :placement => { :availability_zone => nil },
+            :instance_type => nil,
+            :ebs_optimized => nil,
+            :image_id => nil,
+            :key_name => nil,
+            :subnet_id => nil,
+            :private_ip_address => nil,
+            :network_interfaces => [{
+              :device_index => 0,
+              :associate_public_ip_address => true,
+              :delete_on_termination => true,
+              :groups => ["sg-789"]
+            }]
+          )
+        end
+      end
+
+      context "and private_ip_address is provided" do
+        let(:config) do
+          {
+            :associate_public_ip => true,
+            :private_ip_address => "0.0.0.0"
+          }
+        end
+
+        it "adds a network_interfaces block" do
+          expect(generator.ec2_instance_data).to eq(
+            :placement => { :availability_zone => nil },
+            :instance_type => nil,
+            :ebs_optimized => nil,
+            :image_id => nil,
+            :key_name => nil,
+            :subnet_id => nil,
+            :network_interfaces => [{
+              :device_index => 0,
+              :associate_public_ip_address => true,
+              :delete_on_termination => true,
+              :private_ip_address => "0.0.0.0"
+            }]
+          )
+        end
       end
     end
 
@@ -319,7 +404,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :ebs_optimized => true,
           :image_id => "ami-123",
           :key_name => "key",
-          :private_ip_address => "0.0.0.0",
           :block_device_mappings => [
             {
               :ebs => {
@@ -336,10 +420,12 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :network_interfaces => [{
             :device_index => 0,
             :associate_public_ip_address => true,
-            :subnet_id => "s-456"
+            :subnet_id => "s-456",
+            :delete_on_termination => true,
+            :groups => ["sg-789"],
+            :private_ip_address =>  "0.0.0.0"
           }],
-          :security_group_ids => ["sg-789"],
-          :user_data => "foo"
+          :user_data => Base64.encode64("foo")
         )
       end
     end

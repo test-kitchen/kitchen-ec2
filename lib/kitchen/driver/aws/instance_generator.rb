@@ -17,6 +17,7 @@
 # limitations under the License.
 
 require "kitchen/logging"
+require "base64"
 
 module Kitchen
 
@@ -62,12 +63,20 @@ module Kitchen
             i[:network_interfaces] =
               [{
                 :device_index => 0,
-                :associate_public_ip_address => config[:associate_public_ip]
+                :associate_public_ip_address => config[:associate_public_ip],
+                :delete_on_termination => true
               }]
-            # If specifying `:network_interfaces` in the request, you must specify the
-            # subnet_id in the network_interfaces block and not at the top level
+            # If specifying `:network_interfaces` in the request, you must specify
+            # network specific configs in the network_interfaces block and not at
+            # the top level
             if config[:subnet_id]
               i[:network_interfaces][0][:subnet_id] = i.delete(:subnet_id)
+            end
+            if config[:private_ip_address]
+              i[:network_interfaces][0][:private_ip_address] = i.delete(:private_ip_address)
+            end
+            if config[:security_group_ids]
+              i[:network_interfaces][0][:groups] = i.delete(:security_group_ids)
             end
           end
           i
@@ -134,14 +143,15 @@ module Kitchen
 
         def prepared_user_data
           # If user_data is a file reference, lets read it as such
-          unless @user_data
-            if config[:user_data] && File.file?(config[:user_data])
+          return nil if config[:user_data].nil?
+          @user_data ||= begin
+            if File.file?(config[:user_data])
               @user_data = File.read(config[:user_data])
             else
               @user_data = config[:user_data]
             end
+            @user_data = Base64.encode64(@user_data)
           end
-          @user_data
         end
 
       end
