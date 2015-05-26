@@ -1,3 +1,16 @@
+## 0.9.2 / 2015-05-26
+
+### Bug Fixes
+
+* Pull Request [#131][]: Adding back support for a proxy via config `http_proxy` which defaults to `ENV['HTTP_PROXY']`
+* Pull Request [#128][]: 
+    * Fixes [#121][]: Fixing error `Network interfaces and an instance-level security groups may not be specified on the same request` 
+    * Fixes [#127][]: User Data content should be base64 encoded when passed to aws sdk 
+
+### New Features
+
+### Improvements
+
 ## 0.9.1 / 2015-05-21
 
 ### Bug Fixes
@@ -124,8 +137,12 @@
 [#107]: https://github.com/test-kitchen/kitchen-ec2/issues/107
 [#110]: https://github.com/test-kitchen/kitchen-ec2/issues/110
 [#112]: https://github.com/test-kitchen/kitchen-ec2/issues/112
+[#121]: https://github.com/test-kitchen/kitchen-ec2/issues/121
 [#124]: https://github.com/test-kitchen/kitchen-ec2/issues/124
 [#125]: https://github.com/test-kitchen/kitchen-ec2/issues/125
+[#127]: https://github.com/test-kitchen/kitchen-ec2/issues/127
+[#128]: https://github.com/test-kitchen/kitchen-ec2/issues/128
+[#131]: https://github.com/test-kitchen/kitchen-ec2/issues/131
 [@Atalanta]: https://github.com/Atalanta
 [@Igorshp]: https://github.com/Igorshp
 [@JamesAwesome]: https://github.com/JamesAwesome
