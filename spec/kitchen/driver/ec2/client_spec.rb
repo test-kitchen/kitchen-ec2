@@ -106,6 +106,27 @@ describe Kitchen::Driver::Aws::Client do
       client
       expect(Aws.config[:region]).to eq("us-west-1")
     end
+
+    context "when provided all optional parameters" do
+      let(:client) {
+        Kitchen::Driver::Aws::Client.new(
+          "us-west-1",
+          "profile_name",
+          "access_key_id",
+          "secret_access_key",
+          "session_token",
+          "http_proxy"
+        )
+      }
+      let(:creds) { double("creds") }
+      it "Sets the AWS config" do
+        expect(Kitchen::Driver::Aws::Client).to receive(:get_credentials).and_return(creds)
+        client
+        expect(Aws.config[:region]).to eq("us-west-1")
+        expect(Aws.config[:credentials]).to eq(creds)
+        expect(Aws.config[:http_proxy]).to eq("http_proxy")
+      end
+    end
   end
 
   it "returns a client" do
