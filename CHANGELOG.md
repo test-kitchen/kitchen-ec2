@@ -2,7 +2,7 @@
 
 ### Bug Fixes
 
-* Pull Request [#131][]: Adding back support for a proxy via config `http_proxy` which defaults to `ENV['HTTP_PROXY']`
+* Pull Request [#131][]: Adding back support for a proxy via config `http_proxy` which defaults to `ENV[‘HTTPS_PROXY’] || ENV['HTTP_PROXY']`
 * Pull Request [#128][]: 
     * Fixes [#121][]: Fixing error `Network interfaces and an instance-level security groups may not be specified on the same request` 
     * Fixes [#127][]: User Data content should be base64 encoded when passed to aws sdk 
