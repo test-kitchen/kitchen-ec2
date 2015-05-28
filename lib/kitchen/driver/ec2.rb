@@ -391,9 +391,12 @@ module Kitchen
       end
 
       def create_ec2_json(state)
-        instance.transport.connection(state).execute(
-          "sudo mkdir -p /etc/chef/ohai/hints;sudo touch /etc/chef/ohai/hints/ec2.json"
-        )
+        if instance.transport.windows_os?
+          cmd = "mkdir c:\\chef\\ohai\\hints; echo $null >> c:\\chef\\ohai\\hints\\ec2.json"
+        else
+          cmd = "sudo mkdir -p /etc/chef/ohai/hints;sudo touch /etc/chef/ohai/hints/ec2.json"
+        end
+        instance.transport.connection(state).execute(cmd)
       end
 
     end
