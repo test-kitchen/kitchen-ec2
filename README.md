@@ -232,10 +232,10 @@ name of your ebs device, for example: `/dev/sda1`
 A list of block device mappings for the machine.  An example of all available keys looks like:
 ```yaml
 block_device_mappings:
-  - ebs_device_name: /dev/sda1
+  - ebs_device_name: /dev/sda
     ebs_volume_size: 20
     ebs_delete_on_termination: true
-  - ebs_device_name: /dev/sda2
+  - ebs_device_name: /dev/sdb
     ebs_volume_type: gp2
     ebs_virtual_name: test
     ebs_volume_size: 15
@@ -371,7 +371,7 @@ driver:
   private_ip_address: 10.0.0.27
   interface: dns
   block_device_mappings:
-    - ebs_device_name: /dev/sda0
+    - ebs_device_name: /dev/sda
       ebs_volume_type: gp2
       ebs_virtual_name: test
       ebs_volume_size: 15
