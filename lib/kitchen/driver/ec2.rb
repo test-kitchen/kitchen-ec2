@@ -62,6 +62,7 @@ module Kitchen
       default_config :username,            nil
       default_config :associate_public_ip, nil
       default_config :interface,           nil
+      default_config :get_windows_password, false
 
       required_config :aws_ssh_key_id
       required_config :image_id
@@ -215,6 +216,37 @@ module Kitchen
 
         info("EC2 instance <#{state[:server_id]}> ready.")
         state[:hostname] = hostname(server)
+
+        if config[:get_windows_password]
+          wait_log = proc do |attempts|
+            c = attempts * config[:retryable_sleep]
+            t = config[:retryable_tries] * config[:retryable_sleep]
+            info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> to get" \
+              " its Windows password."
+          end
+          begin
+            server.wait_until(
+              :max_attempts => config[:retryable_tries],
+              :delay => config[:retryable_sleep],
+              :before_attempt => wait_log
+            ) do |s|
+              enc = server.client.get_password_data(
+                instance_id: state[:server_id]
+              ).password_data
+              # Password data is blank until password is available
+              !enc.nil? && !enc.empty?
+            end
+          rescue ::Aws::Waiters::Errors::WaiterFailed
+            error("Ran out of time waiting for the server with id [#{state[:server_id]}]" \
+              " to get its Windows password, attempting to destroy it")
+            destroy(state)
+            raise
+          end
+          pass = server.decrypt_windows_password(instance.transport[:ssh_key])
+          state[:password] = pass
+          info("Retrieved Windows password for instance <#{state[:server_id]}>.")
+        end
+
         instance.transport.connection(state).wait_until_ready
         create_ec2_json(state)
         debug("ec2:create '#{state[:hostname]}'")
