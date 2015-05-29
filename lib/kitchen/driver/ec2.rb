@@ -188,7 +188,6 @@ module Kitchen
           server = submit_server
         end
         info("Instance <#{server.id}> requested.")
-        tag_server(server)
 
         state[:server_id] = server.id
         info("EC2 instance <#{state[:server_id]}> created.")
@@ -215,6 +214,7 @@ module Kitchen
         end
 
         info("EC2 instance <#{state[:server_id]}> ready.")
+        tag_server(server)
         state[:hostname] = hostname(server)
         instance.transport.connection(state).wait_until_ready
         create_ec2_json(state)
