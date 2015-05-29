@@ -32,6 +32,12 @@ describe Kitchen::Driver::Ec2 do
   let(:provisioner)   { Kitchen::Provisioner::Dummy.new }
   let(:transport)     { Kitchen::Transport::Dummy.new }
   let(:state_file)    { double("state_file") }
+  let(:generator)     { instance_double(Kitchen::Driver::Aws::InstanceGenerator) }
+  # There is too much name overlap I let creep in - my `client` is actually
+  # a wrapper around the actual ec2 client
+  let(:actual_client) { double("actual ec2 client") }
+  let(:client)        { double(Kitchen::Driver::Aws::Client, :client => actual_client) }
+  let(:server) { double("aws server object") }
 
   let(:driver) { Kitchen::Driver::Ec2.new(config) }
 
@@ -46,6 +52,11 @@ describe Kitchen::Driver::Ec2 do
       :transport => transport,
       :state_file => state_file
     )
+  end
+
+  before do
+    allow(Kitchen::Driver::Aws::InstanceGenerator).to receive(:new).and_return(generator)
+    allow(Kitchen::Driver::Aws::Client).to receive(:new).and_return(client)
   end
 
   it "driver api_version is 2" do
@@ -155,6 +166,89 @@ describe Kitchen::Driver::Ec2 do
         it "returns the private_ip_address" do
           expect(driver.hostname(server)).to eq(private_ip_address)
         end
+      end
+    end
+  end
+
+  describe "#submit_server" do
+    it "submits the server request" do
+      expect(generator).to receive(:ec2_instance_data).and_return({})
+      expect(client).to receive(:create_instance).with(:min_count => 1, :max_count => 1)
+      driver.submit_server
+    end
+  end
+
+  describe "#submit_spot" do
+    let(:state) { {} }
+    let(:response) {
+      { :spot_instance_requests => [{ :spot_instance_request_id => "id" }] }
+    }
+
+    it "submits the server request" do
+      expect(generator).to receive(:ec2_instance_data).and_return({})
+      expect(actual_client).to receive(:request_spot_instances).with(
+        :spot_price => "", :launch_specification => {}
+      ).and_return(response)
+      expect(actual_client).to receive(:wait_until)
+      expect(client).to receive(:get_instance_from_spot_request).with("id")
+      driver.submit_spot(state)
+      expect(state).to eq(:spot_request_id => "id")
+    end
+  end
+
+  describe "#tag_server" do
+    it "tags the server" do
+      config[:tags] = { :key1 => :value1, :key2 => :value2 }
+      expect(server).to receive(:create_tags).with(
+        :tags => [
+          { :key => :key1, :value => :value1 },
+          { :key => :key2, :value => :value2 }
+        ]
+      )
+      driver.tag_server(server)
+    end
+  end
+
+  describe "#destroy" do
+    context "when state[:server_id] is nil" do
+      let(:state) { {} }
+      it "returns nil" do
+        expect(driver.destroy(state)).to eq(nil)
+      end
+    end
+
+    context "when state has a normal server_id" do
+      let(:state) { { :server_id => "id", :hostname => "name" } }
+
+      context "the server is already destroyed" do
+        it "does nothing" do
+          expect(client).to receive(:get_instance).with("id").and_return nil
+          driver.destroy(state)
+          expect(state).to eq({})
+        end
+      end
+
+      it "destroys the server" do
+        expect(client).to receive(:get_instance).with("id").and_return(server)
+        expect(instance).to receive_message_chain("transport.connection.close")
+        expect(server).to receive(:terminate)
+        driver.destroy(state)
+        expect(state).to eq({})
+      end
+    end
+
+    context "when state has a spot request" do
+      let(:state) { { :server_id => "id", :hostname => "name", :spot_request_id => "spot" } }
+
+      it "destroys the server" do
+        expect(client).to receive(:get_instance).with("id").and_return(server)
+        expect(instance).to receive_message_chain("transport.connection.close")
+        expect(server).to receive(:terminate)
+        expect(actual_client).to receive(:cancel_spot_instance_requests).with(
+          :spot_instance_request_ids => ["spot"]
+        )
+        driver.destroy(state)
+        expect(state).to eq({})
       end
     end
   end

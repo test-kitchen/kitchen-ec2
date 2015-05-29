@@ -188,6 +188,10 @@ module Kitchen
           server = submit_server
         end
         info("Instance <#{server.id}> requested.")
+        ec2.client.wait_until(
+          :instance_exists,
+          :instance_ids => [server.id]
+        )
         tag_server(server)
 
         state[:server_id] = server.id
@@ -234,6 +238,7 @@ module Kitchen
           ec2.client.cancel_spot_instance_requests(
             :spot_instance_request_ids => [state[:spot_request_id]]
           )
+          state.delete(:spot_request_id)
         end
         info("EC2 instance <#{state[:server_id]}> destroyed.")
         state.delete(:server_id)
