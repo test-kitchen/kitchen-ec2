@@ -1,3 +1,13 @@
+## 0.9.3 / 2015-05-29
+
+### Bug Fixes
+
+* Pull Request [#140][]: Wait for an instance to pass existence check before tagging it
+
+### New Features
+
+### Improvements
+
 ## 0.9.2 / 2015-05-27
 
 ### Bug Fixes
@@ -143,6 +153,7 @@
 [#127]: https://github.com/test-kitchen/kitchen-ec2/issues/127
 [#128]: https://github.com/test-kitchen/kitchen-ec2/issues/128
 [#131]: https://github.com/test-kitchen/kitchen-ec2/issues/131
+[#140]: https://github.com/test-kitchen/kitchen-ec2/issues/140
 [@Atalanta]: https://github.com/Atalanta
 [@Igorshp]: https://github.com/Igorshp
 [@JamesAwesome]: https://github.com/JamesAwesome

@@ -21,6 +21,6 @@ module Kitchen
   module Driver
 
     # Version string for EC2 Test Kitchen driver
-    EC2_VERSION = "0.10.0.dev.2"
+    EC2_VERSION = "0.9.3"
   end
 end
