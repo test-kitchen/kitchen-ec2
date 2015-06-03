@@ -30,13 +30,12 @@ module Kitchen
       # @author Tyler Ball <tball@chef.io>
       class InstanceGenerator
 
-        include Logging
+        attr_reader :config, :ec2, :logger
 
-        attr_reader :config, :ec2
-
-        def initialize(config, ec2)
+        def initialize(config, ec2, logger)
           @config = config
           @ec2 = ec2
+          @logger = logger
         end
 
         # Transform the provided config into the hash to send to AWS.  Some fields
@@ -125,6 +124,7 @@ module Kitchen
         # If the provided bdms match the root device in the AMI, emit log that
         # states this
         def debug_if_root_device(bdms)
+          return if bdms.nil? || bdms.empty?
           image_id = config[:image_id]
           image = ec2.resource.image(image_id)
           begin
@@ -136,7 +136,7 @@ module Kitchen
           end
           bdms.find { |bdm|
             if bdm[:device_name] == root_device_name
-              info("Overriding root device [#{root_device_name}] from image [#{image_id}]")
+              logger.info("Overriding root device [#{root_device_name}] from image [#{image_id}]")
             end
           }
         end

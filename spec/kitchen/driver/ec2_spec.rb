@@ -88,6 +88,12 @@ describe Kitchen::Driver::Ec2 do
       driver.finalize_config!(instance)
       expect(config[:availability_zone]).to eq("us-east-1b")
     end
+
+    it "expands the availability zone if provided as a letter" do
+      config[:availability_zone] = "d"
+      driver.finalize_config!(instance)
+      expect(config[:availability_zone]).to eq("us-east-1d")
+    end
   end
 
   describe "#hostname" do
@@ -171,6 +177,10 @@ describe Kitchen::Driver::Ec2 do
   end
 
   describe "#submit_server" do
+    before do
+      expect(driver).to receive(:instance).at_least(:once).and_return(instance)
+    end
+
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
       expect(client).to receive(:create_instance).with(:min_count => 1, :max_count => 1)
@@ -183,6 +193,10 @@ describe Kitchen::Driver::Ec2 do
     let(:response) {
       { :spot_instance_requests => [{ :spot_instance_request_id => "id" }] }
     }
+
+    before do
+      expect(driver).to receive(:instance).at_least(:once).and_return(instance)
+    end
 
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
