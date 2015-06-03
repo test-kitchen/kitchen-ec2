@@ -159,6 +159,8 @@ module Kitchen
 
         if config[:availability_zone].nil?
           config[:availability_zone] = config[:region] + "b"
+        elsif config[:availability_zone] =~ /^[a-z]$/
+          config[:availability_zone] = config[:region] + config[:availability_zone]
         end
         # TODO: when we get rid of flavor_id, move this to a default
         if config[:instance_type].nil?
@@ -196,27 +198,7 @@ module Kitchen
 
         state[:server_id] = server.id
         info("EC2 instance <#{state[:server_id]}> created.")
-        wait_log = proc do |attempts|
-          c = attempts * config[:retryable_sleep]
-          t = config[:retryable_tries] * config[:retryable_sleep]
-          info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> to become ready."
-        end
-        begin
-          server = server.wait_until(
-            :max_attempts => config[:retryable_tries],
-            :delay => config[:retryable_sleep],
-            :before_attempt => wait_log
-          ) do |s|
-            hostname = hostname(s, config[:interface])
-            # Euca instances often report ready before they have an IP
-            s.exists? && s.state.name == "running" && !hostname.nil? && hostname != "0.0.0.0"
-          end
-        rescue ::Aws::Waiters::Errors::WaiterFailed
-          error("Ran out of time waiting for the server with id [#{state[:server_id]}]" \
-            " to become ready, attempting to destroy it")
-          destroy(state)
-          raise
-        end
+        wait_until_ready(server, state)
 
         info("EC2 instance <#{state[:server_id]}> ready.")
         state[:hostname] = hostname(server)
@@ -262,7 +244,7 @@ module Kitchen
       end
 
       def instance_generator
-        @instance_generator ||= Aws::InstanceGenerator.new(config, ec2)
+        @instance_generator ||= Aws::InstanceGenerator.new(config, ec2, instance.logger)
       end
 
       # This copies transport config from the current config object into the
@@ -332,6 +314,30 @@ module Kitchen
           tags << { :key => k, :value => v }
         end
         server.create_tags(:tags => tags)
+      end
+
+      def wait_until_ready(server, state)
+        wait_log = proc do |attempts|
+          c = attempts * config[:retryable_sleep]
+          t = config[:retryable_tries] * config[:retryable_sleep]
+          info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> to become ready."
+        end
+        begin
+          server.wait_until(
+            :max_attempts => config[:retryable_tries],
+            :delay => config[:retryable_sleep],
+            :before_attempt => wait_log
+          ) do |s|
+            hostname = hostname(s, config[:interface])
+            # Euca instances often report ready before they have an IP
+            s.exists? && s.state.name == "running" && !hostname.nil? && hostname != "0.0.0.0"
+          end
+        rescue ::Aws::Waiters::Errors::WaiterFailed
+          error("Ran out of time waiting for the server with id [#{state[:server_id]}]" \
+            " to become ready, attempting to destroy it")
+          destroy(state)
+          raise
+        end
       end
 
       def amis

@@ -1,3 +1,13 @@
+## 0.9.4 / 2015-06-03
+
+### Bug Fixes
+
+* Pull Request [#142][]: Fixing NoMethodError, providing logger to instance_generator
+
+### New Features
+
+### Improvements
+
 ## 0.9.3 / 2015-05-29
 
 ### Bug Fixes
@@ -154,6 +164,7 @@
 [#128]: https://github.com/test-kitchen/kitchen-ec2/issues/128
 [#131]: https://github.com/test-kitchen/kitchen-ec2/issues/131
 [#140]: https://github.com/test-kitchen/kitchen-ec2/issues/140
+[#142]: https://github.com/test-kitchen/kitchen-ec2/issues/142
 [@Atalanta]: https://github.com/Atalanta
 [@Igorshp]: https://github.com/Igorshp
 [@JamesAwesome]: https://github.com/JamesAwesome

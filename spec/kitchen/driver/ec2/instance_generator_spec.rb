@@ -24,12 +24,10 @@ require "base64"
 describe Kitchen::Driver::Aws::InstanceGenerator do
 
   let(:config) { Hash.new }
-
   let(:resource) { instance_double(Aws::EC2::Resource) }
-
   let(:ec2) { instance_double(Kitchen::Driver::Aws::Client, :resource => resource) }
-
-  let(:generator) { Kitchen::Driver::Aws::InstanceGenerator.new(config, ec2) }
+  let(:logger)        { instance_double(Logger) }
+  let(:generator) { Kitchen::Driver::Aws::InstanceGenerator.new(config, ec2, logger) }
 
   describe "#debug_if_root_device" do
     let(:image_id) { "ami-123456" }
@@ -37,20 +35,28 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     let(:image) { double("image") }
 
     before do
-      expect(resource).to receive(:image).with(image_id).and_return(image)
+      allow(resource).to receive(:image).with(image_id).and_return(image)
+    end
+
+    it "returns nil when provided nil" do
+      expect(generator.debug_if_root_device(nil)).to eq(nil)
+    end
+
+    it "returns nil when provided empty" do
+      expect(generator.debug_if_root_device([])).to eq(nil)
     end
 
     it "returns nil when the image cannot be found" do
       expect(image).to receive(:root_device_name).and_raise(
         ::Aws::EC2::Errors::InvalidAMIIDNotFound.new({}, "")
       )
-      expect(generator).to_not receive(:info)
-      expect(generator.debug_if_root_device({})).to eq(nil)
+      expect(logger).to_not receive(:info)
+      expect(generator.debug_if_root_device([{ :device_name => "name" }])).to eq(nil)
     end
 
     it "logs an info message when the device mappings are overriding the root device" do
       expect(image).to receive(:root_device_name).and_return("name")
-      expect(generator).to receive(:info)
+      expect(logger).to receive(:info)
       expect(generator.debug_if_root_device([{ :device_name => "name" }])).to eq(nil)
     end
   end
