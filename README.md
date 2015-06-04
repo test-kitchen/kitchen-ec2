@@ -21,8 +21,13 @@ Please read the [Driver usage][driver_usage] page for more details.
 ## Default Configuration
 
 This driver can determine AMI and username login for a select number of
-platforms in each region. Currently, the following platform names are
-supported:
+platforms in each region.
+
+For Windows instances the generated Administrator password is fetched
+automatically from Amazon EC2 with the same private key as we use for
+SSH logins to Linux.
+
+Currently, the following platform names are supported:
 
 ```ruby
 ---
@@ -402,6 +407,8 @@ platforms:
           ebs_delete_on_termination: true
     transport:
       username: centos
+  - name: windows-2012r2
+  - name: windows-2008r2
 
 suites:
 # ...

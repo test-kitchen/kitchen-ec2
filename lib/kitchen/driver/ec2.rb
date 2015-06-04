@@ -46,7 +46,11 @@ module Kitchen
       default_config :ebs_optimized,      false
       default_config :security_group_ids, nil
       default_config :tags,                "created-by" => "test-kitchen"
-      default_config :user_data,          nil
+      default_config :user_data do |driver|
+        if driver.windows_os?
+          driver.default_windows_user_data
+        end
+      end
       default_config :private_ip_address, nil
       default_config :iam_profile_name,   nil
       default_config :price,              nil
@@ -200,6 +204,14 @@ module Kitchen
         info("EC2 instance <#{state[:server_id]}> created.")
         wait_until_ready(server, state)
 
+        if windows_os? &&
+          instance.transport[:username] =~ /administrator/i &&
+          instance.transport[:password].nil?
+          # If we're logging into the administrator user and a password isn't
+          # supplied, try to fetch it from the AWS instance
+          fetch_windows_admin_password(server, state)
+        end
+
         info("EC2 instance <#{state[:server_id]}> ready.")
         instance.transport.connection(state).wait_until_ready
         create_ec2_json(state)
@@ -322,31 +334,53 @@ module Kitchen
           # we still have it, even if it will change later
           state[:hostname] = hostname
           # Euca instances often report ready before they have an IP
-          aws_instance.exists? &&
+          ready = aws_instance.exists? &&
             aws_instance.state.name == "running" &&
             hostname != "0.0.0.0"
+          if ready && windows_os?
+            output = server.console_output.output
+            unless output.nil?
+              output = Base64.decode64(output)
+              debug "Console output: --- \n#{output}"
+            end
+            ready = !!(output =~ /Windows is Ready to use/)
+          end
+          ready
         end
+      end
+
+      def fetch_windows_admin_password(server, state)
+        wait_with_destroy(server, state, "to fetch windows admin password") do |aws_instance|
+          enc = server.client.get_password_data(
+            instance_id: state[:server_id]
+          ).password_data
+          # Password data is blank until password is available
+          !enc.nil? && !enc.empty?
+        end
+        pass = server.decrypt_windows_password(instance.transport[:ssh_key])
+        state[:password] = pass
+        info("Retrieved Windows password for instance <#{state[:server_id]}>.")
       end
 
       def wait_with_destroy(server, state, status_msg, &block)
         wait_log = proc do |attempts|
-          c = attempts * config[:retryable_sleep]
-          t = config[:retryable_tries] * config[:retryable_sleep]
-          info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> #{status_msg}."
-        end
-        begin
-          server.wait_until(
-            :max_attempts => config[:retryable_tries],
-            :delay => config[:retryable_sleep],
-            :before_attempt => wait_log,
-            &block
-          )
-        rescue ::Aws::Waiters::Errors::WaiterFailed
-          error("Ran out of time waiting for the server with id [#{state[:server_id]}]" \
-            " #{status_msg}, attempting to destroy it")
-          destroy(state)
-          raise
-        end
+           c = attempts * config[:retryable_sleep]
+           t = config[:retryable_tries] * config[:retryable_sleep]
+           info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> #{status_msg}."
+         end
+         begin
+           server.wait_until(
+             :max_attempts => config[:retryable_tries],
+             :delay => config[:retryable_sleep],
+             :before_attempt => wait_log,
+             &block
+           )
+         rescue ::Aws::Waiters::Errors::WaiterFailed
+           error("Ran out of time waiting for the server with id [#{state[:server_id]}]" \
+             " #{status_msg}, attempting to destroy it")
+           destroy(state)
+           raise
+         end
       end
 
       def amis
@@ -391,12 +425,57 @@ module Kitchen
       end
 
       def create_ec2_json(state)
-        if instance.transport.windows_os?
-          cmd = "mkdir c:\\chef\\ohai\\hints; echo $null >> c:\\chef\\ohai\\hints\\ec2.json"
+        if windows_os?
+          cmd = "mkdir \\etc\\chef\\ohai\\hints; echo $null >> \\etc\\chef\\ohai\\hints\\ec2.json"
         else
           cmd = "sudo mkdir -p /etc/chef/ohai/hints;sudo touch /etc/chef/ohai/hints/ec2.json"
         end
         instance.transport.connection(state).execute(cmd)
+      end
+
+      def default_windows_user_data
+        #Preparing custom static admin user if we defined something other than Administrator
+        customAdminScript = ''
+        if !(instance.transport[:username] =~ /administrator/i) && instance.transport[:password]
+          customAdminScript = Kitchen::Util.outdent!(<<-EOH)
+          "Disabling Complex Passwords" >> $logfile
+          $seccfg = [IO.Path]::GetTempFileName()
+          & secedit.exe /export /cfg $seccfg >> $logfile
+          (Get-Content $seccfg) | Foreach-Object {$_ -replace "PasswordComplexity\\s*=\\s*1", "PasswordComplexity = 0"} | Set-Content $seccfg
+          & secedit.exe /configure /db $env:windir\\security\\new.sdb /cfg $seccfg /areas SECURITYPOLICY >> $logfile
+          & cp $seccfg "c:\\"
+          & del $seccfg
+          $username="#{instance.transport[:username]}"
+          $password="#{instance.transport[:password]}"
+          "Creating static user: $username" >> $logfile
+          & net.exe user /y /add $username $password >> $logfile
+          "Adding $username to Administrators" >> $logfile
+          & net.exe localgroup Administrators /add $username >> $logfile
+          EOH
+        end
+
+        # Returning the fully constructed PowerShell script to user_data
+        Kitchen::Util.outdent!(<<-EOH)
+        <powershell>
+        $logfile="C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log"
+        #PS Remoting and & winrm.cmd basic config
+        Enable-PSRemoting -Force -SkipNetworkProfileCheck
+        & winrm.cmd quickconfig -q >> $logfile
+        & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
+        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="512"}' >> $logfile
+        & winrm.cmd set winrm/config/winrs '@{MaxShellsPerUser="50"}' >> $logfile
+        #Client settings
+        & winrm.cmd set winrm/config/client/auth '@{Basic="true"}' >> $logfile
+        #Server settings
+        & winrm.cmd set winrm/config/service/auth '@{Basic="true"}' >> $logfile
+        & winrm.cmd set winrm/config/service '@{AllowUnencrypted="true"}' >> $logfile
+        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
+        #Firewall Config
+        & netsh.exe advfirewall set publicprofile state off  >> $logfile
+        & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
+        #{customAdminScript}
+        </powershell>
+        EOH
       end
 
     end

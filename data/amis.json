@@ -8,7 +8,9 @@
       "ubuntu-13.10": "ami-45f1a744",
       "ubuntu-14.04": "ami-955c0c94",
       "centos-6.4": "ami-9ffa709e",
-      "debian-7.1.0": "ami-f1f064f0"
+      "debian-7.1.0": "ami-f1f064f0",
+      "windows-2012r2": "ami-28bc7428",
+      "windows-2008r2": "ami-5ace065a"
     },
     "ap-southeast-1": {
       "ubuntu-10.04": "ami-34713866",
@@ -18,7 +20,9 @@
       "ubuntu-13.10": "ami-02e6b850",
       "ubuntu-14.04": "ami-9a7c25c8",
       "centos-6.4": "ami-46f5bb14",
-      "debian-7.1.0": "ami-fe8ac3ac"
+      "debian-7.1.0": "ami-fe8ac3ac",
+      "windows-2012r2": "ami-062e1054",
+      "windows-2008r2": "ami-30291762"
     },
     "ap-southeast-2": {
       "ubuntu-10.04": "ami-2f009315",
@@ -28,7 +32,9 @@
       "ubuntu-13.10": "ami-e54423df",
       "ubuntu-14.04": "ami-f3b1d6c9",
       "centos-6.4": "ami-9352c1a9",
-      "debian-7.1.0": "ami-4e099a74"
+      "debian-7.1.0": "ami-4e099a74",
+      "windows-2012r2": "ami-6be19e51",
+      "windows-2008r2": "ami-fdd8a7c7"
     },
     "eu-west-1": {
       "ubuntu-10.04": "ami-bbadb0cf",
@@ -38,7 +44,9 @@
       "ubuntu-13.10": "ami-39eb3f4e",
       "ubuntu-14.04": "ami-c112c5b6",
       "centos-6.4": "ami-75190b01",
-      "debian-7.1.0": "ami-954559e1"
+      "debian-7.1.0": "ami-954559e1",
+      "windows-2012r2": "ami-1387ed64",
+      "windows-2008r2": "ami-1b97fd6c"
     },
     "sa-east-1": {
       "ubuntu-10.04": "ami-962c898b",
@@ -48,7 +56,9 @@
       "ubuntu-13.10": "ami-076cc21a",
       "ubuntu-14.04": "ami-052b8518",
       "centos-6.4": "ami-a665c0bb",
-      "debian-7.1.0": "ami-b03590ad"
+      "debian-7.1.0": "ami-b03590ad",
+      "windows-2012r2": "ami-7929ae64",
+      "windows-2008r2": "ami-9331b68e"
     },
     "us-east-1": {
       "ubuntu-10.04": "ami-1ab3ce73",
@@ -58,7 +68,9 @@
       "ubuntu-13.10": "ami-a65393ce",
       "ubuntu-14.04": "ami-4a915c22",
       "centos-6.4": "ami-bf5021d6",
-      "debian-7.1.0": "ami-50d9a439"
+      "debian-7.1.0": "ami-50d9a439",
+      "windows-2012r2": "ami-c01102a8",
+      "windows-2008r2": "ami-c8c0d3a0"
     },
     "us-west-1": {
       "ubuntu-10.04": "ami-848ba2c1",
@@ -68,7 +80,9 @@
       "ubuntu-13.10": "ami-bb2a2afe",
       "ubuntu-14.04": "ami-d99a9a9c",
       "centos-6.4": "ami-5d456c18",
-      "debian-7.1.0": "ami-1a9bb25f"
+      "debian-7.1.0": "ami-1a9bb25f",
+      "windows-2012r2": "ami-c30a39f3",
+      "windows-2008r2": "ami-af04eaeb"
     },
     "us-west-2": {
       "ubuntu-10.04": "ami-f19407c1",
@@ -78,7 +92,9 @@
       "ubuntu-13.10": "ami-c18ff1f1",
       "ubuntu-14.04": "ami-b7720b87",
       "centos-6.4": "ami-b3bf2f83",
-      "debian-7.1.0": "ami-158a1925"
+      "debian-7.1.0": "ami-158a1925",
+      "windows-2012r2": "ami-830ee0c7",
+      "windows-2008r2": "ami-adf8cb9d"
     }
   },
   "usernames": {
@@ -89,11 +105,14 @@
     "ubuntu-13.10": "ubuntu",
     "ubuntu-14.04": "ubuntu",
     "centos-6.4": "root",
-    "debian-7.1.0": "admin"
+    "debian-7.1.0": "admin",
+    "windows-2008r2": "administrator",
+    "windows-2012r2": "administrator"
   },
   "references": {
     "ubuntu": "http://uec-images.ubuntu.com/query/",
     "debian": "https://wiki.debian.org/Cloud/AmazonEC2Image",
-    "centos": "http://wiki.centos.org/Cloud/AWS"
+    "centos": "http://wiki.centos.org/Cloud/AWS",
+    "windows": "http://aws.amazon.com/windows/"
   }
 }
