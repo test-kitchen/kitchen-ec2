@@ -62,7 +62,6 @@ module Kitchen
       default_config :username,            nil
       default_config :associate_public_ip, nil
       default_config :interface,           nil
-      default_config :get_windows_password, false
 
       required_config :aws_ssh_key_id
       required_config :image_id
@@ -217,7 +216,9 @@ module Kitchen
         info("EC2 instance <#{state[:server_id]}> ready.")
         state[:hostname] = hostname(server)
 
-        if config[:get_windows_password]
+        # Get EC2-generated Windows password
+        if windows_os? && instance.transport[:username] =~ /[Aa]dministrator/ &&
+           instance.transport[:password].nil?
           wait_log = proc do |attempts|
             c = attempts * config[:retryable_sleep]
             t = config[:retryable_tries] * config[:retryable_sleep]
