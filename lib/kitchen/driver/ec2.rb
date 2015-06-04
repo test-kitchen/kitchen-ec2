@@ -198,7 +198,7 @@ module Kitchen
 
         state[:server_id] = server.id
         info("EC2 instance <#{state[:server_id]}> created.")
-        wait_until_ready(server, state)
+        server = wait_until_ready(server, state)
 
         info("EC2 instance <#{state[:server_id]}> ready.")
         state[:hostname] = hostname(server)
@@ -323,7 +323,7 @@ module Kitchen
           info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> to become ready."
         end
         begin
-          server.wait_until(
+          server = server.wait_until(
             :max_attempts => config[:retryable_tries],
             :delay => config[:retryable_sleep],
             :before_attempt => wait_log
@@ -338,6 +338,7 @@ module Kitchen
           destroy(state)
           raise
         end
+        server
       end
 
       def amis
