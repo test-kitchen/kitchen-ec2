@@ -1,3 +1,13 @@
+## 0.9.4 / 2015-06-05
+
+### Bug Fixes
+
+* Pull Request [#151][]: Fixing a regression where we are fetching the hostname from an old server object even after waiting for it to update, causing us to get back an invalid hostname
+
+### New Features
+
+### Improvements
+
 ## 0.9.4 / 2015-06-03
 
 ### Bug Fixes
@@ -165,6 +175,7 @@
 [#131]: https://github.com/test-kitchen/kitchen-ec2/issues/131
 [#140]: https://github.com/test-kitchen/kitchen-ec2/issues/140
 [#142]: https://github.com/test-kitchen/kitchen-ec2/issues/142
+[#151]: https://github.com/test-kitchen/kitchen-ec2/issues/151
 [@Atalanta]: https://github.com/Atalanta
 [@Igorshp]: https://github.com/Igorshp
 [@JamesAwesome]: https://github.com/JamesAwesome
