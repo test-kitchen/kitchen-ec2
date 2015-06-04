@@ -38,6 +38,7 @@ describe Kitchen::Driver::Ec2 do
   let(:actual_client) { double("actual ec2 client") }
   let(:client)        { double(Kitchen::Driver::Aws::Client, :client => actual_client) }
   let(:server) { double("aws server object") }
+  let(:state) { {} }
 
   let(:driver) { Kitchen::Driver::Ec2.new(config) }
 
@@ -223,9 +224,83 @@ describe Kitchen::Driver::Ec2 do
     end
   end
 
+  describe "#wait_until_ready" do
+    let(:hostname) { "0.0.0.0" }
+    let(:msg) { "to become ready" }
+    let(:aws_instance) { double("aws instance") }
+
+    before do
+      config[:interface] = :i
+      expect(driver).to receive(:wait_with_destroy).with(server, state, msg).and_yield(aws_instance)
+      expect(driver).to receive(:hostname).with(aws_instance, :i).and_return(hostname)
+    end
+
+    after do
+      expect(state[:hostname]).to eq(hostname)
+    end
+
+    it "first checks instance existence" do
+      expect(aws_instance).to receive(:exists?).and_return(false)
+      expect(driver.wait_until_ready(server, state)).to eq(false)
+    end
+
+    it "second checks instance state" do
+      expect(aws_instance).to receive(:exists?).and_return(true)
+      expect(aws_instance).to receive_message_chain("state.name").and_return("nope")
+      expect(driver.wait_until_ready(server, state)).to eq(false)
+    end
+
+    it "third checks hostname" do
+      expect(aws_instance).to receive(:exists?).and_return(true)
+      expect(aws_instance).to receive_message_chain("state.name").and_return("running")
+      expect(driver.wait_until_ready(server, state)).to eq(false)
+    end
+
+    context "when it exists, has a valid state and a valid hostname" do
+      let(:hostname) { "host" }
+
+      it "returns true" do
+        expect(aws_instance).to receive(:exists?).and_return(true)
+        expect(aws_instance).to receive_message_chain("state.name").and_return("running")
+        expect(driver.wait_until_ready(server, state)).to eq(true)
+      end
+    end
+  end
+
+  describe "#wait_with_destroy" do
+    let(:tries) { 111 }
+    let(:sleep) { 222 }
+    let(:msg) { "msg" }
+    given_block = lambda do; end
+
+    before do
+      config[:retryable_sleep] = sleep
+      config[:retryable_tries] = tries
+    end
+
+    it "calls wait and exits successfully if there is no error" do
+      expect(server).to receive(:wait_until) do |args, &block|
+        expect(args[:max_attempts]).to eq(tries)
+        expect(args[:delay]).to eq(sleep)
+        expect(block).to eq(given_block)
+        expect(driver).to receive(:info).with(/#{msg}/)
+        args[:before_attempt].call(0)
+      end
+      driver.wait_with_destroy(server, state, msg, &given_block)
+    end
+
+    it "attempts to destroy the instance if the waiter fails" do
+      expect(server).to receive(:wait_until).and_raise(::Aws::Waiters::Errors::WaiterFailed)
+      expect(driver).to receive(:destroy).with(state)
+      expect(driver).to receive(:error).with(/#{msg}/)
+      expect {
+        driver.wait_with_destroy(server, state, msg, &given_block)
+      }.to raise_error(::Aws::Waiters::Errors::WaiterFailed)
+    end
+  end
+
   describe "#destroy" do
     context "when state[:server_id] is nil" do
-      let(:state) { {} }
       it "returns nil" do
         expect(driver.destroy(state)).to eq(nil)
       end
