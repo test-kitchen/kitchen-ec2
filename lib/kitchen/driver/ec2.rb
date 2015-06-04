@@ -218,7 +218,7 @@ module Kitchen
 
         # Get EC2-generated Windows password
         if windows_os? && instance.transport[:username] =~ /[Aa]dministrator/ &&
-           instance.transport[:password].nil?
+            instance.transport[:password].nil?
           wait_log = proc do |attempts|
             c = attempts * config[:retryable_sleep]
             t = config[:retryable_tries] * config[:retryable_sleep]
@@ -231,8 +231,8 @@ module Kitchen
               :delay => config[:retryable_sleep],
               :before_attempt => wait_log
             ) do |s|
-              enc = server.client.get_password_data(
-                instance_id: state[:server_id]
+              enc = s.client.get_password_data(
+                :instance_id => state[:server_id]
               ).password_data
               # Password data is blank until password is available
               !enc.nil? && !enc.empty?
