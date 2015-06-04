@@ -350,6 +350,14 @@ The default will be determined by the Platform name, if a default exists (see
 [amis.json][amis_json]). If a default cannot be computed, then the default is
 `"root"`.
 
+## Windows support
+
+**kitchen-ec2 support for Windows is currently limited.**
+
+To use the EC2-generated Windows password, supply an SSH key with
+`transport.ssh_key` and leave the `transport.username` and `transport.password`
+fields blank.
+
 ## Example
 
 The following could be used in a `.kitchen.yml` or in a `.kitchen.local.yml`
