@@ -201,7 +201,6 @@ module Kitchen
         wait_until_ready(server, state)
 
         info("EC2 instance <#{state[:server_id]}> ready.")
-        state[:hostname] = hostname(server)
         instance.transport.connection(state).wait_until_ready
         create_ec2_json(state)
         debug("ec2:create '#{state[:hostname]}'")
@@ -317,24 +316,34 @@ module Kitchen
       end
 
       def wait_until_ready(server, state)
+        wait_with_destroy(server, state, "to become ready") do |aws_instance|
+          hostname = hostname(aws_instance, config[:interface])
+          # We aggressively store the hostname so if the process fails here
+          # we still have it, even if it will change later
+          state[:hostname] = hostname
+          # Euca instances often report ready before they have an IP
+          aws_instance.exists? &&
+            aws_instance.state.name == "running" &&
+            hostname != "0.0.0.0"
+        end
+      end
+
+      def wait_with_destroy(server, state, status_msg, &block)
         wait_log = proc do |attempts|
           c = attempts * config[:retryable_sleep]
           t = config[:retryable_tries] * config[:retryable_sleep]
-          info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> to become ready."
+          info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> #{status_msg}."
         end
         begin
           server.wait_until(
             :max_attempts => config[:retryable_tries],
             :delay => config[:retryable_sleep],
-            :before_attempt => wait_log
-          ) do |s|
-            hostname = hostname(s, config[:interface])
-            # Euca instances often report ready before they have an IP
-            s.exists? && s.state.name == "running" && !hostname.nil? && hostname != "0.0.0.0"
-          end
+            :before_attempt => wait_log,
+            &block
+          )
         rescue ::Aws::Waiters::Errors::WaiterFailed
           error("Ran out of time waiting for the server with id [#{state[:server_id]}]" \
-            " to become ready, attempting to destroy it")
+            " #{status_msg}, attempting to destroy it")
           destroy(state)
           raise
         end

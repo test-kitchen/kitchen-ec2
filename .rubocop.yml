@@ -2,6 +2,9 @@ Style/FileName:
   Exclude:
     - 'data/**/*'
 
+Style/Lambda:
+  Enabled: false
+
 Style/Next:
   Enabled: false
 
