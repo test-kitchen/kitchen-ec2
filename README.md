@@ -232,10 +232,10 @@ name of your ebs device, for example: `/dev/sda1`
 A list of block device mappings for the machine.  An example of all available keys looks like:
 ```yaml
 block_device_mappings:
-  - ebs_device_name: /dev/sda1
+  - ebs_device_name: /dev/sda
     ebs_volume_size: 20
     ebs_delete_on_termination: true
-  - ebs_device_name: /dev/sda2
+  - ebs_device_name: /dev/sdb
     ebs_volume_type: gp2
     ebs_virtual_name: test
     ebs_volume_size: 15
@@ -361,21 +361,14 @@ driver:
   name: ec2
   aws_ssh_key_id: id_rsa-aws
   security_group_ids: ["sg-1a2b3c4d"]
-  region: us-east-1
+  region: us-west-2
   availability_zone: b
   require_chef_omnibus: true
-  subnet_id: subnet-6d6...
+  subnet_id: subnet-6e5d4c3b
   iam_profile_name: chef-client
-  instance_type: t2.micro
+  instance_type: m3.medium
   associate_public_ip: true
-  private_ip_address: 10.0.0.27
   interface: dns
-  block_device_mappings:
-    - ebs_device_name: /dev/sda0
-      ebs_volume_type: gp2
-      ebs_virtual_name: test
-      ebs_volume_size: 15
-      ebs_delete_on_termination: true
 
 transport:
   ssh_key: /path/to/id_rsa-aws
@@ -385,13 +378,27 @@ transport:
 
 platforms:
   - name: ubuntu-12.04
+  - name: centos-6.4
+  - name: ubuntu-15.04
     driver:
-      image_id: ami-fd20ad94
-      username: ubuntu
-  - name: centos-6.3
+      image_id: ami-83211eb3
+      block_device_mappings:
+        - ebs_device_name: /dev/sda1
+          ebs_volume_type: standard
+          ebs_virtual_name: test
+          ebs_volume_size: 15
+          ebs_delete_on_termination: true
+  - name: centos-7
     driver:
-      image_id: ami-ef5ff086
-      username: ec2-user
+      image_id: ami-c7d092f7
+      block_device_mappings:
+        - ebs_device_name: /dev/sdb
+          ebs_volume_type: gp2
+          ebs_virtual_name: test
+          ebs_volume_size: 8
+          ebs_delete_on_termination: true
+    transport:
+      username: centos
 
 suites:
 # ...
