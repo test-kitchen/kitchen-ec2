@@ -45,15 +45,18 @@ platforms:
   - name: ubuntu-10.04
     driver:
       image_id: ami-1ab3ce73
+    transport:
       username: ubuntu
   - name: ubuntu-12.04
     driver:
       image_id: ami-2f115c46
+    transport:
       username: ubuntu
   # ...
   - name: centos-6.4
     driver:
       image_id: ami-bf5021d6
+    transport:
       username: root
   # ...
 ```
