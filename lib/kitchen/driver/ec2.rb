@@ -175,7 +175,6 @@ module Kitchen
         return if state[:server_id]
 
         info(Kitchen::Util.outdent!(<<-END))
-          Creating <#{state[:server_id]}>...
           If you are not using an account that qualifies under the AWS
           free-tier, you may be charged to run these suites. The charge
           should be minimal, but neither Test Kitchen nor its maintainers
