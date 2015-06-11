@@ -81,7 +81,7 @@
       "ubuntu-14.04": "ami-d99a9a9c",
       "centos-6.4": "ami-5d456c18",
       "debian-7.1.0": "ami-1a9bb25f",
-      "windows-2012r2": "ami-c30a39f3",
+      "windows-2012r2": "ami-830ee0c7",
       "windows-2008r2": "ami-af04eaeb"
     },
     "us-west-2": {
@@ -93,7 +93,7 @@
       "ubuntu-14.04": "ami-b7720b87",
       "centos-6.4": "ami-b3bf2f83",
       "debian-7.1.0": "ami-158a1925",
-      "windows-2012r2": "ami-830ee0c7",
+      "windows-2012r2": "ami-c30a39f3",
       "windows-2008r2": "ami-adf8cb9d"
     }
   },
