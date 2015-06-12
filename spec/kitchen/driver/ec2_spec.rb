@@ -27,11 +27,7 @@ describe Kitchen::Driver::Ec2 do
   let(:logger)        { Logger.new(logged_output) }
   let(:config)        { { :aws_ssh_key_id => "key", :image_id => "ami-1234567" } }
   let(:platform)      { Kitchen::Platform.new(:name => "fooos-99") }
-  let(:suite)         { Kitchen::Suite.new(:name => "suitey") }
-  let(:verifier)      { Kitchen::Verifier::Dummy.new }
-  let(:provisioner)   { Kitchen::Provisioner::Dummy.new }
   let(:transport)     { Kitchen::Transport::Dummy.new }
-  let(:state_file)    { double("state_file") }
   let(:generator)     { instance_double(Kitchen::Driver::Aws::InstanceGenerator) }
   # There is too much name overlap I let creep in - my `client` is actually
   # a wrapper around the actual ec2 client
@@ -43,21 +39,20 @@ describe Kitchen::Driver::Ec2 do
   let(:driver) { Kitchen::Driver::Ec2.new(config) }
 
   let(:instance) do
-    Kitchen::Instance.new(
-      :verifier => verifier,
-      :driver => driver,
+    instance_double(
+      Kitchen::Instance,
       :logger => logger,
-      :suite => suite,
-      :platform => platform,
-      :provisioner => provisioner,
       :transport => transport,
-      :state_file => state_file
+      :platform => platform,
+      :to_str => "str"
     )
   end
 
   before do
     allow(Kitchen::Driver::Aws::InstanceGenerator).to receive(:new).and_return(generator)
     allow(Kitchen::Driver::Aws::Client).to receive(:new).and_return(client)
+    allow(driver).to receive(:windows_os?).and_return(false)
+    allow(driver).to receive(:instance).and_return(instance)
   end
 
   it "driver api_version is 2" do
@@ -267,6 +262,34 @@ describe Kitchen::Driver::Ec2 do
     end
   end
 
+  describe "#fetch_windows_admin_password" do
+    let(:msg) { "to fetch windows admin password" }
+    let(:aws_instance) { double("aws instance") }
+    let(:server_id) { "server_id" }
+    let(:encrypted_password) { "alksdofw" }
+    let(:data) { double("data", :password_data => encrypted_password) }
+    let(:password) { "password" }
+    let(:transport) { { :ssh_key => "foo" } }
+
+    before do
+      state[:server_id] = server_id
+      expect(driver).to receive(:wait_with_destroy).with(server, state, msg).and_yield(aws_instance)
+    end
+
+    after do
+      expect(state[:password]).to eq(password)
+    end
+
+    it "fetches and decrypts the windows password" do
+      expect(server).to receive_message_chain("client.get_password_data").with(
+        :instance_id => server_id
+      ).and_return(data)
+      expect(server).to receive(:decrypt_windows_password).with("foo").and_return(password)
+      driver.fetch_windows_admin_password(server, state)
+    end
+
+  end
+
   describe "#wait_with_destroy" do
     let(:tries) { 111 }
     let(:sleep) { 222 }
@@ -297,6 +320,65 @@ describe Kitchen::Driver::Ec2 do
         driver.wait_with_destroy(server, state, msg, &given_block)
       }.to raise_error(::Aws::Waiters::Errors::WaiterFailed)
     end
+  end
+
+  describe "#create" do
+    let(:server) { double("aws server object", :id => id) }
+    let(:id) { "i-12345" }
+
+    before do
+      expect(driver).to receive(:copy_deprecated_configs).with(state)
+    end
+
+    it "returns if the instance is already created" do
+      state[:server_id] = id
+      expect(driver.create(state)).to eq(nil)
+    end
+
+    shared_examples "common create" do
+      it "successfully creates and tags the instance" do
+        expect(actual_client).to receive(:wait_until).with(
+          :instance_exists,
+          :instance_ids => [server.id]
+        )
+        expect(driver).to receive(:tag_server).with(server)
+        expect(driver).to receive(:wait_until_ready).with(server, state)
+        expect(transport).to receive_message_chain("connection.wait_until_ready")
+        expect(driver).to receive(:create_ec2_json).with(state)
+        driver.create(state)
+        expect(state[:server_id]).to eq(id)
+      end
+    end
+
+    context "non-windows on-depand instance" do
+      before do
+        expect(driver).to receive(:submit_server).and_return(server)
+      end
+
+      include_examples "common create"
+    end
+
+    context "config is for a spot instance" do
+      before do
+        config[:price] = 1
+        expect(driver).to receive(:submit_spot).with(state).and_return(server)
+      end
+
+      include_examples "common create"
+    end
+
+    context "instance is a windows machine" do
+      before do
+        expect(driver).to receive(:windows_os?).and_return(true)
+        expect(transport).to receive(:[]).with(:username).and_return("administrator")
+        expect(transport).to receive(:[]).with(:password).and_return(nil)
+        expect(driver).to receive(:submit_server).and_return(server)
+        expect(driver).to receive(:fetch_windows_admin_password).with(server, state)
+      end
+
+      include_examples "common create"
+    end
+
   end
 
   describe "#destroy" do

@@ -205,8 +205,8 @@ module Kitchen
         wait_until_ready(server, state)
 
         if windows_os? &&
-          instance.transport[:username] =~ /administrator/i &&
-          instance.transport[:password].nil?
+            instance.transport[:username] =~ /administrator/i &&
+            instance.transport[:password].nil?
           # If we're logging into the administrator user and a password isn't
           # supplied, try to fetch it from the AWS instance
           fetch_windows_admin_password(server, state)
@@ -349,10 +349,11 @@ module Kitchen
         end
       end
 
+      # rubocop:disable Lint/UnusedBlockArgument
       def fetch_windows_admin_password(server, state)
         wait_with_destroy(server, state, "to fetch windows admin password") do |aws_instance|
           enc = server.client.get_password_data(
-            instance_id: state[:server_id]
+            :instance_id => state[:server_id]
           ).password_data
           # Password data is blank until password is available
           !enc.nil? && !enc.empty?
@@ -361,26 +362,27 @@ module Kitchen
         state[:password] = pass
         info("Retrieved Windows password for instance <#{state[:server_id]}>.")
       end
+      # rubocop:enable Lint/UnusedBlockArgument
 
       def wait_with_destroy(server, state, status_msg, &block)
         wait_log = proc do |attempts|
-           c = attempts * config[:retryable_sleep]
-           t = config[:retryable_tries] * config[:retryable_sleep]
-           info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> #{status_msg}."
-         end
-         begin
-           server.wait_until(
-             :max_attempts => config[:retryable_tries],
-             :delay => config[:retryable_sleep],
-             :before_attempt => wait_log,
-             &block
-           )
-         rescue ::Aws::Waiters::Errors::WaiterFailed
-           error("Ran out of time waiting for the server with id [#{state[:server_id]}]" \
-             " #{status_msg}, attempting to destroy it")
-           destroy(state)
-           raise
-         end
+          c = attempts * config[:retryable_sleep]
+          t = config[:retryable_tries] * config[:retryable_sleep]
+          info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> #{status_msg}."
+        end
+        begin
+          server.wait_until(
+            :max_attempts => config[:retryable_tries],
+            :delay => config[:retryable_sleep],
+            :before_attempt => wait_log,
+            &block
+          )
+        rescue ::Aws::Waiters::Errors::WaiterFailed
+          error("Ran out of time waiting for the server with id [#{state[:server_id]}]" \
+            " #{status_msg}, attempting to destroy it")
+          destroy(state)
+          raise
+        end
       end
 
       def amis
@@ -433,11 +435,12 @@ module Kitchen
         instance.transport.connection(state).execute(cmd)
       end
 
+      # rubocop:disable Metrics/MethodLength, Metrics/LineLength
       def default_windows_user_data
-        #Preparing custom static admin user if we defined something other than Administrator
-        customAdminScript = ''
+        # Preparing custom static admin user if we defined something other than Administrator
+        custom_admin_script = ""
         if !(instance.transport[:username] =~ /administrator/i) && instance.transport[:password]
-          customAdminScript = Kitchen::Util.outdent!(<<-EOH)
+          custom_admin_script = Kitchen::Util.outdent!(<<-EOH)
           "Disabling Complex Passwords" >> $logfile
           $seccfg = [IO.Path]::GetTempFileName()
           & secedit.exe /export /cfg $seccfg >> $logfile
@@ -469,10 +472,11 @@ module Kitchen
         & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
         #Firewall Config
         & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
-        #{customAdminScript}
+        #{custom_admin_script}
         </powershell>
         EOH
       end
+      # rubocop:enable Metrics/MethodLength, Metrics/LineLength
 
     end
   end
