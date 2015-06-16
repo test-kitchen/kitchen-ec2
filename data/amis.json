@@ -8,6 +8,7 @@
       "ubuntu-13.10": "ami-45f1a744",
       "ubuntu-14.04": "ami-955c0c94",
       "centos-6.4": "ami-9ffa709e",
+      "centos-6.5": "ami-81294380",
       "debian-7.1.0": "ami-f1f064f0"
     },
     "ap-southeast-1": {
@@ -18,6 +19,7 @@
       "ubuntu-13.10": "ami-02e6b850",
       "ubuntu-14.04": "ami-9a7c25c8",
       "centos-6.4": "ami-46f5bb14",
+      "centos-6.5": "ami-a08fd9f2",
       "debian-7.1.0": "ami-fe8ac3ac"
     },
     "ap-southeast-2": {
@@ -28,6 +30,7 @@
       "ubuntu-13.10": "ami-e54423df",
       "ubuntu-14.04": "ami-f3b1d6c9",
       "centos-6.4": "ami-9352c1a9",
+      "centos-6.5": "ami-e7138ddd",
       "debian-7.1.0": "ami-4e099a74"
     },
     "eu-west-1": {
@@ -38,6 +41,7 @@
       "ubuntu-13.10": "ami-39eb3f4e",
       "ubuntu-14.04": "ami-c112c5b6",
       "centos-6.4": "ami-75190b01",
+      "centos-6.5": "ami-42718735",
       "debian-7.1.0": "ami-954559e1"
     },
     "sa-east-1": {
@@ -48,6 +52,7 @@
       "ubuntu-13.10": "ami-076cc21a",
       "ubuntu-14.04": "ami-052b8518",
       "centos-6.4": "ami-a665c0bb",
+      "centos-6.5": "ami-7d02a260",
       "debian-7.1.0": "ami-b03590ad"
     },
     "us-east-1": {
@@ -58,6 +63,7 @@
       "ubuntu-13.10": "ami-a65393ce",
       "ubuntu-14.04": "ami-4a915c22",
       "centos-6.4": "ami-bf5021d6",
+      "centos-6.5": "ami-8997afe0",
       "debian-7.1.0": "ami-50d9a439"
     },
     "us-west-1": {
@@ -68,6 +74,7 @@
       "ubuntu-13.10": "ami-bb2a2afe",
       "ubuntu-14.04": "ami-d99a9a9c",
       "centos-6.4": "ami-5d456c18",
+      "centos-6.5": "ami-1a013c5f",
       "debian-7.1.0": "ami-1a9bb25f"
     },
     "us-west-2": {
@@ -78,6 +85,7 @@
       "ubuntu-13.10": "ami-c18ff1f1",
       "ubuntu-14.04": "ami-b7720b87",
       "centos-6.4": "ami-b3bf2f83",
+      "centos-6.5": "ami-b6bdde86",
       "debian-7.1.0": "ami-158a1925"
     }
   },
@@ -89,6 +97,7 @@
     "ubuntu-13.10": "ubuntu",
     "ubuntu-14.04": "ubuntu",
     "centos-6.4": "root",
+    "centos-6.5": "root",
     "debian-7.1.0": "admin"
   },
   "references": {
