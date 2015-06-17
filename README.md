@@ -12,7 +12,7 @@ instances. Use Amazon's cloud for your infrastructure testing!
 ## Requirements
 
 There are **no** external system requirements for this driver. However you
-will need access to an [AWS][aws_site] account.
+will need access to an [AWS][aws_site] account.  [IAM][iam_site] users should have, at a minimum, permission to manage the lifecycle of an EC2 instance along with modifying components specified in kitchen driver configs.  Consider using a permissive managed IAM policy like ``arn:aws:iam::aws:policy/AmazonEC2FullAccess`` or tailor one specific to your security requirements.
 
 ## Installation and Setup
 
@@ -441,6 +441,7 @@ Apache 2.0 (see [LICENSE][license])
 [amis_json]:        https://github.com/test-kitchen/kitchen-ec2/blob/master/data/amis.json
 [ami_docs]:         http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html
 [aws_site]:         http://aws.amazon.com/
+[iam_site]:         http://aws.amazon.com/iam
 [credentials_docs]: http://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs
 [aws_sdk_gem]:      http://docs.aws.amazon.com/sdkforruby/api/index.html
 [group_docs]:       http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html
