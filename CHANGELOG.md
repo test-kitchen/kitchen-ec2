@@ -1,4 +1,20 @@
-## 0.9.4 / 2015-06-05
+## 0.10.0 / TBD
+
+### Bug Fixes
+
+### New Features
+
+* Pull Request [#150][]: Added support for managing Windows hosts in AWS
+    * Updated `amis.json` to include AMIs for Windows Server 2008 and 2012R2.
+    * Add default user data which enables winrm.  See `ec2.rb` for the exact user data that is uploaded.
+    * Default user data will add a non-`administrator` user to the Administrator group if `username` and `password` transport options are specified.
+    * EC2 will automatically generate the `administrator` user password if it is not specified as `password` transport options.  This will be stored and used for further kitchen commands.
+        * Unfortunately this cannot be passed to the RDP client initiated by `kitchen login`.  Look at `.kitchen/<name>.yml` for the password in this case.
+    * A HUGE thanks to [@zl4bv][] and [@afiune][] for the majority of the work on these changes!
+
+### Improvements
+
+## 0.9.5 / 2015-06-05
 
 ### Bug Fixes
 
@@ -175,6 +191,7 @@
 [#131]: https://github.com/test-kitchen/kitchen-ec2/issues/131
 [#140]: https://github.com/test-kitchen/kitchen-ec2/issues/140
 [#142]: https://github.com/test-kitchen/kitchen-ec2/issues/142
+[#150]: https://github.com/test-kitchen/kitchen-ec2/issues/150
 [#151]: https://github.com/test-kitchen/kitchen-ec2/issues/151
 [@Atalanta]: https://github.com/Atalanta
 [@Igorshp]: https://github.com/Igorshp
@@ -196,6 +213,7 @@
 [@mattray]: https://github.com/mattray
 [@mumoshu]: https://github.com/mumoshu
 [@nicgrayson]: https://github.com/nicgrayson
+[@afiune]: https://github.com/afiune
 [@scarolan]: https://github.com/scarolan
 [@sebbrandt87]: https://github.com/sebbrandt87
 [@sethvargo]: https://github.com/sethvargo
@@ -203,3 +221,4 @@
 [@spheromak]: https://github.com/spheromak
 [@tiwilliam]: https://github.com/tiwilliam
 [@tyler-ball]: https://github.com/tyler-ball
+[@zl4bv]: https://github.com/zl4bv

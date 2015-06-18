@@ -19,19 +19,8 @@ RuboCop::RakeTask.new(:style) do |task|
   task.options << "--display-cop-names"
 end
 
-if RUBY_ENGINE != "jruby"
-  require "cane/rake_task"
-  desc "Run cane to check quality metrics"
-  Cane::RakeTask.new do |cane|
-    cane.canefile = "./.cane"
-  end
-
-  desc "Run all quality tasks"
-  task :quality => [:cane, :style, :stats]
-else
-  desc "Run all quality tasks"
-  task :quality => [:style, :stats]
-end
+desc "Run all quality tasks"
+task :quality => [:style, :stats]
 
 require "yard"
 YARD::Rake::YardocTask.new

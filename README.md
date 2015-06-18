@@ -21,8 +21,13 @@ Please read the [Driver usage][driver_usage] page for more details.
 ## Default Configuration
 
 This driver can determine AMI and username login for a select number of
-platforms in each region. Currently, the following platform names are
-supported:
+platforms in each region.
+
+For Windows instances the generated Administrator password is fetched
+automatically from Amazon EC2 with the same private key as we use for
+SSH logins to Linux.
+
+Currently, the following platform names are supported:
 
 ```ruby
 ---
@@ -35,6 +40,8 @@ platforms:
   - name: ubuntu-14.04
   - name: centos-6.4
   - name: debian-7.1.0
+  - name: windows-2012r2
+  - name: windows-2008r2
 ```
 
 This will effectively generate a configuration similar to:
@@ -47,17 +54,18 @@ platforms:
       image_id: ami-1ab3ce73
     transport:
       username: ubuntu
-  - name: ubuntu-12.04
-    driver:
-      image_id: ami-2f115c46
-    transport:
-      username: ubuntu
   # ...
   - name: centos-6.4
     driver:
       image_id: ami-bf5021d6
     transport:
       username: root
+  # ...
+  - name: windows-2012r2
+    driver:
+      image_id: ami-28bc7428
+    transport:
+      username: administrator
   # ...
 ```
 
@@ -181,14 +189,18 @@ The Hash of EC tag name/value pairs which will be applied to the instance.
 
 The default is `{ "created-by" => "test-kitchen" }`.
 
-### user_data
+### user\_data
 
 The user_data script or the path to a script to feed the instance.
 Use bash to install dependencies or download artifacts before chef runs.
 This is just for some cases. If you can do the stuff with chef, then do it with
 chef!
 
-The default is unset, or `nil`.
+On linux instances the default is unset, or `nil`.
+
+On Windows instances we specify a default that enables winrm and
+adds a non-administrator user specified in the `username` transport
+options to the Administrator's User Group.
 
 ### iam\_profile\_name
 
@@ -402,6 +414,8 @@ platforms:
           ebs_delete_on_termination: true
     transport:
       username: centos
+  - name: windows-2012r2
+  - name: windows-2008r2
 
 suites:
 # ...
