@@ -100,6 +100,22 @@ through CI we no longer recommend storing the AWS credentials in the
 `.kitchen.yml` file.  Instead, specify them as environment variables or in the 
 `~/.aws/credentials` file.
 
+## Windows Configuration
+
+If you specify a platform name of `windows-2012r2` or `windows-2008` Test
+Kitchen will pull a default AMI out of `amis.json` if one is not specified.
+
+The default user_data will add any `username` with its associated `password`
+from the transport options to the Aministrator group.  If no `username` is
+specified then the default `administrator` is available.
+
+AWS automatically generates an `administrator` password in the default
+Windows AMIs.  Test Kitchen fetches this and stores it in the
+`.kitchen/#{platform}.json` file.  If you need to `kitchen login` to the instance
+and you have not specified your own `username` and `password` you can use
+the `administrator` user and the password from this file.  Unfortunately
+we cannot auto-fill the RDP password at this point.
+
 ## General Configuration
 
 ### availability\_zone
@@ -313,7 +329,7 @@ The default is unset.
 
 ### ssh\_key
 
-**Deprecated** Instead use the `transport.ssh_key` like
+**Deprecated** Instead use the `ssh_key` transport option like
 
 ```ruby
 transport:
@@ -326,7 +342,7 @@ The default is unset, or `nil`.
 
 ### ssh\_timeout
 
-**Deprecated** Instead use the `transport.connection_timeout` like
+**Deprecated** Instead use the `connection_timeout` transport key like
 
 ```ruby
 transport:
@@ -339,7 +355,7 @@ The default is `1`.
 
 ### ssh\_retries
 
-**Deprecated** Instead use the `transport.connection_retries` like
+**Deprecated** Instead use the `connection_retries` transport key like
 
 ```ruby
 transport:
@@ -352,7 +368,7 @@ The default is `3`.
 
 ### username
 
-**Deprecated** Instead use the `transport.username` like
+**Deprecated** Instead use the `username` transport key like
 
 ```ruby
 transport:
@@ -364,6 +380,9 @@ The SSH username that will be used to communicate with the instance.
 The default will be determined by the Platform name, if a default exists (see
 [amis.json][amis_json]). If a default cannot be computed, then the default is
 `"root"`.
+
+On Windows hosts with the default `user_data` this user is added to the
+Administrator's group.
 
 ## Example
 
