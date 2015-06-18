@@ -18,10 +18,9 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
-  gem.add_dependency "test-kitchen", "~> 1.4"
+  gem.add_dependency "test-kitchen", "~> 1.4", ">= 1.4.1"
   gem.add_dependency "excon"
   gem.add_dependency "multi_json"
-  gem.add_dependency "aws-sdk-v1", "~> 1.59.0"
   gem.add_dependency "aws-sdk", "~> 2"
 
   gem.add_development_dependency "rspec",     "~> 3.2"
