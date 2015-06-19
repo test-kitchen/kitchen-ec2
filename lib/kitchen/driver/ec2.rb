@@ -18,7 +18,6 @@
 
 require "benchmark"
 require "json"
-require "aws"
 require "kitchen"
 require_relative "ec2_version"
 require_relative "aws/client"
