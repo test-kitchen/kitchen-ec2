@@ -110,6 +110,7 @@ module Kitchen
               :device_name             => bdm[:ebs_device_name]
             }
             b[:ebs][:volume_type] = bdm[:ebs_volume_type] if bdm[:ebs_volume_type]
+            b[:ebs][:iops] = bdm[:ebs_iops] if bdm[:ebs_iops]
             b[:ebs][:snapshot_id] = bdm[:ebs_snapshot_id] if bdm[:ebs_snapshot_id]
             b[:virtual_name] = bdm[:ebs_virtual_name] if bdm[:ebs_virtual_name]
             b
