@@ -338,11 +338,38 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         end
       end
 
-      context "and security_group_ids is provided" do
+      context "and security_group_ids is provided as an array" do
         let(:config) do
           {
             :associate_public_ip => true,
-            :security_group_ids => ["sg-789"]
+            :security_group_ids => ["sg-789", "sg-123"]
+          }
+        end
+
+        it "adds a network_interfaces block" do
+          expect(generator.ec2_instance_data).to eq(
+            :placement => { :availability_zone => nil },
+            :instance_type => nil,
+            :ebs_optimized => nil,
+            :image_id => nil,
+            :key_name => nil,
+            :subnet_id => nil,
+            :private_ip_address => nil,
+            :network_interfaces => [{
+              :device_index => 0,
+              :associate_public_ip_address => true,
+              :delete_on_termination => true,
+              :groups => ["sg-789", "sg-123"]
+            }]
+          )
+        end
+      end
+
+      context "and security_group_ids is provided as an string" do
+        let(:config) do
+          {
+            :associate_public_ip => true,
+            :security_group_ids => "sg-789"
           }
         end
 
