@@ -1,9 +1,10 @@
-## 0.10.0 / TBD
+## 0.10.0 / 2016-06-24
 
 ### Bug Fixes
 
 * Pull Request [#165][]: Added `ebs_iops` parameter to block_device_mappings, necessary when specifying volume type of `io1` ([@tyler-ball][])
 * Pull Request [#161][]: Fixing UTF error in hints file on Windows ([@zl4bv][])
+* Pull Request [#166][]: If `security_group_ids` is specified as a string instead of an array we coerce it to an array automatically ([@fnichol][])
 
 ### New Features
 
@@ -198,6 +199,7 @@
 [#151]: https://github.com/test-kitchen/kitchen-ec2/issues/151
 [#161]: https://github.com/test-kitchen/kitchen-ec2/issues/161
 [#165]: https://github.com/test-kitchen/kitchen-ec2/issues/165
+[#166]: https://github.com/test-kitchen/kitchen-ec2/issues/166
 [@Atalanta]: https://github.com/Atalanta
 [@Igorshp]: https://github.com/Igorshp
 [@JamesAwesome]: https://github.com/JamesAwesome
