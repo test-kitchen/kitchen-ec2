@@ -363,6 +363,19 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
             }]
           )
         end
+
+        it "accepts a single string value" do
+          config[:security_group_ids] = "only-one"
+
+          expect(generator.ec2_instance_data).to include(
+            :network_interfaces => [{
+              :device_index => 0,
+              :associate_public_ip_address => true,
+              :delete_on_termination => true,
+              :groups => ["only-one"]
+            }]
+          )
+        end
       end
 
       context "and private_ip_address is provided" do
