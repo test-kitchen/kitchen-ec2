@@ -114,6 +114,13 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
             :ebs_volume_type => "gp2",
             :ebs_snapshot_id => "id",
             :ebs_virtual_name => "test"
+          },
+          {
+            :ebs_volume_size => 100,
+            :ebs_delete_on_termination => true,
+            :ebs_device_name => "/dev/sda3",
+            :ebs_volume_type => "io1",
+            :ebs_iops => 100
           }
         ] }
       end
@@ -137,6 +144,15 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               },
               :device_name => "/dev/sda2",
               :virtual_name => "test"
+            },
+            {
+              :ebs => {
+                :volume_size => 100,
+                :volume_type => "io1",
+                :iops => 100,
+                :delete_on_termination => true
+              },
+              :device_name => "/dev/sda3"
             }
           ]
         )

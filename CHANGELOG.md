@@ -2,6 +2,8 @@
 
 ### Bug Fixes
 
+* Pull Request #165: Added `ebs_iops` parameter to block_device_mappings, necessary when specifying volume type of `io1`
+
 ### New Features
 
 * Pull Request [#150][]: Added support for managing Windows hosts in AWS
