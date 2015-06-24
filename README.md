@@ -234,7 +234,7 @@ The default is `nil`.
 
 Specify a proxy to send AWS requests through.  Should be of the format `http://<host>:<port>`.
 
-The default is `ENV['HTTP_PROXY']`
+The default is `ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]`
 
 **Note** - The AWS command line utility allow you to specify [two proxies](http://docs.aws.amazon.com/cli/latest/userguide/cli-http-proxy.html), one for HTTP and one for HTTPS.  The AWS Ruby SDK only allows you to specify 1 proxy and because all requests are `https://` this proxy needs to support HTTPS.
 
