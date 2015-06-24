@@ -2,7 +2,8 @@
 
 ### Bug Fixes
 
-* Pull Request #165: Added `ebs_iops` parameter to block_device_mappings, necessary when specifying volume type of `io1`
+* Pull Request [#165][]: Added `ebs_iops` parameter to block_device_mappings, necessary when specifying volume type of `io1` ([@tyler-ball][])
+* Pull Request [#161][]: Fixing UTF error in hints file on Windows ([@zl4bv][])
 
 ### New Features
 
@@ -195,9 +196,12 @@
 [#142]: https://github.com/test-kitchen/kitchen-ec2/issues/142
 [#150]: https://github.com/test-kitchen/kitchen-ec2/issues/150
 [#151]: https://github.com/test-kitchen/kitchen-ec2/issues/151
+[#161]: https://github.com/test-kitchen/kitchen-ec2/issues/161
+[#165]: https://github.com/test-kitchen/kitchen-ec2/issues/165
 [@Atalanta]: https://github.com/Atalanta
 [@Igorshp]: https://github.com/Igorshp
 [@JamesAwesome]: https://github.com/JamesAwesome
+[@afiune]: https://github.com/afiune
 [@anl]: https://github.com/anl
 [@arangamani]: https://github.com/arangamani
 [@bozinsky]: https://github.com/bozinsky
@@ -215,7 +219,6 @@
 [@mattray]: https://github.com/mattray
 [@mumoshu]: https://github.com/mumoshu
 [@nicgrayson]: https://github.com/nicgrayson
-[@afiune]: https://github.com/afiune
 [@scarolan]: https://github.com/scarolan
 [@sebbrandt87]: https://github.com/sebbrandt87
 [@sethvargo]: https://github.com/sethvargo

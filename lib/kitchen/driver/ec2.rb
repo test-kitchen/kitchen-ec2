@@ -426,7 +426,7 @@ module Kitchen
 
       def create_ec2_json(state)
         if windows_os?
-          cmd = "New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -Type File"
+          cmd = "New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File"
         else
           cmd = "sudo mkdir -p /etc/chef/ohai/hints;sudo touch /etc/chef/ohai/hints/ec2.json"
         end
