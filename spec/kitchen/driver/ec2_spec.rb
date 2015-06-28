@@ -424,4 +424,18 @@ describe Kitchen::Driver::Ec2 do
     end
   end
 
+  describe "#default_ami" do
+    context "when platform is ubuntu" do
+      let(:config) { { :aws_ssh_key_id => "key" } }
+      let(:platform) { Kitchen::Platform.new(:name => "ubuntu-14.04") }
+      let(:ami_data) { %w[ ami-1305ef78 instance-store amd64 us-east-1 paravirtual ] }
+
+      it "queries an ami_id" do
+        expect(driver).to receive(:ubuntu_ami).with(config[:region], platform.name). \
+          and_return(Ubuntu::Ami.new(*ami_data))
+        expect(driver.default_ami).to eq(ami_data[0])
+      end
+    end
+  end
+
 end
