@@ -23,6 +23,7 @@ require_relative "ec2_version"
 require_relative "aws/client"
 require_relative "aws/instance_generator"
 require "aws-sdk-core/waiters/errors"
+require "ubuntu_ami"
 
 module Kitchen
 
@@ -236,9 +237,24 @@ module Kitchen
         state.delete(:hostname)
       end
 
+      def ubuntu_ami(region, platform_name)
+        release = amis["ubuntu_releases"][platform_name]
+        Ubuntu.release(release).amis.find do |ami|
+          ami.arch == "amd64" &&
+            ami.root_store == "instance-store" &&
+            ami.region == region &&
+            ami.virtualization_type == "paravirtual"
+        end
+      end
+
       def default_ami
-        region = amis["regions"][config[:region]]
-        region && region[instance.platform.name]
+        if instance.platform.name.start_with?("ubuntu")
+          ami = ubuntu_ami(config[:region], instance.platform.name)
+          ami && ami.name
+        else
+          region = amis["regions"][config[:region]]
+          region && region[instance.platform.name]
+        end
       end
 
       def ec2
