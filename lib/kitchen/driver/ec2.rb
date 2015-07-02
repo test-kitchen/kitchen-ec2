@@ -194,7 +194,7 @@ module Kitchen
         end
         info("Instance <#{server.id}> requested.")
         ec2.client.wait_until(
-          :instance_exists,
+          :instance_running,
           :instance_ids => [server.id]
         )
         tag_server(server)

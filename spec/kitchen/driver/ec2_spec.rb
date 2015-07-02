@@ -338,7 +338,7 @@ describe Kitchen::Driver::Ec2 do
     shared_examples "common create" do
       it "successfully creates and tags the instance" do
         expect(actual_client).to receive(:wait_until).with(
-          :instance_exists,
+          :instance_running,
           :instance_ids => [server.id]
         )
         expect(driver).to receive(:tag_server).with(server)
