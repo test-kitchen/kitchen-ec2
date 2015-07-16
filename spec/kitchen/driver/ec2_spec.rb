@@ -93,7 +93,7 @@ describe Kitchen::Driver::Ec2 do
 
     it "turns an image_id hash into a image_id string" do
       config[:image_id] = { :name => "ami_name" }
-      expect(driver).to receive(:lookup_ami).with( :name => "ami_name" ). \
+      expect(driver).to receive(:lookup_ami).with(:name => "ami_name"). \
         and_return("ami-a1b2c3d4")
       driver.finalize_config!(instance)
       expect(config[:image_id]).to eq("ami-a1b2c3d4")
