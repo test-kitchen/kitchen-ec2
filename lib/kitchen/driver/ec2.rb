@@ -171,6 +171,10 @@ module Kitchen
           config[:instance_type] = config[:flavor_id] || "m1.small"
         end
 
+        if config[:image_id].is_a?(Hash)
+          config[:image_id] = lookup_ami(config[:image_id])
+        end
+
         self
       end
 
@@ -235,6 +239,17 @@ module Kitchen
         info("EC2 instance <#{state[:server_id]}> destroyed.")
         state.delete(:server_id)
         state.delete(:hostname)
+      end
+
+      def lookup_ami(filters_hash)
+        filters = []
+        filters_hash.each do |key, value|
+          filters.push(:name => key.to_s, :values => Array(value))
+        end
+        images = ec2.resource.images(:filters => filters).sort do |ami1, ami2|
+          Time.parse(ami1.creation_date) <=> Time.parse(ami2.creation_date)
+        end
+        images.last && images.last.id
       end
 
       def ubuntu_ami(region, platform_name)

@@ -90,6 +90,14 @@ describe Kitchen::Driver::Ec2 do
       driver.finalize_config!(instance)
       expect(config[:availability_zone]).to eq("us-east-1d")
     end
+
+    it "turns an image_id hash into a image_id string" do
+      config[:image_id] = { :name => "ami_name" }
+      expect(driver).to receive(:lookup_ami).with({ :name => "ami_name" }). \
+        and_return("ami-a1b2c3d4")
+      driver.finalize_config!(instance)
+      expect(config[:image_id]).to eq("ami-a1b2c3d4")
+    end
   end
 
   describe "#hostname" do
@@ -420,6 +428,47 @@ describe Kitchen::Driver::Ec2 do
         )
         driver.destroy(state)
         expect(state).to eq({})
+      end
+    end
+  end
+
+  describe "#lookup_ami" do
+    let(:filters) { { :name => "ami_name" } }
+    let(:aws_filters) { { :filters => [{:name => "name", values: ["ami_name"] }] } }
+    let(:resource) { double('actual resource') }
+
+    before do
+      allow(client).to receive(:resource).and_return(resource)
+    end
+
+    context "when one ami found" do
+      let(:ami_id) { "ami-a1b2c3d4" }
+      let(:date) { "2015-06-10T03:47:20.000Z" }
+      let(:ami_list) { [double("ami", :id => ami_id, :creation_date => date)] }
+
+      it "returns the ami id" do
+        expect(resource).to receive(:images).with(aws_filters). \
+          and_return(ami_list)
+        expect(driver.lookup_ami(filters)).to eq(ami_id)
+      end
+    end
+
+    context "when more than one ami found" do
+      let(:date_older) { "2015-06-10T03:47:20.000Z" }
+      let(:date_newer) { "2015-06-11T03:47:20.000Z" }
+      let(:ami_id_older) { "ami-a1b2c3d4" }
+      let(:ami_id_newer) { "ami-e5f6g7h8" }
+      let(:ami_list) do
+        [
+          double("ami", :id => ami_id_older, :creation_date => date_older),
+          double("ami", :id => ami_id_newer, :creation_date => date_newer)
+        ]
+      end
+
+      it "returns most recently created ami id" do
+        expect(resource).to receive(:images).with(aws_filters). \
+          and_return(ami_list)
+        expect(driver.lookup_ami(filters)).to eq(ami_id_newer)
       end
     end
   end
