@@ -193,10 +193,23 @@ module Kitchen
           server = submit_server
         end
         info("Instance <#{server.id}> requested.")
-        ec2.client.wait_until(
-          :instance_running,
-          :instance_ids => [server.id]
-        )
+
+        tries = 0
+        begin
+          ec2.client.wait_until(
+            :instance_running,
+            :instance_ids => [server.id]
+          )
+        rescue Aws::Waiters::Errors::UnexpectedError => e
+          tires += 1
+          if tries < 5
+            sleep_time = [2 * (2 ** tries), 30].max
+            info("Instance <#{server.id}> was not available. Retrying in #{sleep_time}")
+            # Exponentially back off
+            sleep(sleep_time)
+            retry
+          end
+        end
         tag_server(server)
 
         state[:server_id] = server.id
