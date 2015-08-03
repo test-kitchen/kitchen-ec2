@@ -23,6 +23,7 @@ Gem::Specification.new do |gem|
   gem.add_dependency "multi_json"
   gem.add_dependency "aws-sdk", "~> 2"
   gem.add_dependency "ubuntu_ami", "~> 0.4.1"
+  gem.add_dependency "retryable", "~> 2.0"
 
   gem.add_development_dependency "rspec",     "~> 3.2"
   gem.add_development_dependency "countloc",  "~> 0.4"
