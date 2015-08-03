@@ -193,6 +193,12 @@ module Kitchen
           server = submit_server
         end
         info("Instance <#{server.id}> requested.")
+        # We have to wait until the instance exists before we can wait for it to
+        # run ... and we have to wait until it is running before we can tag it.
+        ec2.client.wait_until(
+          :instance_exists,
+          :instance_ids => [server.id]
+        )
         ec2.client.wait_until(
           :instance_running,
           :instance_ids => [server.id]
