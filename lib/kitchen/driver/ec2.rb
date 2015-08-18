@@ -129,7 +129,7 @@ module Kitchen
                 bdm.keys.include?(:ebs_delete_on_termination) &&
                 bdm.keys.include?(:ebs_device_name)
             elsif bdm.keys.include?(:device_name) &&
-                  bdm.keys.include?(:virtual_name)
+                bdm.keys.include?(:virtual_name)
             else
               raise "Every :block_device_mapping must include the keys :ebs_volume_size, " \
                 ":ebs_delete_on_termination and :ebs_device_name for EBS devices \
