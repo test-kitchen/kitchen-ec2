@@ -125,12 +125,16 @@ module Kitchen
       validations[:block_device_mappings] = lambda do |_attr, val, _driver|
         unless val.nil?
           val.each do |bdm|
-            unless bdm.keys.include?(:ebs_volume_size) &&
+            if bdm.keys.include?(:ebs_volume_size) &&
                 bdm.keys.include?(:ebs_delete_on_termination) &&
                 bdm.keys.include?(:ebs_device_name)
+            elsif bdm.keys.include?(:device_name) &&
+                  bdm.keys.include?(:virtual_name)
+            else
               raise "Every :block_device_mapping must include the keys :ebs_volume_size, " \
-                ":ebs_delete_on_termination and :ebs_device_name"
-            end
+                ":ebs_delete_on_termination and :ebs_device_name for EBS devices \
+                OR device_name, virtual_name for Ephemeral devices"
+            endd
           end
         end
       end
