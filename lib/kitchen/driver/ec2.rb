@@ -134,7 +134,7 @@ module Kitchen
               raise "Every :block_device_mapping must include the keys :ebs_volume_size, " \
                 ":ebs_delete_on_termination and :ebs_device_name for EBS devices \
                 OR device_name, virtual_name for Ephemeral devices"
-            endd
+            end
           end
         end
       end
