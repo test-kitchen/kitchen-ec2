@@ -103,7 +103,7 @@ module Kitchen
           # Convert the provided keys to what AWS expects
           bdms = bdms.map do |bdm|
             b = {}
-            if bdm.has_key?(:ebs_device_name)
+            if bdm.key?(:ebs_device_name)
               b = {
                 :ebs => {
                   :volume_size           => bdm[:ebs_volume_size],
@@ -116,7 +116,7 @@ module Kitchen
               b[:ebs][:snapshot_id] = bdm[:ebs_snapshot_id] if bdm[:ebs_snapshot_id]
               b[:virtual_name] = bdm[:ebs_virtual_name] if bdm[:ebs_virtual_name]
             else
-              #ephemeral drive
+              # ephemeral drive
               b = {
                 :virtual_name   => bdm[:virtual_name],
                 :device_name    => bdm[:device_name]
