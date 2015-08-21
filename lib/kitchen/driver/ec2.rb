@@ -202,6 +202,7 @@ module Kitchen
 
         # See https://github.com/aws/aws-sdk-ruby/issues/859
         # Tagging can fail with a NotFound error even though we waited until the server exists
+        # Waiting can also fail, so we have to also retry on that.  If it means we re-tag the instance, so be it.
         Retryable.retryable(
           :tries => 10,
           :sleep => lambda { |n| [2**n, 30].min },
@@ -209,11 +210,11 @@ module Kitchen
         ) do |r, _|
           info("Attempting to tag the instance, #{r} retries")
           tag_server(server)
-        end
 
-        state[:server_id] = server.id
-        info("EC2 instance <#{state[:server_id]}> created.")
-        wait_until_ready(server, state)
+          state[:server_id] = server.id
+          info("EC2 instance <#{state[:server_id]}> created.")
+          wait_until_ready(server, state)
+        end
 
         if windows_os? &&
             instance.transport[:username] =~ /administrator/i &&
