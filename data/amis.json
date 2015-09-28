@@ -56,6 +56,8 @@
     "ubuntu-13.04": "ubuntu",
     "ubuntu-13.10": "ubuntu",
     "ubuntu-14.04": "ubuntu",
+    "ubuntu-15.04": "ubuntu",
+    "ubuntu-15.10": "ubuntu",
     "centos-6.4": "root",
     "debian-7.1.0": "admin",
     "windows-2008r2": "administrator",
