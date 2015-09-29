@@ -202,7 +202,8 @@ module Kitchen
 
         # See https://github.com/aws/aws-sdk-ruby/issues/859
         # Tagging can fail with a NotFound error even though we waited until the server exists
-        # Waiting can also fail, so we have to also retry on that.  If it means we re-tag the instance, so be it.
+        # Waiting can also fail, so we have to also retry on that.  If it means we re-tag the
+        # instance, so be it.
         Retryable.retryable(
           :tries => 10,
           :sleep => lambda { |n| [2**n, 30].min },
