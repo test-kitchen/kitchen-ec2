@@ -325,13 +325,21 @@ If you don't set this it will default to whatever DHCP address EC2 hands out.
 
 ### interface
 
-The place from which to derive the hostname for communicating with the instance.  May be `dns`, `public` or `private`.  If this is unset, the driver will derive the hostname by failing back in the following order:
+The place from which to derive the hostname for communicating with the instance.  May be `dns`, `public`, `private`, `private_dns`.  If this is unset, the driver will derive the hostname by failing back in the following order:
 
 1. DNS Name
 2. Public IP Address
 3. Private IP Address
+4. Private DNS Name
 
-The default is unset.
+The default is unset. Under normal circumstances, the lookup will return the `Private IP Address`.
+
+If the `Private DNS Name` is preferred over the private IP, it must be specified in the `.kitchen.yml` file
+
+```ruby
+driver:
+  interface: private_dns
+```
 
 ### ssh\_key
 
