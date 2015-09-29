@@ -325,7 +325,7 @@ If you don't set this it will default to whatever DHCP address EC2 hands out.
 
 ### interface
 
-The place from which to derive the hostname for communicating with the instance.  May be `dns`, `public`, `private`, `private_dns`.  If this is unset, the driver will derive the hostname by failing back in the following order:
+The place from which to derive the hostname for communicating with the instance.  May be `dns`, `public`, `private` or `private_dns`.  If this is unset, the driver will derive the hostname by failing back in the following order:
 
 1. DNS Name
 2. Public IP Address
