@@ -251,6 +251,17 @@ module Kitchen
         state.delete(:hostname)
       end
 
+      def lookup_ami(filters_hash)
+        filters = []
+        filters_hash.each do |key, value|
+          filters.push(:name => key.to_s, :values => Array(value))
+        end
+        images = ec2.resource.images(:filters => filters).sort do |ami1, ami2|
+          Time.parse(ami1.creation_date) <=> Time.parse(ami2.creation_date)
+        end
+        images.last && images.last.id
+      end
+
       def ubuntu_ami(region, platform_name)
         release = amis["ubuntu_releases"][platform_name]
         Ubuntu.release(release).amis.find do |ami|
@@ -265,6 +276,8 @@ module Kitchen
         if instance.platform.name.start_with?("ubuntu")
           ami = ubuntu_ami(config[:region], instance.platform.name)
           ami && ami.name
+        elsif !config[:image_search].nil?
+          lookup_ami(config[:image_search])
         else
           region = amis["regions"][config[:region]]
           region && region[instance.platform.name]
