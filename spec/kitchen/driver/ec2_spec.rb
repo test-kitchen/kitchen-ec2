@@ -91,12 +91,50 @@ describe Kitchen::Driver::Ec2 do
       expect(config[:availability_zone]).to eq("us-east-1d")
     end
 
-    it "turns an image_id hash into a image_id string" do
-      config[:image_id] = { :name => "ami_name" }
-      expect(driver).to receive(:lookup_ami).with(:name => "ami_name"). \
-        and_return("ami-a1b2c3d4")
-      driver.finalize_config!(instance)
-      expect(config[:image_id]).to eq("ami-a1b2c3d4")
+    context "when image_id is not provided" do
+      context "when image_search is not provided" do
+        let(:default_ami) { 'ami-xxxxxxxx' }
+
+        before do
+          allow(instance).to receive(:driver). \
+            and_return(double('driver', default_ami: default_ami))
+        end
+
+        it "sets image_id to the default image" do
+          config[:image_id] = nil
+          driver.finalize_config!(instance)
+          expect(config[:image_id]).to eq(default_ami)
+        end
+
+        it "does not use image_search" do
+          config[:image_id] = nil
+          config[:image_search] = nil
+          driver.finalize_config!(instance)
+          expect(driver).to_not receive(:lookup_ami)
+        end
+      end
+
+      context "when image_search is provided" do
+        let(:found_ami) { 'ami-yyyyyyyy' }
+
+        it "searches for an image ID" do
+          config[:image_id] = nil
+          config[:image_search] = { :name => "ami_name" }
+          expect(driver).to receive(:lookup_ami).with(:name => "ami_name"). \
+            and_return(found_ami)
+          driver.finalize_config!(instance)
+          expect(config[:image_id]).to eq(found_ami)
+        end
+      end
+    end
+
+    context "when image_id is provided" do
+      it "does not use image_search" do
+        config[:image_id] = "a"
+        config[:image_search] = {}
+        driver.finalize_config!(instance)
+        expect(driver).to_not receive(:lookup_ami)
+      end
     end
   end
 
