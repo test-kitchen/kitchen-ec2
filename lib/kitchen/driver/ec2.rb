@@ -171,14 +171,6 @@ module Kitchen
           config[:instance_type] = config[:flavor_id] || "m1.small"
         end
 
-        if config[:image_id].nil?
-          if config[:image_search].nil?
-            config[:image_id] = instance.driver.default_ami
-          else
-            config[:image_id] = lookup_ami(config[:image_search])
-          end
-        end
-
         self
       end
 
@@ -270,6 +262,8 @@ module Kitchen
         if instance.platform.name.start_with?("ubuntu")
           ami = ubuntu_ami(config[:region], instance.platform.name)
           ami && ami.name
+        elsif !config[:image_search].nil?
+          lookup_ami(config[:image_search])
         else
           region = amis["regions"][config[:region]]
           region && region[instance.platform.name]

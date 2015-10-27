@@ -90,52 +90,6 @@ describe Kitchen::Driver::Ec2 do
       driver.finalize_config!(instance)
       expect(config[:availability_zone]).to eq("us-east-1d")
     end
-
-    context "when image_id is not provided" do
-      context "when image_search is not provided" do
-        let(:default_ami) { 'ami-xxxxxxxx' }
-
-        before do
-          allow(instance).to receive(:driver). \
-            and_return(double('driver', default_ami: default_ami))
-        end
-
-        it "sets image_id to the default image" do
-          config[:image_id] = nil
-          driver.finalize_config!(instance)
-          expect(config[:image_id]).to eq(default_ami)
-        end
-
-        it "does not use image_search" do
-          config[:image_id] = nil
-          config[:image_search] = nil
-          driver.finalize_config!(instance)
-          expect(driver).to_not receive(:lookup_ami)
-        end
-      end
-
-      context "when image_search is provided" do
-        let(:found_ami) { 'ami-yyyyyyyy' }
-
-        it "searches for an image ID" do
-          config[:image_id] = nil
-          config[:image_search] = { :name => "ami_name" }
-          expect(driver).to receive(:lookup_ami).with(:name => "ami_name"). \
-            and_return(found_ami)
-          driver.finalize_config!(instance)
-          expect(config[:image_id]).to eq(found_ami)
-        end
-      end
-    end
-
-    context "when image_id is provided" do
-      it "does not use image_search" do
-        config[:image_id] = "a"
-        config[:image_search] = {}
-        driver.finalize_config!(instance)
-        expect(driver).to_not receive(:lookup_ami)
-      end
-    end
   end
 
   describe "#hostname" do
@@ -524,6 +478,17 @@ describe Kitchen::Driver::Ec2 do
         expect(driver).to receive(:ubuntu_ami).with(config[:region], platform.name). \
           and_return(Ubuntu::Ami.new(*ami_data))
         expect(driver.default_ami).to eq(ami_data[0])
+      end
+    end
+
+    context "when ami_search is provided" do
+      let(:config) { { :image_search => {} } }
+      let(:ami_id) { "ami-xxxxxxxx" }
+
+      it "searches for an image id" do
+        expect(driver).to receive(:lookup_ami).with(config[:image_search]). \
+          and_return(ami_id)
+        expect(driver.default_ami).to eq(ami_id)
       end
     end
   end
