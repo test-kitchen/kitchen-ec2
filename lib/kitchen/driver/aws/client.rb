@@ -38,7 +38,8 @@ module Kitchen
           access_key_id = nil,
           secret_access_key = nil,
           session_token = nil,
-          http_proxy = nil
+          http_proxy = nil,
+          retry_limit = nil
         )
           creds = self.class.get_credentials(
             profile_name, access_key_id, secret_access_key, session_token
@@ -48,6 +49,7 @@ module Kitchen
             :credentials => creds,
             :http_proxy => http_proxy
           )
+          ::Aws.config.update(:retry_limit => retry_limit) unless retry_limit.nil?
         end
 
         # Try and get the credentials from an ordered list of locations
