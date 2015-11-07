@@ -169,7 +169,7 @@ module Kitchen
         end
         # TODO: when we get rid of flavor_id, move this to a default
         if config[:instance_type].nil?
-          config[:instance_type] = config[:flavor_id] || "m1.small"
+          config[:instance_type] = config[:flavor_id] || "t2.micro"
         end
 
         self

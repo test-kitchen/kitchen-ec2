@@ -169,7 +169,7 @@ The AWS [session token][credentials_docs] to use.
 
 The EC2 [instance type][instance_docs] (also known as size) to use.
 
-The default is `"m1.small"`.
+The default is `"t2.micro"`.
 
 ### security_group_ids
 
