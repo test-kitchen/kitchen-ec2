@@ -266,9 +266,9 @@ module Kitchen
         release = amis["ubuntu_releases"][platform_name]
         Ubuntu.release(release).amis.find do |ami|
           ami.arch == "amd64" &&
-            ami.root_store == "instance-store" &&
+            ami.root_store == "ebs" &&
             ami.region == region &&
-            ami.virtualization_type == "paravirtual"
+            ami.virtualization_type == "hvm"
         end
       end
 
