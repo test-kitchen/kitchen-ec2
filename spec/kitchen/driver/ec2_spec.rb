@@ -25,7 +25,7 @@ describe Kitchen::Driver::Ec2 do
 
   let(:logged_output) { StringIO.new }
   let(:logger)        { Logger.new(logged_output) }
-  let(:config)        { { :aws_ssh_key_id => "key", :image_id => "ami-1234567" } }
+  let(:config)        { { :aws_ssh_key_id => "key", :image_id => "ami-1234567", :block_duration_minutes => 60 } }
   let(:platform)      { Kitchen::Platform.new(:name => "fooos-99") }
   let(:transport)     { Kitchen::Transport::Dummy.new }
   let(:generator)     { instance_double(Kitchen::Driver::Aws::InstanceGenerator) }
@@ -177,7 +177,7 @@ describe Kitchen::Driver::Ec2 do
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
       expect(actual_client).to receive(:request_spot_instances).with(
-        :spot_price => "", :launch_specification => {}
+        :spot_price => "", :launch_specification => {}, :block_duration_minutes => 60
       ).and_return(response)
       expect(actual_client).to receive(:wait_until)
       expect(client).to receive(:get_instance_from_spot_request).with("id")

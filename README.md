@@ -290,6 +290,13 @@ The price you bid in order to submit a spot request. An additional step will be 
 
 The default is `nil`.
 
+### block_duration_minutes
+
+The [specified duration](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html#fixed-duration-spot-instances) for a spot instance, in minutes. This value must be a multiple of 60 (60, 120, 180, 240, 300, or 360).
+If no duration is set, the spot instance will remain active until it is terminated.
+
+The default is `nil`.
+
 ### `http_proxy`
 
 Specify a proxy to send AWS requests through.  Should be of the format `http://<host>:<port>`.
