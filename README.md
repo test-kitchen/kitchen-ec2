@@ -487,8 +487,7 @@ Apache 2.0 (see [LICENSE][license])
 [license]:          https://github.com/test-kitchen/kitchen-ec2/blob/master/LICENSE
 [repo]:             https://github.com/test-kitchen/kitchen-ec2
 [driver_usage]:     https://github.com/test-kitchen/kitchen-ec2
-[chef_omnibus_dl]:  http://www.getchef.com/chef/install/
-
+[chef_omnibus_dl]:  https://downloads.chef.io/chef-client/
 [amis_json]:        https://github.com/test-kitchen/kitchen-ec2/blob/master/data/amis.json
 [ami_docs]:         http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html
 [aws_site]:         http://aws.amazon.com/
