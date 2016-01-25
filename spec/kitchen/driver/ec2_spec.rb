@@ -70,26 +70,6 @@ describe Kitchen::Driver::Ec2 do
       expect { driver.finalize_config!(instance) }.to \
         raise_error(Kitchen::UserError, /:aws_ssh_key_id/)
     end
-
-    it "requires :image_id to be provided" do
-      config[:aws_ssh_key_id] = "key"
-      expect { driver.finalize_config!(instance) }.to \
-        raise_error(Kitchen::UserError, /:image_id/)
-    end
-  end
-
-  describe "#finalize_config!" do
-    it "defaults the availability zone if not provided" do
-      expect(config[:availability_zone]).to eq(nil)
-      driver.finalize_config!(instance)
-      expect(config[:availability_zone]).to eq("us-east-1b")
-    end
-
-    it "expands the availability zone if provided as a letter" do
-      config[:availability_zone] = "d"
-      driver.finalize_config!(instance)
-      expect(config[:availability_zone]).to eq("us-east-1d")
-    end
   end
 
   describe "#hostname" do
@@ -284,7 +264,7 @@ describe Kitchen::Driver::Ec2 do
       expect(server).to receive_message_chain("client.get_password_data").with(
         :instance_id => server_id
       ).and_return(data)
-      expect(server).to receive(:decrypt_windows_password).with("foo").and_return(password)
+      expect(server).to receive(:decrypt_windows_password).with(File.expand_path("foo")).and_return(password)
       driver.fetch_windows_admin_password(server, state)
     end
 
@@ -417,75 +397,6 @@ describe Kitchen::Driver::Ec2 do
         )
         driver.destroy(state)
         expect(state).to eq({})
-      end
-    end
-  end
-
-  describe "#lookup_ami" do
-    let(:resource) { double("actual resource") }
-
-    let(:filters) { { :name => "ami_name" } }
-    let(:aws_filters) do
-      { :filters => [{ :name => "name", :values => ["ami_name"] }] }
-    end
-
-    before do
-      allow(client).to receive(:resource).and_return(resource)
-    end
-
-    context "when one ami found" do
-      let(:ami_id) { "ami-a1b2c3d4" }
-      let(:date) { "2015-06-10T03:47:20.000Z" }
-      let(:ami_list) { [double("ami", :id => ami_id, :creation_date => date)] }
-
-      it "returns the ami id" do
-        expect(resource).to receive(:images).with(aws_filters). \
-          and_return(ami_list)
-        expect(driver.lookup_ami(filters)).to eq(ami_id)
-      end
-    end
-
-    context "when more than one ami found" do
-      let(:date_older) { "2015-06-10T03:47:20.000Z" }
-      let(:date_newer) { "2015-06-11T03:47:20.000Z" }
-      let(:ami_id_older) { "ami-a1b2c3d4" }
-      let(:ami_id_newer) { "ami-e5f6g7h8" }
-      let(:ami_list) do
-        [
-          double("ami", :id => ami_id_older, :creation_date => date_older),
-          double("ami", :id => ami_id_newer, :creation_date => date_newer)
-        ]
-      end
-
-      it "returns most recently created ami id" do
-        expect(resource).to receive(:images).with(aws_filters). \
-          and_return(ami_list)
-        expect(driver.lookup_ami(filters)).to eq(ami_id_newer)
-      end
-    end
-  end
-
-  describe "#default_ami" do
-    context "when platform is ubuntu" do
-      let(:config) { { :aws_ssh_key_id => "key" } }
-      let(:platform) { Kitchen::Platform.new(:name => "ubuntu-14.04") }
-      let(:ami_data) { %w[ ami-1305ef78 instance-store amd64 us-east-1 paravirtual ] }
-
-      it "queries an ami_id" do
-        expect(driver).to receive(:ubuntu_ami).with(config[:region], platform.name). \
-          and_return(Ubuntu::Ami.new(*ami_data))
-        expect(driver.default_ami).to eq(ami_data[0])
-      end
-    end
-
-    context "when ami_search is provided" do
-      let(:config) { { :image_search => {} } }
-      let(:ami_id) { "ami-xxxxxxxx" }
-
-      it "searches for an image id" do
-        expect(driver).to receive(:lookup_ami).with(config[:image_search]). \
-          and_return(ami_id)
-        expect(driver.default_ami).to eq(ami_id)
       end
     end
   end
