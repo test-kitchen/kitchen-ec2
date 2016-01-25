@@ -70,7 +70,6 @@ module Kitchen
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
 
       required_config :aws_ssh_key_id
-      required_config :image_id
 
       def self.validation_warn(driver, old_key, new_key)
         driver.warn "WARN: The driver[#{driver.class.name}] config key `#{old_key}` " \
