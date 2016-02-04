@@ -475,9 +475,10 @@ module Kitchen
       # Returns the sudo command to use or empty string if sudo is not configured
       #
       def sudo_command
-        instance.provisioner[:sudo] ? instance.provisioner[:sudo_command].to_s : ''
+        instance.provisioner[:sudo] ? instance.provisioner[:sudo_command].to_s : ""
       end
 
+      # rubocop:disable Metrics/MethodLength, Metrics/LineLength
       def create_ec2_json(state)
         if windows_os?
           cmd = "New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File"
@@ -488,7 +489,6 @@ module Kitchen
         instance.transport.connection(state).execute(cmd)
       end
 
-      # rubocop:disable Metrics/MethodLength, Metrics/LineLength
       def default_windows_user_data
         # Preparing custom static admin user if we defined something other than Administrator
         custom_admin_script = ""
