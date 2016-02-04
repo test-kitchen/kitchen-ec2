@@ -471,11 +471,19 @@ module Kitchen
         end
       end
 
+      #
+      # Returns the sudo command to use or empty string if sudo is not configured
+      #
+      def sudo_command
+        instance.provisioner[:sudo] ? instance.provisioner[:sudo_command].to_s : ''
+      end
+
       def create_ec2_json(state)
         if windows_os?
           cmd = "New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File"
         else
-          cmd = "sudo mkdir -p /etc/chef/ohai/hints;sudo touch /etc/chef/ohai/hints/ec2.json"
+          debug "Using sudo_command='#{sudo_command}' for ohai hints"
+          cmd = "#{sudo_command} mkdir -p /etc/chef/ohai/hints; #{sudo_command} touch /etc/chef/ohai/hints/ec2.json"
         end
         instance.transport.connection(state).execute(cmd)
       end
