@@ -70,7 +70,6 @@ module Kitchen
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
 
       required_config :aws_ssh_key_id
-      required_config :image_id
 
       def self.validation_warn(driver, old_key, new_key)
         driver.warn "WARN: The driver[#{driver.class.name}] config key `#{old_key}` " \
@@ -252,6 +251,7 @@ module Kitchen
       end
 
       def lookup_ami(filters_hash)
+        debug("Searching for AMI matching #{filters_hash} ...")
         filters = []
         filters_hash.each do |key, value|
           filters.push(:name => key.to_s, :values => Array(value))
@@ -259,28 +259,47 @@ module Kitchen
         images = ec2.resource.images(:filters => filters).sort do |ami1, ami2|
           Time.parse(ami1.creation_date) <=> Time.parse(ami2.creation_date)
         end
-        images.last && images.last.id
+        id = images.last && images.last.id
+        if id
+          debug("Found AMI #{id}")
+        else
+          debug("Found no AMI!")
+        end
+        id
       end
 
       def ubuntu_ami(region, platform_name)
+        debug("Grabbing ubuntu AMI for #{platform_name} on #{region}...")
         release = amis["ubuntu_releases"][platform_name]
-        Ubuntu.release(release).amis.find do |ami|
+        result = Ubuntu.release(release).amis.find do |ami|
           ami.arch == "amd64" &&
             ami.root_store == "ebs" &&
             ami.region == region &&
             ami.virtualization_type == "hvm"
         end
+        if result
+          debug("Found AMI #{ami}")
+        else
+          debug("Found no AMI!")
+        end
+        result
       end
 
       def default_ami
-        if instance.platform.name.start_with?("ubuntu")
+        if !config[:image_search].nil?
+          lookup_ami(config[:image_search])
+        elsif instance.platform.name.start_with?("ubuntu")
           ami = ubuntu_ami(config[:region], instance.platform.name)
           ami && ami.name
-        elsif !config[:image_search].nil?
-          lookup_ami(config[:image_search])
         else
+          debug("Grabbing default AMI for #{instance.platform.name} on #{config[:region]}")
           region = amis["regions"][config[:region]]
-          region && region[instance.platform.name]
+          result = region && region[instance.platform.name]
+          if result
+            debug("Found AMI #{result}")
+          else
+            debug("Found no AMI!")
+          end
         end
       end
 
