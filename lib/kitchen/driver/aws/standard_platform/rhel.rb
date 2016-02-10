@@ -6,12 +6,12 @@ module Kitchen
       class StandardPlatform
         # https://aws.amazon.com/blogs/aws/now-available-red-hat-enterprise-linux-64-amis/
         class El < StandardPlatform
-          StandardPlatform.platforms["el"] = self
           StandardPlatform.platforms["rhel"] = self
+          StandardPlatform.platforms["el"] = self
 
           def initialize(driver, name, version, architecture)
             # rhel = el
-            super(driver, "el", version, architecture)
+            super(driver, "rhel", version, architecture)
           end
 
           def username

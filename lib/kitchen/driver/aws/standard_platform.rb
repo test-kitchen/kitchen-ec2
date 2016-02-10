@@ -1,9 +1,37 @@
 module Kitchen
   module Driver
     class Aws
+      #
+      # Lets you grab StandardPlatform objects that help search for official
+      # AMIs in your region and tell you useful tidbits like usernames.
+      #
+      # To use these, set your platform name to a supported platform name like:
+      #
+      # centos
+      # rhel
+      # fedora
+      # freebsd
+      # ubuntu
+      # windows
+      #
+      # The implementation will select the latest matching version and AMI.
+      #
+      # You can specify a version and optional architecture as well:
+      #
+      # windows-2012r2-i386
+      # centos-7
+      #
       # Useful reference for platform AMIs:
       # https://alestic.com/2014/01/ec2-ssh-username/
       class StandardPlatform
+        #
+        # Create a new StandardPlatform object.
+        #
+        # @param driver [Kitchen::Driver::Ec2] The driver.
+        # @param name [String] The name of the platform (rhel, centos, etc.)
+        # @param version [String] The version of the platform (7.1, 2008sp1, etc.)
+        # @param architecture [String] The architecture (i386, x86_64)
+        #
         def initialize(driver, name, version, architecture)
           @driver = driver
           @name = name
@@ -11,14 +39,40 @@ module Kitchen
           @architecture = architecture
         end
 
+        #
+        # The driver.
+        #
+        # @return [Kitchen::Driver::Ec2]
+        #
         attr_reader :driver
+
+        #
+        # The name of the platform (e.g. rhel, centos, etc.)
+        #
+        # @return [String]
+        #
         attr_reader :name
+
+        #
+        # The version of the platform (e.g. 7.1, 2008sp1, etc.)
+        #
+        # @return [String]
+        #
         attr_reader :version
+
+        #
+        # The architecture of the platform, e.g. i386, x86_64
+        #
+        # @return [String]
+        #
+        # @see ARCHITECTURES
+        #
         attr_reader :architecture
 
         #
-        # Find the best matching image for the given image search
+        # Find the best matching image for the given image search.
         #
+        # @return [String] The image ID (e.g. ami-213984723)
         def find_image(image_search)
           driver.debug("Searching for images matching #{image_search} ...")
           # Convert to ec2 search format (pairs of name+values)
@@ -59,10 +113,71 @@ module Kitchen
           images.first && images.first.id
         end
 
+        #
+        # The list of StandardPlatform objects. StandardPlatforms register
+        # themselves with this.
+        #
+        # @return Array[Kitchen::Driver::Aws::StandardPlatform]
+        #
         def self.platforms
           @platforms ||= {}
         end
 
+        def to_s
+          "#{name}#{version ? " #{version}" : ""}#{architecture ? " #{architecture}" : ""}"
+        end
+
+        #
+        # Instantiate a platform from a platform name.
+        #
+        # @param driver [Kitchen::Driver::Ec2] The driver.
+        # @param platform_string [String] The platform string, e.g. "windows", "ubuntu-7.1", "centos-7-i386"
+        #
+        # @return [Kitchen::Driver::Aws::StandardPlatform]
+        #
+        def self.from_platform_string(driver, platform_string)
+          platform, version, architecture = parse_platform_string(platform_string)
+          if platform && platforms[platform]
+            platforms[platform].new(driver, platform, version, architecture)
+          end
+        end
+
+        #
+        # Detect platform from an image.
+        #
+        # @param driver [Kitchen::Driver::Ec2] The driver.
+        # @param image [Aws::Ec2::Image] The EC2 Image object.
+        #
+        # @return [Kitchen::Driver::Aws::StandardPlatform]
+        #
+        def self.from_image(driver, image)
+          platforms.each_value do |platform|
+            result = platform.from_image(driver, image)
+            return result if result
+          end
+          nil
+        end
+
+        #
+        # The list of supported architectures
+        #
+        ARCHITECTURE = %w(x86_64 i386 i86pc sun4v powerpc)
+
+        protected
+
+        #
+        # Sort a list of images by their versions, from greatest to least.
+        #
+        # This MUST perform a stable sort. (Note that `sort` and `sort_by` are
+        # not, by default, stable sorts in Ruby.)
+        #
+        # Used by the default find_image. The default version calls platform_from_image()
+        # on each image, and interprets the versions as floats (7 < 7.1 < 8).
+        #
+        # @param images [Array[Aws::Ec2::Image]] The list of images to sort
+        #
+        # @return [Array[Aws::Ec2::Image]] A sorted list.
+        #
         def sort_by_version(images)
           # 7.1 -> [ img1, img2, img3 ]
           # 6 -> [ img4, img5 ]
@@ -72,30 +187,7 @@ module Kitchen
                  sort_by { |k,v| k ? k.to_f : nil }.reverse.map { |k,v| v }.flatten(1)
         end
 
-        def to_s
-          "#{name}#{version ? " #{version}" : ""}#{architecture ? " #{architecture}" : ""}"
-        end
-
         # Not supported yet: aix mac_os_x nexus solaris
-
-        ARCHITECTURE = %w(x86_64 i386 i86pc sun4v powerpc)
-
-        def self.from_platform_string(driver, platform_string)
-          platform, version, architecture = parse_platform_string(platform_string)
-          if platform && platforms[platform]
-            platforms[platform].new(driver, platform, version, architecture)
-          end
-        end
-
-        def self.from_image(driver, image)
-          platforms.each_value do |platform|
-            result = platform.from_image(driver, image)
-            return result if result
-          end
-          nil
-        end
-
-        protected
 
         def prefer(images, &block)
           # Put the matching ones *before* the non-matching ones.

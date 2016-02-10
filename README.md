@@ -9,84 +9,147 @@ A [Test Kitchen][kitchenci] Driver for Amazon EC2.
 This driver uses the [aws sdk gem][aws_sdk_gem] to provision and destroy EC2
 instances. Use Amazon's cloud for your infrastructure testing!
 
+## Initial Setup
+
+To get started, you need to install the software and set up your credentials and SSH key. Some of these steps you have probably already done, but we include them here for completeness.
+
+1. Install the latest ChefDK and put it in your path.
+2. From this repository, type `bundle install; bundle exec rake install` to install the latest version of the driver.
+3. Install the [AWS command line tools](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-set-up.html).
+4. Run `aws configure` to place your AWS credentials on the drive at ~/.aws/credentials.
+5. Create your AWS SSH key. We recommend naming it with your username, but you can use any name:
+
+     ```
+     aws ec2 create-key-pair --key-name $USER | ruby -e "require 'json'; puts JSON.parse(STDIN.read)['KeyMaterial']" > ~/.ssh/$USER
+     ```
+6. `export AWS_SSH_KEY_ID=<your key name>`
+
+## Quick Start
+
+Once
+that is done, create your kitchen file in your cookbook directory (or an empty
+directory if you just want to get a feel for it):
+
+1. `kitchen init -D ec2`
+2. Edit `.kitchen.yml` and add the aws_ssh_key_id to driver and a transport with
+   an ssh_key:
+
+   ```yaml
+   transport:
+     ssh_key: ~/.ssh/your_private_key_file
+   ```
+3. While you are in there, modify `centos-7.1` to `centos-7`.
+3. `kitchen test`
+
+It's that easy! This will set up and run centos and ubuntu flavored instances.
+
 ## Requirements
 
 There are **no** external system requirements for this driver. However you
 will need access to an [AWS][aws_site] account.  [IAM][iam_site] users should have, at a minimum, permission to manage the lifecycle of an EC2 instance along with modifying components specified in kitchen driver configs.  Consider using a permissive managed IAM policy like ``arn:aws:iam::aws:policy/AmazonEC2FullAccess`` or tailor one specific to your security requirements.
 
-## Installation and Setup
+## Configuration
 
-Please read the [Driver usage][driver_usage] page for more details.
+By automatically applying reasonable defaults wherever possible, kitchen-ec2 does a lot of work to make your life easier. Here is a description of some of the configuration parameters and what we do to default them.
 
-## Default Configuration
+### Specifying the Image
 
-This driver can determine AMI and username login for a select number of
-platforms in each region.
+There are three ways to specify the image you use for the instance: `image_id`,
+`image_search` and `platform.name`
 
-For Windows instances the generated Administrator password is fetched
-automatically from Amazon EC2 with the same private key as we use for
-SSH logins to Linux.
+#### `image_id`
 
-Currently, the following platform names are supported:
+`image_id` can be set explicitly. It must be an ami in the region you are
+working with!
 
-```ruby
----
+```yaml
 platforms:
-  - name: ubuntu-10.04
-  - name: ubuntu-12.04
-  - name: ubuntu-12.10
-  - name: ubuntu-13.04
-  - name: ubuntu-13.10
+  - name: centos-7
+    image_id: ami-96a818fe
+```
+
+#### `image_search`
+
+`image_search` lets you specify a series of key/value pairs to search for the
+image. If a value is set to an array, then *any* of those values will match.
+You can learn more about the available filters in the AWS CLI doc under `--filters` [here](http://docs.aws.amazon.com/cli/latest/reference/ec2/describe-images.html).
+
+```yaml
+platforms:
   - name: ubuntu-14.04
-  - name: centos-6.4
-  - name: debian-7.1.0
-  - name: windows-2012r2
-  - name: windows-2008r2
+    image_search:
+      owner-id: "099720109477"
+      name: ubuntu/images/*/ubuntu-*-14.04*
 ```
 
-This will effectively generate a configuration similar to:
+In the event that there are multiple matches (as sometimes happens), we sort to
+get the best results. In order of priority from greatest to least, we prefer:
 
-```ruby
----
+- HVM images over paravirtual
+- SSD support over magnetic drives
+- 64-bit over 32-bit
+- The most recently created image (to pick up patch releases)
+
+#### `platform.name`
+
+The third way to specify the image is by leaving `image_id` and `image_search`
+blank, and specifying a standard platform name.
+
+```yaml
 platforms:
-  - name: ubuntu-10.04
-    driver:
-      image_id: ami-1ab3ce73
-    transport:
-      username: ubuntu
-  # ...
-  - name: centos-6.4
-    driver:
-      image_id: ami-bf5021d6
-    transport:
-      username: root
-  # ...
-  - name: windows-2012r2
-    driver:
-      image_id: ami-28bc7428
-    transport:
-      username: administrator
-  # ...
+  - name: ubuntu-14.04
 ```
 
-For specific default values, please consult [amis.json][amis_json].
+If you use the platform name `ubuntu`, `windows`, `rhel`, `debian`, `centos`, `freebsd` or `fedora`, kitchen-ec2 will search for the latest matching official image of
+the given OS in your region. You may leave versions off, specify partial versions,
+and you may specify architecture to distinguish 32- and 64-bit. Some examples:
 
-## Authenticating with AWS
+```yaml
+platforms:
+  # The latest stable minor+patch release of rhel 6
+  - name: rhel-6
+  # The latest patch release of CentOS 6.3
+  - name: centos-6.3
+  # 32-bit version of latest major+minor+patch release of Ubuntu
+  - name: ubuntu-i386
+  # 32-bit version of Debian 6
+  - name: debian-6-i386
+  # Latest 64-bit stable minor release of freebsd 10
+  - name: freebsd-10-i386
+  # The latest stable major+minor+patch release of Fedora
+  - name: fedora
+  # The most recent service-pack for Windows 2012 (not R2)
+  - name: windows-2012
+  # The most recent service-pack for Windows 2012R2
+  - name: windows-2012r2
+  # Windows 2008 RTM (not R2, no service pack)
+  - name: windows-2008rtm
+  # Windows 2008R2 SP1
+  - name: windows-2008r2sp1
+```
 
-There are 3 ways you can authenticate against AWS, and we will try them in the
+We always pick the highest released stable version that matches your regex, and
+follow the other `image_search` rules for preference.
+
+### AWS Authentication
+
+In order to connect to AWS, you must specify the AWS access key id and secret key
+for your account. There are 3 ways you do this, and we will try them in the
 following order:
 
 1. You can specify the access key and access secret (and optionally the session
-token) through config.  See the `aws_access_key_id` and `aws_secret_access_key`
-config sections below to see how to specify these in your .kitchen.yml or
-through environment variables.  If you would like to specify your session token
-use the environment variable `AWS_SESSION_TOKEN`.
-1. The shared credentials ini file at `~/.aws/credentials`.  You can specify
-multiple profiles in this file and select one with the `AWS_PROFILE`
-environment variable or the `shared_credentials_profile` driver config.  Read
-[this][credentials_docs] for more information.
-1. From an instance profile when running on EC2.  This accesses the local
-metadata service to discover the local instance's IAM instance profile.
+   token) through config.  See the `aws_access_key_id` and `aws_secret_access_key`
+   config sections below to see how to specify these in your .kitchen.yml or
+   through environment variables.  If you would like to specify your session token
+   use the environment variable `AWS_SESSION_TOKEN`.
+2. The shared credentials ini file at `~/.aws/credentials`. This is the file
+   populated by `aws configure` command line and used by AWS tools in general, so if
+   you are set up for any other AWS tools, you probably already have this. You can
+   specify multiple profiles in this file and select one with the `AWS_PROFILE`
+   environment variable or the `shared_credentials_profile` driver config.  Read
+   [this][credentials_docs] for more information.
+3. From an instance profile when running on EC2.  This accesses the local
+   metadata service to discover the local instance's IAM instance profile.
 
 This precedence order is taken from http://docs.aws.amazon.com/sdkforruby/api/index.html#Configuration
 
@@ -100,10 +163,41 @@ through CI we no longer recommend storing the AWS credentials in the
 `.kitchen.yml` file.  Instead, specify them as environment variables or in the
 `~/.aws/credentials` file.
 
-## Windows Configuration
+### Instance Login Configuration
 
-If you specify a platform name of `windows-2012r2` or `windows-2008` Test
-Kitchen will pull a default AMI out of `amis.json` if one is not specified.
+The instances you create use credentials you specify which are *separate* from
+the AWS credentials. Generally, SSH and WinRM use an AWS key pair which you
+specify. You probably set this up in the Initial Setup.
+
+#### `aws_ssh_key_id`
+
+The ID of the AWS key pair you want to use.
+
+The default will be read from the `AWS_SSH_KEY_ID` environment variable if set,
+or `nil` otherwise.
+
+#### `transport.ssh_key`
+
+The private key file for the AWS key pair you want to use.
+
+#### `transport.username`
+
+This is not strictly a `driver` thing, but the username is a crucial component
+of logging in to an instance. Different AMIs tend to provide different usernames.
+
+If you use an official AMI (or create an image with the platform name in the
+image name), we will use the default username for official AMIs for that platform.
+
+#### Password
+
+For Windows instances the generated Administrator password is fetched
+automatically from Amazon EC2 with the same private key as we use for
+SSH logins to Linux.
+
+### Windows Configuration
+
+If you specify a platform name starting with `windows`, Test Kitchen will pull a
+default AMI out of `amis.json` if one is not specified.
 
 The default user_data will add any `username` with its associated `password`
 from the transport options to the Aministrator group.  If no `username` is
@@ -116,108 +210,54 @@ and you have not specified your own `username` and `password` you can use
 the `administrator` user and the password from this file.  Unfortunately
 we cannot auto-fill the RDP password at this point.
 
-## General Configuration
+### Other Configuration
 
-### availability\_zone
+#### `availability_zone`
 
 The AWS [availability zone][region_docs] to use.  Only request
 the letter designation - will attach this to the region used.
 
-The default is `"#{region}b"`.
+If not specified, your instances will be placed in an AZ of AWS's choice in your
+region.
 
-### aws\_access\_key\_id
-
-**Deprecated** It is recommended to use the `AWS_ACCESS_KEY_ID` or the
-`~/.aws/credentials` file instead.
-
-The AWS [access key id][credentials_docs] to use.
-
-### aws\_secret\_access\_key
-
-**Deprecated** It is recommended to use the `AWS_SECRET_ACCESS_KEY` or the
-`~/.aws/credentials` file instead.
-
-The AWS [secret access key][credentials_docs] to use.
-
-### shared\_credentials\_profile
-
-The EC2 [profile name][credentials_docs] to use when reading credentials out
-of `~/.aws/credentials`.  If it is not specified AWS will read the `Default`
-profile credentials (if using this method of authentication).
-
-Can also be specified as `ENV['AWS_PROFILE']`.
-
-### aws\_ssh\_key\_id
-
-**Required** The EC2 [SSH key id][key_id_docs] to use.
-
-The default will be read from the `AWS_SSH_KEY_ID` environment variable if set,
-or `nil` otherwise.
-
-### aws\_session\_token
-
-**Deprecated** It is recommended to use the `AWS_SESSION_TOKEN` or the
-`~/.aws/credentials` file instead.
-
-The AWS [session token][credentials_docs] to use.
-
-### flavor\_id
+#### `flavor_id`
 
 **Deprecated** See [instance_type](#config-instance_type) below.
 
-### <a name="config-instance_type"></a> instance\_type
+### <a name="config-instance_type"></a> `instance_type`
 
 The EC2 [instance type][instance_docs] (also known as size) to use.
 
-The default is `"t2.micro"`.
+The default is `t2.micro` or `t1.micro`, depending on whether the image is `hvm`
+or `paravirtual`. (`paravirtual` images are incompatible with `t2.micro`.)
 
-### security_group_ids
+### `security_group_ids`
 
 An Array of EC2 [security groups][group_docs] which will be applied to the
 instance.
 
 The default is `["default"]`.
 
-### image\_id
-
-**Required** The EC2 [AMI id][ami_docs] to use.
-
-The default will be determined by the `aws_region` chosen and the Platform
-name, if a default exists (see [amis.json][ami_json]). If a default cannot be
-computed, then the default is `nil`.
-
-### image\_search
-
-Searches the EC2 API for the latest AMI ID that matches the given [filters](http://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeImages.html).
-
-For example, a search for the latest AMI that matches a given image name looks
-like:
-
-```yaml
-image_search:
-  name: Windows_Server-2012-R2_RTM-English-64Bit-Base-*
-```
-
-### region
+### `region`
 
 **Required** The AWS [region][region_docs] to use.
 
 If the environment variable `AWS_REGION` is populated that will be used.
 Otherwise the default is `"us-east-1"`.
 
-### subnet\_id
+### `subnet_id`
 
 The EC2 [subnet][subnet_docs] to use.
 
 The default is unset, or `nil`.
 
-### tags
+### `tags`
 
 The Hash of EC tag name/value pairs which will be applied to the instance.
 
 The default is `{ "created-by" => "test-kitchen" }`.
 
-### user\_data
+### `user_data`
 
 The user_data script or the path to a script to feed the instance.
 Use bash to install dependencies or download artifacts before chef runs.
@@ -230,19 +270,19 @@ On Windows instances we specify a default that enables winrm and
 adds a non-administrator user specified in the `username` transport
 options to the Administrator's User Group.
 
-### iam\_profile\_name
+### `iam_profile_name`
 
 The EC2 IAM profile name to use.
 
 The default is `nil`.
 
-### price
+### `price`
 
 The price you bid in order to submit a spot request. An additional step will be required during the spot request process submission. If no price is set, it will use an on-demand instance.
 
 The default is `nil`.
 
-### http\_proxy
+### `http_proxy`
 
 Specify a proxy to send AWS requests through.  Should be of the format `http://<host>:<port>`.
 
@@ -250,27 +290,27 @@ The default is `ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]`.  If you have these env
 
 **Note** - The AWS command line utility allow you to specify [two proxies](http://docs.aws.amazon.com/cli/latest/userguide/cli-http-proxy.html), one for HTTP and one for HTTPS.  The AWS Ruby SDK only allows you to specify 1 proxy and because all requests are `https://` this proxy needs to support HTTPS.
 
-## Disk Configuration
+### Disk Configuration
 
-### ebs\_volume\_size
+#### `ebs_volume_size`
 
 **Deprecated** See [block_device_mappings](#config-block_device_mappings) below.
 
 Size of ebs volume in GB.
 
-### ebs\_delete\_on\_termination
+#### `ebs_delete_on_termination`
 
 **Deprecated** See [block_device_mappings](#config-block_device_mappings) below.
 
 `true` if you want ebs volumes to get deleted automatically after instance is terminated, `false` otherwise
 
-### ebs\_device\_name
+#### `ebs_device_name`
 
 **Deprecated** See [block_device_mappings](#config-block_device_mappings) below.
 
 name of your ebs device, for example: `/dev/sda1`
 
-### <a name="config-block_device_mappings"></a> block\_device\_mappings
+#### <a name="config-block_device_mappings"></a> `block_device_mappings`
 
 A list of block device mappings for the machine.  An example of all available keys looks like:
 ```yaml
@@ -305,7 +345,7 @@ If you have a block device mapping with a `ebs_device_name` equal to the root st
 
 If this is not provided it will use the default block_device_mappings from the AMI.
 
-### ebs\_optimized
+#### `ebs_optimized`
 
 Option to launch EC2 instance with optimized EBS volume. See
 [Amazon EC2 Instance Types](http://aws.amazon.com/ec2/instance-types/) to find
@@ -313,9 +353,9 @@ out more about instance types that can be launched as EBS-optimized instances.
 
 The default is `false`.
 
-## Network and Communication Configuration
+### Network and Communication Configuration
 
-### associate\_public\_ip
+#### `associate_public_ip`
 
 AWS does not automatically allocate public IP addresses for instances created
 within non-default [subnets][subnet_docs]. Set this option to `true` to force
@@ -329,13 +369,13 @@ instance unless you have a VPN connection to your
 The default is `true` if you have configured a [subnet_id](#config-subnet-id),
 or `false` otherwise.
 
-### private\_ip\_address
+#### `private_ip_address`
 
 The primary private IP address of your instance.
 
 If you don't set this it will default to whatever DHCP address EC2 hands out.
 
-### interface
+#### `interface`
 
 The place from which to derive the hostname for communicating with the instance.  May be `dns`, `public` or `private`.  If this is unset, the driver will derive the hostname by failing back in the following order:
 
@@ -345,7 +385,7 @@ The place from which to derive the hostname for communicating with the instance.
 
 The default is unset.
 
-### ssh\_key
+#### ssh_key
 
 **Deprecated** Instead use the `ssh_key` transport option like
 
@@ -358,7 +398,7 @@ Path to the private SSH key used to connect to the instance.
 
 The default is unset, or `nil`.
 
-### ssh\_timeout
+### `ssh_timeout`
 
 **Deprecated** Instead use the `connection_timeout` transport key like
 
@@ -371,7 +411,7 @@ The number of seconds to sleep before trying to SSH again.
 
 The default is `1`.
 
-### ssh\_retries
+### `ssh_retries`
 
 **Deprecated** Instead use the `connection_retries` transport key like
 
@@ -384,7 +424,7 @@ The number of times to retry SSH-ing into the instance.
 
 The default is `3`.
 
-### username
+### `username`
 
 **Deprecated** Instead use the `username` transport key like
 

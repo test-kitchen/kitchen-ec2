@@ -25,7 +25,7 @@ require_relative "aws/instance_generator"
 require_relative "aws/standard_platform"
 require_relative "aws/standard_platform/centos"
 require_relative "aws/standard_platform/debian"
-require_relative "aws/standard_platform/el"
+require_relative "aws/standard_platform/rhel"
 require_relative "aws/standard_platform/fedora"
 require_relative "aws/standard_platform/freebsd"
 require_relative "aws/standard_platform/ubuntu"
@@ -66,7 +66,7 @@ module Kitchen
       default_config :price,              nil
       default_config :retryable_tries,    60
       default_config :retryable_sleep,    5
-      default_config :aws_access_key_id,  nil
+      default_config :aws_access_key_id,  ENV["AWS_SSH_KEY_ID"]
       default_config :aws_secret_access_key, nil
       default_config :aws_session_token,  nil
       default_config :aws_ssh_key_id,     nil
@@ -251,7 +251,10 @@ module Kitchen
           end
         else
           error("Neither image_id nor an image_search specified for instance #{instance.name}! Please specify one or the other.")
+          raise "Neither image_id nor an image_search specified for instance #{instance.name}! Please specify one or the other."
         end
+
+        @image
       end
 
       def default_instance_type
@@ -283,7 +286,12 @@ module Kitchen
       def default_ami
         @default_ami ||= begin
           image_search = config[:image_search] || desired_platform.image_search
-          desired_platform.find_image(image_search)
+          image = desired_platform.find_image(image_search)
+          if !image
+            error("No image found for #{instance.name} search criteria #{image_search}")
+            raise
+          end
+          image
         end
       end
 
