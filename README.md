@@ -13,7 +13,7 @@ instances. Use Amazon's cloud for your infrastructure testing!
 
 To get started, you need to install the software and set up your credentials and SSH key. Some of these steps you have probably already done, but we include them here for completeness.
 
-1. Install the latest ChefDK and put it in your path.
+1. Install the latest test-kitchen or ChefDK and put it in your path.
 2. From this repository, type `bundle install; bundle exec rake install` to install the latest version of the driver.
 3. Install the [AWS command line tools](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-set-up.html).
 4. Run `aws configure` to place your AWS credentials on the drive at ~/.aws/credentials.
