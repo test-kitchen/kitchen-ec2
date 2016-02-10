@@ -1,4 +1,4 @@
-require 'kitchen/driver/aws/standard_platform'
+require "kitchen/driver/aws/standard_platform"
 
 module Kitchen
   module Driver
@@ -6,7 +6,7 @@ module Kitchen
       class StandardPlatform
         # https://help.ubuntu.com/community/EC2StartersGuide#Official_Ubuntu_Cloud_Guest_Amazon_Machine_Images_.28AMIs.29
         class Ubuntu < StandardPlatform
-          StandardPlatform.platforms['ubuntu'] = self
+          StandardPlatform.platforms["ubuntu"] = self
 
           def username
             "ubuntu"
@@ -24,7 +24,7 @@ module Kitchen
           def self.from_image(driver, image)
             if image.name =~ /ubuntu/i
               image.name =~ /\b(\d+(\.\d+)?)\b/i
-              new(driver, "ubuntu", $1, image.architecture)
+              new(driver, "ubuntu", (Regexp.last_match || [])[1], image.architecture)
             end
           end
         end

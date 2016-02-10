@@ -77,37 +77,13 @@ module Kitchen
           driver.debug("Searching for images matching #{image_search} ...")
           # Convert to ec2 search format (pairs of name+values)
           filters = image_search.map do |key, value|
-            { name: key.to_s, values: Array(value).map { |v| v.to_s } }
+            { :name => key.to_s, :values => Array(value).map(&:to_s) }
           end
 
           # We prefer most recent first
           images = driver.ec2.resource.images(:filters => filters)
-          # P6: We prefer more recent images over older ones
-          images = images.sort_by { |image| image.creation_date }.reverse
-          # P5: We prefer x86_64 over i386 (if available)
-          images = prefer(images) { |image| image.architecture == :x86_64 }
-          # P4: We prefer gp2 (SSD) (if available)
-          images = prefer(images) { |image| image.block_device_mappings.any? { |b| b.device_name == image.root_device_name && b.ebs && b.ebs.volume_type == "gp2" } }
-          # P3: We prefer ebs over instance_store (if available)
-          images = prefer(images) { |image| image.root_device_type == "ebs" }
-          # P2: We prefer hvm (the modern standard)
-          images = prefer(images) { |image| image.virtualization_type == "hvm" }
-          # P1: We prefer the latest version over anything else
-          images = sort_by_version(images)
-          if images.empty?
-            driver.error("Search returned 0 images.")
-          else
-            driver.debug("Search returned #{images.size} images:")
-            images.each do |image|
-              root_device = image.block_device_mappings.find { |b| b.device_name == image.root_device_name }
-              platform = self.class.from_image(driver, image)
-              if platform
-                driver.debug("- #{image.name}: Detected #{platform}. Virtualization: #{image.virtualization_type}, Storage: #{image.root_device_type}#{(root_device && root_device.ebs) ? " #{root_device.ebs.volume_type}" : ""}, Created: #{image.creation_date}")
-              else
-                driver.debug("- #{image.name}: no platform detected. Virtualization: #{image.virtualization_type}, Storage: #{image.root_device_type}#{(root_device && root_device.ebs) ? " #{root_device.ebs.volume_type}" : ""}, Created: #{image.creation_date}")
-              end
-            end
-          end
+          images = sort_images(images)
+          show_returned_images(images)
 
           # Grab the best match
           images.first && images.first.id
@@ -131,7 +107,8 @@ module Kitchen
         # Instantiate a platform from a platform name.
         #
         # @param driver [Kitchen::Driver::Ec2] The driver.
-        # @param platform_string [String] The platform string, e.g. "windows", "ubuntu-7.1", "centos-7-i386"
+        # @param platform_string [String] The platform string, e.g. "windows",
+        #        "ubuntu-7.1", "centos-7-i386"
         #
         # @return [Kitchen::Driver::Aws::StandardPlatform]
         #
@@ -161,7 +138,7 @@ module Kitchen
         #
         # The list of supported architectures
         #
-        ARCHITECTURE = %w(x86_64 i386 i86pc sun4v powerpc)
+        ARCHITECTURE = %w[x86_64 i386 i86pc sun4v powerpc]
 
         protected
 
@@ -182,9 +159,10 @@ module Kitchen
           # 7.1 -> [ img1, img2, img3 ]
           # 6 -> [ img4, img5 ]
           # ...
-          images.group_by { |image| platform = self.class.from_image(driver, image); platform ? platform.version : nil }.
-          # sorted by version and flattened
-                 sort_by { |k,v| k ? k.to_f : nil }.reverse.map { |k,v| v }.flatten(1)
+          images.group_by do |image|
+            platform = self.class.from_image(driver, image)
+            platform ? platform.version : nil
+          end.sort_by { |k, _v| k ? k.to_f : nil }.reverse.map { |_k, v| v }.flatten(1)
         end
 
         # Not supported yet: aix mac_os_x nexus solaris
@@ -208,7 +186,26 @@ module Kitchen
             version = nil if version == ""
           end
 
-          [ platform, version, architecture ]
+          [platform, version, architecture]
+        end
+
+        def sort_images(images)
+          # P6: We prefer more recent images over older ones
+          images = images.sort_by(&:creation_date).reverse
+          # P5: We prefer x86_64 over i386 (if available)
+          images = prefer(images) { |image| image.architecture == :x86_64 }
+          # P4: We prefer gp2 (SSD) (if available)
+          images = prefer(images) do |image|
+            image.block_device_mappings.any? do |b|
+              b.device_name == image.root_device_name && b.ebs && b.ebs.volume_type == "gp2"
+            end
+          end
+          # P3: We prefer ebs over instance_store (if available)
+          images = prefer(images) { |image| image.root_device_type == "ebs" }
+          # P2: We prefer hvm (the modern standard)
+          images = prefer(images) { |image| image.virtualization_type == "hvm" }
+          # P1: We prefer the latest version over anything else
+          sort_by_version(images)
         end
       end
     end

@@ -264,7 +264,9 @@ describe Kitchen::Driver::Ec2 do
       expect(server).to receive_message_chain("client.get_password_data").with(
         :instance_id => server_id
       ).and_return(data)
-      expect(server).to receive(:decrypt_windows_password).with(File.expand_path("foo")).and_return(password)
+      expect(server).to receive(:decrypt_windows_password).
+        with(File.expand_path("foo")).
+        and_return(password)
       driver.fetch_windows_admin_password(server, state)
     end
 

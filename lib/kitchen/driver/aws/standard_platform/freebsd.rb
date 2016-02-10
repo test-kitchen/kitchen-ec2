@@ -1,4 +1,4 @@
-require 'kitchen/driver/aws/standard_platform'
+require "kitchen/driver/aws/standard_platform"
 
 module Kitchen
   module Driver
@@ -18,7 +18,7 @@ module Kitchen
           def image_search
             search = {
               "owner-id" => "118940168514",
-              "name" => [ "FreeBSD #{version}*-RELEASE*", "FreeBSD/EC2 #{version}*-RELEASE*" ]
+              "name" => ["FreeBSD #{version}*-RELEASE*", "FreeBSD/EC2 #{version}*-RELEASE*"]
             }
             search["architecture"] = architecture if architecture
             search
@@ -27,7 +27,7 @@ module Kitchen
           def self.from_image(driver, image)
             if image.name =~ /freebsd/i
               image.name =~ /\b(\d+(\.\d+)?)\b/i
-              new(driver, "freebsd", $1, image.architecture)
+              new(driver, "freebsd", (Regexp.last_match || [])[1], image.architecture)
             end
           end
         end

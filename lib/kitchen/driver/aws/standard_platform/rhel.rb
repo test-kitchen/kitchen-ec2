@@ -1,4 +1,4 @@
-require 'kitchen/driver/aws/standard_platform'
+require "kitchen/driver/aws/standard_platform"
 
 module Kitchen
   module Driver
@@ -9,7 +9,7 @@ module Kitchen
           StandardPlatform.platforms["rhel"] = self
           StandardPlatform.platforms["el"] = self
 
-          def initialize(driver, name, version, architecture)
+          def initialize(driver, _name, version, architecture)
             # rhel = el
             super(driver, "rhel", version, architecture)
           end
@@ -30,7 +30,7 @@ module Kitchen
           def self.from_image(driver, image)
             if image.name =~ /rhel/i
               image.name =~ /\b(\d+(\.\d+)?)/i
-              new(driver, "rhel", $1, image.architecture)
+              new(driver, "rhel", (Regexp.last_match || [])[1], image.architecture)
             end
           end
         end

@@ -240,18 +240,13 @@ module Kitchen
 
         if config[:image_id]
           @image = ec2.resource.image(config[:image_id])
+          show_chosen_image
 
-          # Print some debug stuff
-          root_device = image.block_device_mappings.find { |b| b.device_name == image.root_device_name }
-          debug("Image for #{instance.name}: #{image.name}. Architecture: #{image.architecture}, Virtualization: #{image.virtualization_type}, Storage: #{image.root_device_type}#{root_device && root_device.ebs ? " #{root_device.ebs.volume_type}" : ""}, Created: #{image.creation_date}")
-          if actual_platform
-            debug("Detected platform: #{actual_platform.name} version #{actual_platform.version} on #{actual_platform.architecture}. Instance Type: #{config[:instance_type]}, Username: #{config[:username] || actual_platform.username}.")
-          else
-            debug("No platform detected for #{image.name}.")
-          end
         else
-          error("Neither image_id nor an image_search specified for instance #{instance.name}! Please specify one or the other.")
-          raise "Neither image_id nor an image_search specified for instance #{instance.name}! Please specify one or the other."
+          error("Neither image_id nor an image_search specified for instance #{instance.name}!" \
+                " Please specify one or the other.")
+          raise "Neither image_id nor an image_search specified for instance #{instance.name}!" \
+                " Please specify one or the other."
         end
 
         @image
@@ -261,7 +256,7 @@ module Kitchen
         @instance_type ||= begin
           # We default to the free tier (t2.micro for hvm, t1.micro for paravirtual)
           config[:flavor_id] ||
-          ((image && image.virtualization_type == "hvm") ? "t2.micro" : "t1.micro")
+            ((image && image.virtualization_type == "hvm") ? "t2.micro" : "t1.micro")
         end
       end
 
@@ -274,9 +269,11 @@ module Kitchen
         @desired_platform ||= begin
           platform = Aws::StandardPlatform.from_platform_string(self, instance.platform.name)
           if platform
-            debug("platform name #{instance.platform.name} appears to be a standard platform. Searching for #{platform} ...")
+            debug("platform name #{instance.platform.name} appears to be a standard platform." \
+                  " Searching for #{platform} ...")
           else
-            debug("platform name #{instance.platform.name} does not have a valid os. Searching for latest stable ubuntu ...")
+            debug("platform name #{instance.platform.name} does not have a valid os." \
+                  " Searching for latest stable ubuntu ...")
             platform = Aws::StandardPlatform.from_platform_string(self, "ubuntu")
           end
           platform
@@ -323,10 +320,13 @@ module Kitchen
           state[:connection_retries] = config[:ssh_retries]
         end
         state[:username] = config[:username]
-        state[:username] ||= instance.transport[:username] unless instance.transport[:username] == instance.transport.class.defaults[:username]
+        unless instance.transport[:username] == instance.transport.class.defaults[:username]
+          state[:username] ||= instance.transport[:username]
+        end
         if !state[:username]
           if actual_platform
-            debug("No SSH username specified: using default username #{actual_platform.username} for image #{config[:image_id]}, which we detected as platform #{actual_platform}.")
+            debug("No SSH username specified: using default username #{actual_platform.username} " \
+                  " for image #{config[:image_id]}, which we detected as #{actual_platform}.")
             state[:username] = actual_platform.username
           end
         end
@@ -536,6 +536,25 @@ module Kitchen
         EOH
       end
       # rubocop:enable Metrics/MethodLength, Metrics/LineLength
+
+      def show_chosen_image
+        # Print some debug stuff
+        root_device = image.block_device_mappings.
+          find { |b| b.device_name == image.root_device_name }
+        debug("Image for #{instance.name}: #{image.name}." \
+              " Architecture: #{image.architecture}," \
+              " Virtualization: #{image.virtualization_type}," \
+              " Storage: #{image.root_device_type}" \
+              "#{root_device && root_device.ebs ? " #{root_device.ebs.volume_type}" : ""}," \
+              " Created: #{image.creation_date}")
+        if actual_platform
+          debug("Detected platform: #{actual_platform.name} version #{actual_platform.version}" \
+                " on #{actual_platform.architecture}. Instance Type: #{config[:instance_type]}," \
+                " Username: #{config[:username] || actual_platform.username}.")
+        else
+          debug("No platform detected for #{image.name}.")
+        end
+      end
 
     end
   end

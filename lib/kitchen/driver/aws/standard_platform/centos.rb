@@ -9,7 +9,8 @@ module Kitchen
           StandardPlatform.platforms["centos"] = self
 
           def username
-            # Centos 6.x images use root as the username (but the "centos 6" updateable image uses "centos")
+            # Centos 6.x images use root as the username (but the "centos 6"
+            # updateable image uses "centos")
             return "root" if version && version.start_with?("6.")
             "centos"
           end
@@ -17,7 +18,7 @@ module Kitchen
           def image_search
             search = {
               "owner-alias" => "aws-marketplace",
-              "name" => [ "CentOS Linux #{version}*", "CentOS-#{version}*-GA-*", ]
+              "name" => ["CentOS Linux #{version}*", "CentOS-#{version}*-GA-*"]
             }
             search["architecture"] = architecture if architecture
             search
@@ -28,15 +29,14 @@ module Kitchen
             # 6 -> [ img4, img5 ]
             # ...
             images.group_by { |image| self.class.from_image(driver, image).version }.
-            # sorted by version and flattened
-                   sort_by { |k,v| (k && k.include?(".") ? k.to_f : "#{k}.999".to_f) }.
-                   reverse.map { |k,v| v }.flatten(1)
+              sort_by { |k, _v| (k && k.include?(".") ? k.to_f : "#{k}.999".to_f) }.
+              reverse.map { |_k, v| v }.flatten(1)
           end
 
           def self.from_image(driver, image)
             if image.name =~ /centos/i
               image.name =~ /\b(\d+(\.\d+)?)\b/i
-              new(driver, "centos", $1, image.architecture)
+              new(driver, "centos", (Regexp.last_match || [])[1], image.architecture)
             end
           end
         end

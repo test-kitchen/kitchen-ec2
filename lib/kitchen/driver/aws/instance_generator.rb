@@ -51,7 +51,9 @@ module Kitchen
 
           availability_zone = config[:availability_zone]
           if availability_zone
-            availability_zone = "#{config[:region]}#{availability_zone}" if availability_zone =~ /^[a-z]$/i
+            if availability_zone =~ /^[a-z]$/i
+              availability_zone = "#{config[:region]}#{availability_zone}"
+            end
             i[:placement] = { :availability_zone => availability_zone.downcase }
           end
           i[:block_device_mappings] = block_device_mappings unless block_device_mappings.empty?

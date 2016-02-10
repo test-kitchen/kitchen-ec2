@@ -1,4 +1,4 @@
-require 'kitchen/driver/aws/standard_platform'
+require "kitchen/driver/aws/standard_platform"
 
 module Kitchen
   module Driver
@@ -24,7 +24,7 @@ module Kitchen
           def self.from_image(driver, image)
             if image.name =~ /fedora/i
               image.name =~ /\b(\d+(\.\d+)?)\b/i
-              new(driver, "fedora", $1, image.architecture)
+              new(driver, "fedora", (Regexp.last_match || [])[1], image.architecture)
             end
           end
         end
