@@ -159,27 +159,6 @@ module Kitchen
         end
       end
 
-      # A lifecycle method that should be invoked when the object is about
-      # ready to be used. A reference to an Instance is required as
-      # configuration dependant data may be access through an Instance. This
-      # also acts as a hook point where the object may wish to perform other
-      # last minute checks, validations, or configuration expansions.
-      #
-      # @param instance [Instance] an associated instance
-      # @return [self] itself, for use in chaining
-      # @raise [ClientError] if instance parameter is nil
-      def finalize_config!(instance)
-        super
-
-        if config[:availability_zone] =~ /^[a-z]$/
-          config[:availability_zone] = config[:region] + config[:availability_zone]
-        end
-
-        # image_id,
-
-        self
-      end
-
       def create(state) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         copy_deprecated_configs(state)
         return if state[:server_id]

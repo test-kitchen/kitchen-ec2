@@ -48,7 +48,12 @@ module Kitchen
             :subnet_id                    => config[:subnet_id],
             :private_ip_address           => config[:private_ip_address]
           }
-          i[:placement] = { :availability_zone => config[:availability_zone] } if config[:availability_zone]
+
+          availability_zone = config[:availability_zone]
+          if availability_zone
+            availability_zone = "#{config[:region]}#{availability_zone}" if availability_zone =~ /^[a-z]$/i
+            i[:placement] = { :availability_zone => availability_zone.downcase }
+          end
           i[:block_device_mappings] = block_device_mappings unless block_device_mappings.empty?
           i[:security_group_ids] = Array(config[:security_group_ids]) if config[:security_group_ids]
           i[:user_data] = prepared_user_data if prepared_user_data
