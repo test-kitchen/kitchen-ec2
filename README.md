@@ -1,8 +1,8 @@
 # <a name="title"></a> Kitchen::Ec2: A Test Kitchen Driver for Amazon EC2
 
-[![Gem Version](https://badge.fury.io/rb/kitchen-ec2.png)](http://badge.fury.io/rb/kitchen-ec2)
-[![Build Status](https://travis-ci.org/test-kitchen/kitchen-ec2.png)](https://travis-ci.org/test-kitchen/kitchen-ec2)
-[![Code Climate](https://codeclimate.com/github/test-kitchen/kitchen-ec2.png)](https://codeclimate.com/github/test-kitchen/kitchen-ec2)
+[![Gem Version](https://badge.fury.io/rb/kitchen-ec2.svg)](https://badge.fury.io/rb/kitchen-ec2)
+[![Build Status](https://travis-ci.org/test-kitchen/kitchen-ec2.svg?branch=master)](https://travis-ci.org/test-kitchen/kitchen-ec2)
+[![Code Climate](https://codeclimate.com/github/test-kitchen/kitchen-ec2/badges/gpa.svg)](https://codeclimate.com/github/test-kitchen/kitchen-ec2)
 
 A [Test Kitchen][kitchenci] Driver for Amazon EC2.
 
@@ -81,7 +81,7 @@ token) through config.  See the `aws_access_key_id` and `aws_secret_access_key`
 config sections below to see how to specify these in your .kitchen.yml or
 through environment variables.  If you would like to specify your session token
 use the environment variable `AWS_SESSION_TOKEN`.
-1. The shared credentials ini file at `~/.aws/credentials`.  You can specify 
+1. The shared credentials ini file at `~/.aws/credentials`.  You can specify
 multiple profiles in this file and select one with the `AWS_PROFILE`
 environment variable or the `shared_credentials_profile` driver config.  Read
 [this][credentials_docs] for more information.
@@ -89,7 +89,7 @@ environment variable or the `shared_credentials_profile` driver config.  Read
 metadata service to discover the local instance's IAM instance profile.
 
 This precedence order is taken from http://docs.aws.amazon.com/sdkforruby/api/index.html#Configuration
-  
+
 The first method attempted that works will be used.  IE, if you want to auth
 using the instance profile, you must not set any of the access key configs
 or environment variables, and you must not specify a `~/.aws/credentials`
@@ -97,7 +97,7 @@ file.
 
 Because the Test Kitchen test should be checked into source control and ran
 through CI we no longer recommend storing the AWS credentials in the
-`.kitchen.yml` file.  Instead, specify them as environment variables or in the 
+`.kitchen.yml` file.  Instead, specify them as environment variables or in the
 `~/.aws/credentials` file.
 
 ## Windows Configuration
@@ -169,7 +169,7 @@ The AWS [session token][credentials_docs] to use.
 
 The EC2 [instance type][instance_docs] (also known as size) to use.
 
-The default is `"m1.small"`.
+The default is `"t2.micro"`.
 
 ### security_group_ids
 
@@ -185,6 +185,18 @@ The default is `["default"]`.
 The default will be determined by the `aws_region` chosen and the Platform
 name, if a default exists (see [amis.json][ami_json]). If a default cannot be
 computed, then the default is `nil`.
+
+### image\_search
+
+Searches the EC2 API for the latest AMI ID that matches the given [filters](http://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_DescribeImages.html).
+
+For example, a search for the latest AMI that matches a given image name looks
+like:
+
+```yaml
+image_search:
+  name: Windows_Server-2012-R2_RTM-English-64Bit-Base-*
+```
 
 ### region
 
@@ -475,8 +487,7 @@ Apache 2.0 (see [LICENSE][license])
 [license]:          https://github.com/test-kitchen/kitchen-ec2/blob/master/LICENSE
 [repo]:             https://github.com/test-kitchen/kitchen-ec2
 [driver_usage]:     https://github.com/test-kitchen/kitchen-ec2
-[chef_omnibus_dl]:  http://www.getchef.com/chef/install/
-
+[chef_omnibus_dl]:  https://downloads.chef.io/chef-client/
 [amis_json]:        https://github.com/test-kitchen/kitchen-ec2/blob/master/data/amis.json
 [ami_docs]:         http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html
 [aws_site]:         http://aws.amazon.com/

@@ -173,7 +173,7 @@ module Kitchen
         end
         # TODO: when we get rid of flavor_id, move this to a default
         if config[:instance_type].nil?
-          config[:instance_type] = config[:flavor_id] || "m1.small"
+          config[:instance_type] = config[:flavor_id] || "t2.micro"
         end
 
         self
@@ -206,6 +206,8 @@ module Kitchen
 
         # See https://github.com/aws/aws-sdk-ruby/issues/859
         # Tagging can fail with a NotFound error even though we waited until the server exists
+        # Waiting can also fail, so we have to also retry on that.  If it means we re-tag the
+        # instance, so be it.
         Retryable.retryable(
           :tries => 10,
           :sleep => lambda { |n| [2**n, 30].min },
@@ -213,11 +215,11 @@ module Kitchen
         ) do |r, _|
           info("Attempting to tag the instance, #{r} retries")
           tag_server(server)
-        end
 
-        state[:server_id] = server.id
-        info("EC2 instance <#{state[:server_id]}> created.")
-        wait_until_ready(server, state)
+          state[:server_id] = server.id
+          info("EC2 instance <#{state[:server_id]}> created.")
+          wait_until_ready(server, state)
+        end
 
         if windows_os? &&
             instance.transport[:username] =~ /administrator/i &&
@@ -253,13 +255,24 @@ module Kitchen
         state.delete(:hostname)
       end
 
+      def lookup_ami(filters_hash)
+        filters = []
+        filters_hash.each do |key, value|
+          filters.push(:name => key.to_s, :values => Array(value))
+        end
+        images = ec2.resource.images(:filters => filters).sort do |ami1, ami2|
+          Time.parse(ami1.creation_date) <=> Time.parse(ami2.creation_date)
+        end
+        images.last && images.last.id
+      end
+
       def ubuntu_ami(region, platform_name)
         release = amis["ubuntu_releases"][platform_name]
         Ubuntu.release(release).amis.find do |ami|
           ami.arch == "amd64" &&
-            ami.root_store == "instance-store" &&
+            ami.root_store == "ebs" &&
             ami.region == region &&
-            ami.virtualization_type == "paravirtual"
+            ami.virtualization_type == "hvm"
         end
       end
 
@@ -267,6 +280,8 @@ module Kitchen
         if instance.platform.name.start_with?("ubuntu")
           ami = ubuntu_ami(config[:region], instance.platform.name)
           ami && ami.name
+        elsif !config[:image_search].nil?
+          lookup_ami(config[:image_search])
         else
           region = amis["regions"][config[:region]]
           region && region[instance.platform.name]
@@ -460,16 +475,24 @@ module Kitchen
         end
       end
 
+      #
+      # Returns the sudo command to use or empty string if sudo is not configured
+      #
+      def sudo_command
+        instance.provisioner[:sudo] ? instance.provisioner[:sudo_command].to_s : ""
+      end
+
+      # rubocop:disable Metrics/MethodLength, Metrics/LineLength
       def create_ec2_json(state)
         if windows_os?
           cmd = "New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File"
         else
-          cmd = "sudo mkdir -p /etc/chef/ohai/hints;sudo touch /etc/chef/ohai/hints/ec2.json"
+          debug "Using sudo_command='#{sudo_command}' for ohai hints"
+          cmd = "#{sudo_command} mkdir -p /etc/chef/ohai/hints; #{sudo_command} touch /etc/chef/ohai/hints/ec2.json"
         end
         instance.transport.connection(state).execute(cmd)
       end
 
-      # rubocop:disable Metrics/MethodLength, Metrics/LineLength
       def default_windows_user_data
         # Preparing custom static admin user if we defined something other than Administrator
         custom_admin_script = ""
