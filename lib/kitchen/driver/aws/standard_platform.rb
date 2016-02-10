@@ -3,7 +3,7 @@ module Kitchen
     class Aws
       # Useful reference for platform AMIs:
       # https://alestic.com/2014/01/ec2-ssh-username/
-      class Platform
+      class StandardPlatform
         def initialize(driver, name, version, architecture)
           @driver = driver
           @name = name

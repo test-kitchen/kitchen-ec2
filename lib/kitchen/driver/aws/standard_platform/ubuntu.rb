@@ -1,12 +1,12 @@
-require 'kitchen/driver/aws/platform'
+require 'kitchen/driver/aws/standard_platform'
 
 module Kitchen
   module Driver
     class Aws
-      class Platform
+      class StandardPlatform
         # https://help.ubuntu.com/community/EC2StartersGuide#Official_Ubuntu_Cloud_Guest_Amazon_Machine_Images_.28AMIs.29
-        class Ubuntu < Platform
-          Platform.platforms['ubuntu'] = self
+        class Ubuntu < StandardPlatform
+          StandardPlatform.platforms['ubuntu'] = self
 
           def username
             "ubuntu"

@@ -1,12 +1,12 @@
-require "kitchen/driver/aws/platform"
+require "kitchen/driver/aws/standard_platform"
 
 module Kitchen
   module Driver
     class Aws
-      class Platform
+      class StandardPlatform
         # https://wiki.centos.org/Cloud/AWS
-        class Centos < Platform
-          Platform.platforms["centos"] = self
+        class Centos < StandardPlatform
+          StandardPlatform.platforms["centos"] = self
 
           def username
             # Centos 6.x images use root as the username (but the "centos 6" updateable image uses "centos")

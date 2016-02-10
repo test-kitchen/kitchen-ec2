@@ -1,12 +1,12 @@
-require 'kitchen/driver/aws/platform'
+require 'kitchen/driver/aws/standard_platform'
 
 module Kitchen
   module Driver
     class Aws
-      class Platform
+      class StandardPlatform
         # http://docs.aws.amazon.com/AWSEC2/latest/WindowsGuide/finding-an-ami.html
-        class Windows < Platform
-          Platform.platforms["windows"] = self
+        class Windows < StandardPlatform
+          StandardPlatform.platforms["windows"] = self
 
           def username
             "administrator"

@@ -1,12 +1,12 @@
-require 'kitchen/driver/aws/platform'
+require 'kitchen/driver/aws/standard_platform'
 
 module Kitchen
   module Driver
     class Aws
-      class Platform
+      class StandardPlatform
         # https://docs.fedoraproject.org/en-US/Fedora_Draft_Documentation/0.1/html/Cloud_Guide/ch02.html#id697643
-        class Fedora < Platform
-          Platform.platforms["fedora"] = self
+        class Fedora < StandardPlatform
+          StandardPlatform.platforms["fedora"] = self
 
           def username
             "fedora"

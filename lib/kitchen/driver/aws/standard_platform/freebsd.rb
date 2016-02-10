@@ -1,12 +1,12 @@
-require 'kitchen/driver/aws/platform'
+require 'kitchen/driver/aws/standard_platform'
 
 module Kitchen
   module Driver
     class Aws
-      class Platform
+      class StandardPlatform
         # http://www.daemonology.net/freebsd-on-ec2/
-        class Freebsd < Platform
-          Platform.platforms["freebsd"] = self
+        class Freebsd < StandardPlatform
+          StandardPlatform.platforms["freebsd"] = self
 
           def username
             (version && version.to_f < 9.1) ? "root" : "ec2-user"

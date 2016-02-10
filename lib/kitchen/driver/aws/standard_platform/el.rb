@@ -1,13 +1,13 @@
-require 'kitchen/driver/aws/platform'
+require 'kitchen/driver/aws/standard_platform'
 
 module Kitchen
   module Driver
     class Aws
-      class Platform
+      class StandardPlatform
         # https://aws.amazon.com/blogs/aws/now-available-red-hat-enterprise-linux-64-amis/
-        class El < Platform
-          Platform.platforms["el"] = self
-          Platform.platforms["rhel"] = self
+        class El < StandardPlatform
+          StandardPlatform.platforms["el"] = self
+          StandardPlatform.platforms["rhel"] = self
 
           def initialize(driver, name, version, architecture)
             # rhel = el

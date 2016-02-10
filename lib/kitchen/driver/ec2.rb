@@ -22,14 +22,14 @@ require "kitchen"
 require_relative "ec2_version"
 require_relative "aws/client"
 require_relative "aws/instance_generator"
-require_relative "aws/platform"
-require_relative "aws/platform/centos"
-require_relative "aws/platform/debian"
-require_relative "aws/platform/el"
-require_relative "aws/platform/fedora"
-require_relative "aws/platform/freebsd"
-require_relative "aws/platform/ubuntu"
-require_relative "aws/platform/windows"
+require_relative "aws/standard_platform"
+require_relative "aws/standard_platform/centos"
+require_relative "aws/standard_platform/debian"
+require_relative "aws/standard_platform/el"
+require_relative "aws/standard_platform/fedora"
+require_relative "aws/standard_platform/freebsd"
+require_relative "aws/standard_platform/ubuntu"
+require_relative "aws/standard_platform/windows"
 require "aws-sdk-core/waiters/errors"
 require "retryable"
 
@@ -264,17 +264,17 @@ module Kitchen
 
       # The actual platform is the platform detected from the image
       def actual_platform
-        @actual_platform ||= Aws::Platform.from_image(self, image) if image
+        @actual_platform ||= Aws::StandardPlatform.from_image(self, image) if image
       end
 
       def desired_platform
         @desired_platform ||= begin
-          platform = Aws::Platform.from_platform_string(self, instance.platform.name)
+          platform = Aws::StandardPlatform.from_platform_string(self, instance.platform.name)
           if platform
             debug("platform name #{instance.platform.name} appears to be a standard platform. Searching for #{platform} ...")
           else
             debug("platform name #{instance.platform.name} does not have a valid os. Searching for latest stable ubuntu ...")
-            platform = Aws::Platform.from_platform_string(self, "ubuntu")
+            platform = Aws::StandardPlatform.from_platform_string(self, "ubuntu")
           end
           platform
         end

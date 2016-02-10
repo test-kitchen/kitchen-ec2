@@ -1,12 +1,12 @@
-require "kitchen/driver/aws/platform"
+require "kitchen/driver/aws/standard_platform"
 
 module Kitchen
   module Driver
     class Aws
-      class Platform
+      class StandardPlatform
         # https://wiki.debian.org/Cloud/AmazonEC2Image
-        class Debian < Platform
-          Platform.platforms["debian"] = self
+        class Debian < StandardPlatform
+          StandardPlatform.platforms["debian"] = self
 
           DEBIAN_CODENAMES = {
             "8" => "jessie",
