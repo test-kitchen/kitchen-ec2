@@ -29,7 +29,7 @@ module Kitchen
 
           def self.from_image(driver, image)
             if image.name =~ /rhel/i
-              image.name =~ /\b(\d+(\.\d+)?)\b/i
+              image.name =~ /\b(\d+(\.\d+)?)/i
               new(driver, "rhel", $1, image.architecture)
             end
           end
