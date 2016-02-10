@@ -35,7 +35,7 @@ module Kitchen
             if image.name =~ /debian/i
               image.name =~ /\b(\d+|#{DEBIAN_CODENAMES.values.join("|")})\b/i
               version = $1
-              version = DEBIAN_CODENAMES.find { |v,codename| codename == version }[0] if version.to_i == 0
+              version = DEBIAN_CODENAMES.find { |v,codename| codename == version.downcase }.first if version && version.to_i == 0
               new(driver, "debian", version, image.architecture)
             end
           end

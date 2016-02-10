@@ -92,15 +92,17 @@ module Kitchen
               major, revision, service_pack = $1, $2, $3
             end
 
-            # Get major as an integer (2008 -> 2008, 7 -> 7)
-            major = major.to_i if major
+            if major
+              # Get major as an integer (2008 -> 2008, 7 -> 7)
+              major = major.to_i
 
-            # Get revision as an integer (no revision -> 0, R1 -> 1).
-            revision = revision ? revision[1..-1].to_i : 0
+              # Get revision as an integer (no revision -> 0, R1 -> 1).
+              revision = revision ? revision[1..-1].to_i : 0
 
-            # Turn service_pack into an integer. rtm = 0, spN = N.
-            if service_pack
-              service_pack = (service_pack.downcase == "rtm") ? 0 : service_pack[2..-1].to_i
+              # Turn service_pack into an integer. rtm = 0, spN = N.
+              if service_pack
+                service_pack = (service_pack.downcase == "rtm") ? 0 : service_pack[2..-1].to_i
+              end
             end
 
             [ major, revision, service_pack ]
