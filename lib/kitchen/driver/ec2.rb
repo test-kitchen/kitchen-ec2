@@ -66,10 +66,10 @@ module Kitchen
       default_config :price,              nil
       default_config :retryable_tries,    60
       default_config :retryable_sleep,    5
-      default_config :aws_access_key_id,  ENV["AWS_SSH_KEY_ID"]
+      default_config :aws_access_key_id,  nil
       default_config :aws_secret_access_key, nil
       default_config :aws_session_token,  nil
-      default_config :aws_ssh_key_id,     nil
+      default_config :aws_ssh_key_id,     ENV["AWS_SSH_KEY_ID"]
       default_config :image_id do |driver|
         driver.default_ami
       end
@@ -253,10 +253,16 @@ module Kitchen
       end
 
       def default_instance_type
-        @instance_type ||= begin
+        @instance_type ||= config[:flavor_id] || begin
           # We default to the free tier (t2.micro for hvm, t1.micro for paravirtual)
-          config[:flavor_id] ||
-            ((image && image.virtualization_type == "hvm") ? "t2.micro" : "t1.micro")
+          if image && image.virtualization_type == "hvm"
+            info("instance_type not specified. Using free tier t2.micro instance ...")
+            "t2.micro"
+          else
+            info("instance_type not specified. Using free tier t1.micro instance since" \
+                 " image is paravirtual (pick an hvm image to use the superior t2.micro!) ...")
+            "t1.micro"
+          end
         end
       end
 
@@ -271,10 +277,6 @@ module Kitchen
           if platform
             debug("platform name #{instance.platform.name} appears to be a standard platform." \
                   " Searching for #{platform} ...")
-          else
-            debug("platform name #{instance.platform.name} does not have a valid os." \
-                  " Searching for latest stable ubuntu ...")
-            platform = Aws::StandardPlatform.from_platform_string(self, "ubuntu")
           end
           platform
         end
@@ -282,13 +284,10 @@ module Kitchen
 
       def default_ami
         @default_ami ||= begin
-          image_search = config[:image_search] || desired_platform.image_search
-          image = desired_platform.find_image(image_search)
-          if !image
-            error("No image found for #{instance.name} search criteria #{image_search}")
-            raise
-          end
-          image
+          search_platform = desired_platform ||
+            Aws::StandardPlatform.from_platform_string(self, "ubuntu")
+          image_search = config[:image_search] || search_platform.image_search
+          search_platform.find_image(image_search)
         end
       end
 
@@ -539,21 +538,25 @@ module Kitchen
 
       def show_chosen_image
         # Print some debug stuff
-        root_device = image.block_device_mappings.
-          find { |b| b.device_name == image.root_device_name }
-        debug("Image for #{instance.name}: #{image.name}." \
-              " Architecture: #{image.architecture}," \
-              " Virtualization: #{image.virtualization_type}," \
-              " Storage: #{image.root_device_type}" \
-              "#{root_device && root_device.ebs ? " #{root_device.ebs.volume_type}" : ""}," \
-              " Created: #{image.creation_date}")
+        debug("Image for #{instance.name}: #{image.name}. #{image_info(image)}")
         if actual_platform
-          debug("Detected platform: #{actual_platform.name} version #{actual_platform.version}" \
-                " on #{actual_platform.architecture}. Instance Type: #{config[:instance_type]}," \
-                " Username: #{config[:username] || actual_platform.username}.")
+          info("Detected platform: #{actual_platform.name} version #{actual_platform.version}" \
+               " on #{actual_platform.architecture}. Instance Type: #{config[:instance_type]}." \
+               " Username: #{config[:username] || "#{actual_platform.username} (default)"}.")
         else
           debug("No platform detected for #{image.name}.")
         end
+      end
+
+      def image_info(image)
+        root_device = image.block_device_mappings.
+          find { |b| b.device_name == image.root_device_name }
+        volume_type = " #{root_device.ebs.volume_type}" if root_device && root_device.ebs
+
+        " Architecture: #{image.architecture}," \
+        " Virtualization: #{image.virtualization_type}," \
+        " Storage: #{image.root_device_type}#{volume_type}," \
+        " Created: #{image.creation_date}"
       end
 
     end

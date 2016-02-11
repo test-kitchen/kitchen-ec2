@@ -65,33 +65,7 @@ module Kitchen
             end
           end
 
-          private
-
-          def windows_name_filter
-            major, revision, service_pack = windows_version_parts
-
-            case revision
-            when nil
-              revision_strings = ["", "R*_"]
-            when 0
-              revision_strings = [""]
-            else
-              revision_strings = ["R#{revision}_"]
-            end
-
-            case service_pack
-            when nil
-              revision_strings = revision_strings.flat_map { |r| ["#{r}RTM", "#{r}SP*"] }
-            when 0
-              revision_strings = revision_strings.map { |r| "#{r}RTM" }
-            else
-              revision_strings = revision_strings.map { |r| "#{r}SP#{service_pack}" }
-            end
-
-            revision_strings.map do |r|
-              "Windows_Server-#{major || "*"}-#{r}-English-*-Base-*"
-            end
-          end
+          protected
 
           # Turn windows version into [ major, revision, service_pack ]
           #
@@ -128,6 +102,34 @@ module Kitchen
             end
 
             [major, revision, service_pack]
+          end
+
+          private
+
+          def windows_name_filter
+            major, revision, service_pack = windows_version_parts
+
+            case revision
+            when nil
+              revision_strings = ["", "R*_"]
+            when 0
+              revision_strings = [""]
+            else
+              revision_strings = ["R#{revision}_"]
+            end
+
+            case service_pack
+            when nil
+              revision_strings = revision_strings.flat_map { |r| ["#{r}RTM", "#{r}SP*"] }
+            when 0
+              revision_strings = revision_strings.map { |r| "#{r}RTM" }
+            else
+              revision_strings = revision_strings.map { |r| "#{r}SP#{service_pack}" }
+            end
+
+            revision_strings.map do |r|
+              "Windows_Server-#{major || "*"}-#{r}-English-*-Base-*"
+            end
           end
         end
       end

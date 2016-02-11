@@ -334,7 +334,7 @@ describe "Default images for various platforms" do
 
     context "and platform.name is not a well known platform name" do
       let(:image) { FakeImage.new(:name => "ubuntu") }
-      it "searches for an image id without using the standard filters" do
+      it "does not search for (or find) an image, and informs the user they need to set image_id" do
         expect(driver.ec2.resource).
           to receive(:images).
           with(:filters => [{ :name => "name", :values => %w[SuperImage] }]).

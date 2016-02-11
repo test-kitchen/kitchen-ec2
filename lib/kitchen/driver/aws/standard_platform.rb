@@ -207,6 +207,22 @@ module Kitchen
           # P1: We prefer the latest version over anything else
           sort_by_version(images)
         end
+
+        def show_returned_images(images)
+          if images.empty?
+            driver.error("Search returned 0 images.")
+          else
+            driver.debug("Search returned #{images.size} images:")
+            images.each do |image|
+              platform = self.class.from_image(driver, image)
+              if platform
+                driver.debug("- #{image.name}: Detected #{platform}. #{driver.image_info(image)}")
+              else
+                driver.debug("- #{image.name}: No platform detected. #{driver.image_info(image)}")
+              end
+            end
+          end
+        end
       end
     end
   end
