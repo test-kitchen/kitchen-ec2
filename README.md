@@ -114,7 +114,7 @@ platforms:
   - name: ubuntu-i386
   # 32-bit version of Debian 6
   - name: debian-6-i386
-  # Latest 64-bit stable minor release of freebsd 10
+  # Latest 32-bit stable minor release of freebsd 10
   - name: freebsd-10-i386
   # The latest stable major+minor+patch release of Fedora
   - name: fedora
