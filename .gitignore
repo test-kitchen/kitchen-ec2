@@ -7,6 +7,7 @@ Gemfile.lock
 InstalledFiles
 _yardoc
 coverage
+bin/
 doc/
 lib/bundler/man
 pkg
@@ -17,3 +18,5 @@ test/version_tmp
 tmp
 .project
 
+.kitchen/
+.kitchen.local.yml

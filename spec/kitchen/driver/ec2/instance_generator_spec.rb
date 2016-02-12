@@ -232,7 +232,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
     it "returns empty on nil" do
       expect(generator.ec2_instance_data).to eq(
-        :placement => { :availability_zone => nil },
         :instance_type => nil,
         :ebs_optimized => nil,
         :image_id => nil,
@@ -245,7 +244,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when populated with minimum requirements" do
       let(:config) do
         {
-          :availability_zone            => "eu-west-1a",
           :instance_type                => "micro",
           :ebs_optimized                => true,
           :image_id                     => "ami-123",
@@ -257,13 +255,70 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
       it "returns the minimum data" do
         expect(generator.ec2_instance_data).to eq(
-          :placement => { :availability_zone => "eu-west-1a" },
           :instance_type => "micro",
           :ebs_optimized => true,
           :image_id => "ami-123",
           :key_name => "key",
           :subnet_id => "s-456",
           :private_ip_address => "0.0.0.0"
+        )
+      end
+    end
+
+    context "when availability_zone is provided as 'eu-west-1c'" do
+      let(:config) do
+        {
+          :region => "eu-east-1",
+          :availability_zone => "eu-west-1c"
+        }
+      end
+      it "returns that in the instance data" do
+        expect(generator.ec2_instance_data).to eq(
+          :instance_type => nil,
+          :ebs_optimized => nil,
+          :image_id => nil,
+          :key_name => nil,
+          :subnet_id => nil,
+          :private_ip_address => nil,
+          :placement => { :availability_zone => "eu-west-1c" }
+        )
+      end
+    end
+
+    context "when availability_zone is provided as 'c'" do
+      let(:config) do
+        {
+          :region => "eu-east-1",
+          :availability_zone => "c"
+        }
+      end
+      it "adds the region to it in the instance data" do
+        expect(generator.ec2_instance_data).to eq(
+          :instance_type => nil,
+          :ebs_optimized => nil,
+          :image_id => nil,
+          :key_name => nil,
+          :subnet_id => nil,
+          :private_ip_address => nil,
+          :placement => { :availability_zone => "eu-east-1c" }
+        )
+      end
+    end
+
+    context "when availability_zone is not provided" do
+      let(:config) do
+        {
+          :region => "eu-east-1"
+        }
+      end
+      it "is not added to the instance data" do
+        expect(generator.ec2_instance_data).to eq(
+          :instance_type => nil,
+          :ebs_optimized => nil,
+          :image_id => nil,
+          :key_name => nil,
+          :subnet_id => nil,
+          :private_ip_address => nil
         )
       end
     end
@@ -277,7 +332,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
       it "adds a network_interfaces block" do
         expect(generator.ec2_instance_data).to eq(
-          :placement => { :availability_zone => nil },
           :instance_type => nil,
           :ebs_optimized => nil,
           :image_id => nil,
@@ -297,7 +351,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
       it "adds a network_interfaces block" do
         expect(generator.ec2_instance_data).to eq(
-          :placement => { :availability_zone => nil },
           :instance_type => nil,
           :ebs_optimized => nil,
           :image_id => nil,
@@ -322,7 +375,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
         it "adds a network_interfaces block" do
           expect(generator.ec2_instance_data).to eq(
-            :placement => { :availability_zone => nil },
             :instance_type => nil,
             :ebs_optimized => nil,
             :image_id => nil,
@@ -348,7 +400,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
         it "adds a network_interfaces block" do
           expect(generator.ec2_instance_data).to eq(
-            :placement => { :availability_zone => nil },
             :instance_type => nil,
             :ebs_optimized => nil,
             :image_id => nil,
@@ -388,7 +439,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
         it "adds a network_interfaces block" do
           expect(generator.ec2_instance_data).to eq(
-            :placement => { :availability_zone => nil },
             :instance_type => nil,
             :ebs_optimized => nil,
             :image_id => nil,
@@ -434,7 +484,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
       it "returns the maximum data" do
         expect(generator.ec2_instance_data).to eq(
-          :placement => { :availability_zone => "eu-west-1a" },
           :instance_type => "micro",
           :ebs_optimized => true,
           :image_id => "ami-123",
@@ -460,6 +509,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
             :groups => ["sg-789"],
             :private_ip_address =>  "0.0.0.0"
           }],
+          :placement => { :availability_zone => "eu-west-1a" },
           :user_data => Base64.encode64("foo")
         )
       end

@@ -1,7 +1,10 @@
 source "https://rubygems.org"
 
-# Specify your gem's dependencies in kitchen-ec2.gemspec
+# Specify your gem"s dependencies in kitchen-ec2.gemspec
 gemspec
+gem "test-kitchen"
+gem "winrm-transport"
+gem "winrm-fs"
 
 group :test do
   gem "rake"
