@@ -127,9 +127,12 @@ module Kitchen
           val.each do |bdm|
             unless bdm.keys.include?(:ebs_volume_size) &&
                 bdm.keys.include?(:ebs_delete_on_termination) &&
-                bdm.keys.include?(:ebs_device_name)
+                bdm.keys.include?(:ebs_device_name) &&
+                bdm.keys.include?(:device_name) &&
+                bdm.keys.include?(:virtual_name)
               raise "Every :block_device_mapping must include the keys :ebs_volume_size, " \
-                ":ebs_delete_on_termination and :ebs_device_name"
+                ":ebs_delete_on_termination and :ebs_device_name for EBS devices \
+                OR device_name, virtual_name for Ephemeral devices"
             end
           end
         end

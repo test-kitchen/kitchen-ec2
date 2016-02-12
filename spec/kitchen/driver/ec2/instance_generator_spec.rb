@@ -222,6 +222,72 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           ]
         )
       end
+
+    end
+
+    context "when populated with ephemeral drive config" do
+      let(:config) do
+        { :block_device_mappings => [
+          {
+            :device_name => "/dev/xvda",
+            :virtual_name => "ephemeral0"
+          }
+        ] }
+      end
+
+      it "returns the same mappings" do
+        expect(generator.block_device_mappings).to match(
+          [
+            {
+              :device_name => "/dev/xvda",
+              :virtual_name => "ephemeral0"
+            }
+          ]
+        )
+      end
+
+    end
+
+    context "when populated with ebs and ephemeral mappings" do
+      let(:config) do
+        { :block_device_mappings => [
+          {
+            :ebs_volume_size => 13,
+            :ebs_delete_on_termination => true,
+            :ebs_device_name => "/dev/xvda"
+          },
+          {
+            :device_name => "/dev/xvdb",
+            :virtual_name => "ephemeral0"
+          },
+          {
+            :device_name => "/dev/xvdc",
+            :virtual_name => "ephemeral1"
+          }
+        ] }
+      end
+
+      it "returns the transformed mappings" do
+        expect(generator.block_device_mappings).to match(
+          [
+            {
+              :ebs => {
+                :volume_size => 13,
+                :delete_on_termination => true
+              },
+              :device_name => "/dev/xvda"
+            },
+            {
+              :device_name => "/dev/xvdb",
+              :virtual_name => "ephemeral0"
+            },
+            {
+              :device_name => "/dev/xvdc",
+              :virtual_name => "ephemeral1"
+            }
+          ]
+        )
+      end
     end
   end
 
