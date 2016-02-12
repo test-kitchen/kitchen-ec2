@@ -49,7 +49,6 @@ module Kitchen
       default_config :region,             ENV["AWS_REGION"] || "us-east-1"
       default_config :shared_credentials_profile, nil
       default_config :availability_zone,  nil
-      default_config :flavor_id,          nil
       default_config :instance_type do |driver|
         driver.default_instance_type
       end
@@ -87,82 +86,73 @@ module Kitchen
           "is deprecated, please use `#{new_key}`"
       end
 
-      # TODO: remove these in the next major version of TK
+      def self.validation_error(driver, old_key, new_key)
+        raise "ERROR: The driver[#{driver.class.name}] config key `#{old_key}` " \
+          "has been removed, please use `#{new_key}`"
+      end
+
+      # TODO: remove these in 1.1
       deprecated_configs = [:ebs_volume_size, :ebs_delete_on_termination, :ebs_device_name]
       deprecated_configs.each do |d|
         validations[d] = lambda do |attr, val, driver|
           unless val.nil?
-            validation_warn(driver, attr, "block_device_mappings")
+            validation_error(driver, attr, "block_device_mappings")
           end
         end
       end
       validations[:ssh_key] = lambda do |attr, val, driver|
         unless val.nil?
-          validation_warn(driver, attr, "transport.ssh_key")
+          validation_error(driver, attr, "transport.ssh_key")
         end
       end
       validations[:ssh_timeout] = lambda do |attr, val, driver|
         unless val.nil?
-          validation_warn(driver, attr, "transport.connection_timeout")
+          validation_error(driver, attr, "transport.connection_timeout")
         end
       end
       validations[:ssh_retries] = lambda do |attr, val, driver|
         unless val.nil?
-          validation_warn(driver, attr, "transport.connection_retries")
+          validation_error(driver, attr, "transport.connection_retries")
         end
       end
       validations[:username] = lambda do |attr, val, driver|
         unless val.nil?
-          validation_warn(driver, attr, "transport.username")
+          validation_error(driver, attr, "transport.username")
         end
       end
       validations[:flavor_id] = lambda do |attr, val, driver|
         unless val.nil?
-          validation_warn(driver, attr, "instance_type")
-        end
-      end
-
-      default_config :block_device_mappings, nil
-      validations[:block_device_mappings] = lambda do |_attr, val, _driver|
-        unless val.nil?
-          val.each do |bdm|
-            unless bdm.keys.include?(:ebs_volume_size) &&
-                bdm.keys.include?(:ebs_delete_on_termination) &&
-                bdm.keys.include?(:ebs_device_name)
-              raise "Every :block_device_mapping must include the keys :ebs_volume_size, " \
-                ":ebs_delete_on_termination and :ebs_device_name"
-            end
-          end
+          validation_error(driver, attr, "instance_type")
         end
       end
 
       # The access key/secret are now using the priority list AWS uses
       # Providing these inside the .kitchen.yml is no longer recommended
-      validations[:aws_access_key_id] = lambda do |attr, val, driver|
+      validations[:aws_access_key_id] = lambda do |attr, val, _driver|
         unless val.nil?
-          driver.warn "WARN: #{attr} has been deprecated, please use " \
+          raise "#{attr} is no longer valid, please use " \
             "ENV['AWS_ACCESS_KEY_ID'] or ~/.aws/credentials.  See " \
             "the README for more details"
         end
       end
-      validations[:aws_secret_access_key] = lambda do |attr, val, driver|
+      validations[:aws_secret_access_key] = lambda do |attr, val, _driver|
         unless val.nil?
-          driver.warn "WARN: #{attr} has been deprecated, please use " \
+          raise "#{attr} is no longer valid, please use " \
             "ENV['AWS_SECRET_ACCESS_KEY'] or ~/.aws/credentials.  See " \
             "the README for more details"
         end
       end
-      validations[:aws_session_token] = lambda do |attr, val, driver|
+      validations[:aws_session_token] = lambda do |attr, val, _driver|
         unless val.nil?
-          driver.warn "WARN: #{attr} has been deprecated, please use " \
+          raise "#{attr} is no longer valid, please use " \
             "ENV['AWS_SESSION_TOKEN'] or ~/.aws/credentials.  See " \
             "the README for more details"
         end
       end
 
       def create(state) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
-        copy_deprecated_configs(state)
         return if state[:server_id]
+        update_username(state)
 
         info(Kitchen::Util.outdent!(<<-END))
           If you are not using an account that qualifies under the AWS
@@ -244,8 +234,6 @@ module Kitchen
           show_chosen_image
 
         else
-          error("Neither image_id nor an image_search specified for instance #{instance.name}!" \
-                " Please specify one or the other.")
           raise "Neither image_id nor an image_search specified for instance #{instance.name}!" \
                 " Please specify one or the other."
         end
@@ -254,7 +242,7 @@ module Kitchen
       end
 
       def default_instance_type
-        @instance_type ||= config[:flavor_id] || begin
+        @instance_type ||= begin
           # We default to the free tier (t2.micro for hvm, t1.micro for paravirtual)
           if image && image.virtualization_type == "hvm"
             info("instance_type not specified. Using free tier t2.micro instance ...")
@@ -292,6 +280,16 @@ module Kitchen
         end
       end
 
+      def update_username(state)
+        # TODO: if the user explicitly specified the transport's default username,
+        # do NOT overwrite it!
+        if instance.transport[:username] == instance.transport.class.defaults[:username]
+          debug("No SSH username specified: using default username #{actual_platform.username} " \
+                " for image #{config[:image_id]}, which we detected as #{actual_platform}.")
+          state[:username] = actual_platform.username
+        end
+      end
+
       def ec2
         @ec2 ||= Aws::Client.new(
           config[:region],
@@ -307,35 +305,6 @@ module Kitchen
       def instance_generator
         @instance_generator ||= Aws::InstanceGenerator.new(config, ec2, instance.logger)
       end
-
-      # This copies transport config from the current config object into the
-      # state.  This relies on logic in the transport that merges the transport
-      # config with the current state object, so its a bad coupling.  But we
-      # can get rid of this when we get rid of these deprecated configs!
-      # rubocop:disable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
-      def copy_deprecated_configs(state)
-        if config[:ssh_timeout]
-          state[:connection_timeout] = config[:ssh_timeout]
-        end
-        if config[:ssh_retries]
-          state[:connection_retries] = config[:ssh_retries]
-        end
-        state[:username] = config[:username]
-        unless instance.transport[:username] == instance.transport.class.defaults[:username]
-          state[:username] ||= instance.transport[:username]
-        end
-        if !state[:username]
-          if actual_platform
-            debug("No SSH username specified: using default username #{actual_platform.username} " \
-                  " for image #{config[:image_id]}, which we detected as #{actual_platform}.")
-            state[:username] = actual_platform.username
-          end
-        end
-        if config[:ssh_key]
-          state[:ssh_key] = config[:ssh_key]
-        end
-      end
-      # rubocop:enable Metrics/AbcSize, Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
       # Fog AWS helper for creating the instance
       def submit_server
@@ -544,7 +513,7 @@ module Kitchen
         if actual_platform
           info("Detected platform: #{actual_platform.name} version #{actual_platform.version}" \
                " on #{actual_platform.architecture}. Instance Type: #{config[:instance_type]}." \
-               " Username: #{config[:username] || "#{actual_platform.username} (default)"}.")
+               " Default username: #{actual_platform.username} (default).")
         else
           debug("No platform detected for #{image.name}.")
         end

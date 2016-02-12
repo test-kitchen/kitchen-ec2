@@ -192,6 +192,14 @@ of logging in to an instance. Different AMIs tend to provide different usernames
 If you use an official AMI (or create an image with the platform name in the
 image name), we will use the default username for official AMIs for that platform.
 
+#### `ebs_optimized`
+
+Option to launch EC2 instance with optimized EBS volume. See
+[Amazon EC2 Instance Types](http://aws.amazon.com/ec2/instance-types/) to find
+out more about instance types that can be launched as EBS-optimized instances.
+
+The default is `false`.
+
 #### Password
 
 For Windows instances the generated Administrator password is fetched
@@ -223,10 +231,6 @@ the letter designation - will attach this to the region used.
 
 If not specified, your instances will be placed in an AZ of AWS's choice in your
 region.
-
-#### `flavor_id`
-
-**Deprecated** See [instance_type](#config-instance_type) below.
 
 ### <a name="config-instance_type"></a> `instance_type`
 
@@ -296,55 +300,35 @@ The default is `ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]`.  If you have these env
 
 ### Disk Configuration
 
-#### `ebs_volume_size`
-
-**Deprecated** See [block_device_mappings](#config-block_device_mappings) below.
-
-Size of ebs volume in GB.
-
-#### `ebs_delete_on_termination`
-
-**Deprecated** See [block_device_mappings](#config-block_device_mappings) below.
-
-`true` if you want ebs volumes to get deleted automatically after instance is terminated, `false` otherwise
-
-#### `ebs_device_name`
-
-**Deprecated** See [block_device_mappings](#config-block_device_mappings) below.
-
-name of your ebs device, for example: `/dev/sda1`
-
 #### <a name="config-block_device_mappings"></a> `block_device_mappings`
 
 A list of block device mappings for the machine.  An example of all available keys looks like:
 ```yaml
 block_device_mappings:
-  - ebs_device_name: /dev/sda
-    ebs_volume_size: 20
-    ebs_delete_on_termination: true
-  - ebs_device_name: /dev/sdb
-    ebs_volume_type: gp2
-    ebs_virtual_name: test
-    ebs_volume_size: 15
-    ebs_delete_on_termination: true
-    ebs_snapshot_id: snap-0015d0bc
-  - ebs_device_name: /dev/sdc
-    ebs_volume_size: 100
-    ebs_delete_on_termination: true
-    ebs_volume_type: io1
-    ebs_iops: 100
+  - device_name: /dev/sda
+    ebs:
+      volume_size: 20
+      delete_on_termination: true
+  - device_name: /dev/sdb
+    ebs:
+      volume_type: gp2
+      virtual_name: test
+      volume_size: 15
+      delete_on_termination: true
+      snapshot_id: snap-0015d0bc
+  - device_name: /dev/sdc
+    ebs:
+      volume_size: 100
+      delete_on_termination: true
+      volume_type: io1
+      iops: 100
 ```
 
-The keys `ebs_device_name`, `ebs_volume_size` and `ebs_delete_on_termination` are required for every mapping.
-For backwards compatiability a default `block_device_mappings` will be created if none are listed and the deprecated
-storage config keys are present.
+See
+[Amazon EBS Volume Types](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html)
+to find out more about volume types.
 
-The keys `ebs_volume_type`, `ebs_virtual_name` and `ebs_snapshot_id` are optional.  See
-[Amazon EBS Volume Types](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/EBSVolumeTypes.html) to find out more about
-volume types. `ebs_volume_type` defaults to `standard` but can also be `gp2` or `io1`.  If you specify `io1` you must
-also specify `ebs_iops`.
-
-If you have a block device mapping with a `ebs_device_name` equal to the root storage device name on your
+If you have a block device mapping with a `device_name` equal to the root storage device name on your
 [image](#config-image-id) then the provided mapping will replace the settings in the image.
 
 If this is not provided it will use the default block_device_mappings from the AMI.
@@ -389,63 +373,6 @@ The place from which to derive the hostname for communicating with the instance.
 
 The default is unset.
 
-#### ssh_key
-
-**Deprecated** Instead use the `ssh_key` transport option like
-
-```ruby
-transport:
-  ssh_key: ~/.ssh/id_rsa
-```
-
-Path to the private SSH key used to connect to the instance.
-
-The default is unset, or `nil`.
-
-### `ssh_timeout`
-
-**Deprecated** Instead use the `connection_timeout` transport key like
-
-```ruby
-transport:
-  connection_timeout: 60
-```
-
-The number of seconds to sleep before trying to SSH again.
-
-The default is `1`.
-
-### `ssh_retries`
-
-**Deprecated** Instead use the `connection_retries` transport key like
-
-```ruby
-transport:
-  connection_retries: 10
-```
-
-The number of times to retry SSH-ing into the instance.
-
-The default is `3`.
-
-### `username`
-
-**Deprecated** Instead use the `username` transport key like
-
-```ruby
-transport:
-  username: ubuntu
-```
-
-The SSH username that will be used to communicate with the instance.
-
-The default will be determined by the Platform name, if a default exists (see
-[amis.json][amis_json]). If a default cannot be computed, then the default is
-`"root"`.
-
-On Windows hosts with the default `user_data` this user is added to the
-Administrator's group.
-
 ## Example
 
 The following could be used in a `.kitchen.yml` or in a `.kitchen.local.yml`
@@ -479,20 +406,22 @@ platforms:
     driver:
       image_id: ami-83211eb3
       block_device_mappings:
-        - ebs_device_name: /dev/sda1
-          ebs_volume_type: standard
-          ebs_virtual_name: test
-          ebs_volume_size: 15
-          ebs_delete_on_termination: true
+        - device_name: /dev/sda1
+          ebs:
+            volume_type: standard
+            virtual_name: test
+            volume_size: 15
+            delete_on_termination: true
   - name: centos-7
     driver:
       image_id: ami-c7d092f7
       block_device_mappings:
-        - ebs_device_name: /dev/sdb
-          ebs_volume_type: gp2
-          ebs_virtual_name: test
-          ebs_volume_size: 8
-          ebs_delete_on_termination: true
+        - device_name: /dev/sdb
+          ebs:
+            volume_type: gp2
+            virtual_name: test
+            volume_size: 8
+            delete_on_termination: true
     transport:
       username: centos
   - name: windows-2012r2

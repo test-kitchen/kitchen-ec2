@@ -59,13 +59,6 @@ module Kitchen
           shared_creds = ::Aws::SharedCredentials.new(:profile_name => profile_name)
           if access_key_id && secret_access_key
             ::Aws::Credentials.new(access_key_id, secret_access_key, session_token)
-          # TODO: these are deprecated, remove them in the next major version
-          elsif ENV["AWS_ACCESS_KEY"] && ENV["AWS_SECRET_KEY"]
-            ::Aws::Credentials.new(
-              ENV["AWS_ACCESS_KEY"],
-              ENV["AWS_SECRET_KEY"],
-              ENV["AWS_TOKEN"]
-            )
           elsif ENV["AWS_ACCESS_KEY_ID"] && ENV["AWS_SECRET_ACCESS_KEY"]
             ::Aws::Credentials.new(
               ENV["AWS_ACCESS_KEY_ID"],

@@ -308,10 +308,6 @@ describe Kitchen::Driver::Ec2 do
     let(:server) { double("aws server object", :id => id) }
     let(:id) { "i-12345" }
 
-    before do
-      expect(driver).to receive(:copy_deprecated_configs).with(state)
-    end
-
     it "returns if the instance is already created" do
       state[:server_id] = id
       expect(driver.create(state)).to eq(nil)
@@ -320,6 +316,7 @@ describe Kitchen::Driver::Ec2 do
     shared_examples "common create" do
       it "successfully creates and tags the instance" do
         expect(server).to receive(:wait_until_exists)
+        expect(driver).to receive(:update_username)
         expect(driver).to receive(:tag_server).with(server)
         expect(driver).to receive(:wait_until_ready).with(server, state)
         expect(transport).to receive_message_chain("connection.wait_until_ready")

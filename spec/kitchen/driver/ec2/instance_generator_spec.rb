@@ -29,38 +29,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
   let(:logger)        { instance_double(Logger) }
   let(:generator) { Kitchen::Driver::Aws::InstanceGenerator.new(config, ec2, logger) }
 
-  describe "#debug_if_root_device" do
-    let(:image_id) { "ami-123456" }
-    let(:config) { { :image_id => image_id } }
-    let(:image) { double("image") }
-
-    before do
-      allow(resource).to receive(:image).with(image_id).and_return(image)
-    end
-
-    it "returns nil when provided nil" do
-      expect(generator.debug_if_root_device(nil)).to eq(nil)
-    end
-
-    it "returns nil when provided empty" do
-      expect(generator.debug_if_root_device([])).to eq(nil)
-    end
-
-    it "returns nil when the image cannot be found" do
-      expect(image).to receive(:root_device_name).and_raise(
-        ::Aws::EC2::Errors::InvalidAMIIDNotFound.new({}, "")
-      )
-      expect(logger).to_not receive(:info)
-      expect(generator.debug_if_root_device([{ :device_name => "name" }])).to eq(nil)
-    end
-
-    it "logs an info message when the device mappings are overriding the root device" do
-      expect(image).to receive(:root_device_name).and_return("name")
-      expect(logger).to receive(:info)
-      expect(generator.debug_if_root_device([{ :device_name => "name" }])).to eq(nil)
-    end
-  end
-
   describe "#prepared_user_data" do
     context "when config[:user_data] is a file" do
       let(:tmp_file) { Tempfile.new("prepared_user_data_test") }
@@ -90,146 +58,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     end
   end
 
-  describe "block_device_mappings" do
-    before do
-      expect(generator).to receive(:debug_if_root_device)
-    end
-
-    it "returns empty if nothing is provided" do
-      expect(generator.block_device_mappings).to eq([])
-    end
-
-    context "when populated with multiple mappings" do
-      let(:config) do
-        { :block_device_mappings => [
-          {
-            :ebs_volume_size => 13,
-            :ebs_delete_on_termination => true,
-            :ebs_device_name => "/dev/sda1"
-          },
-          {
-            :ebs_volume_size => 15,
-            :ebs_delete_on_termination => false,
-            :ebs_device_name => "/dev/sda2",
-            :ebs_volume_type => "gp2",
-            :ebs_snapshot_id => "id",
-            :ebs_virtual_name => "test"
-          },
-          {
-            :ebs_volume_size => 100,
-            :ebs_delete_on_termination => true,
-            :ebs_device_name => "/dev/sda3",
-            :ebs_volume_type => "io1",
-            :ebs_iops => 100
-          }
-        ] }
-      end
-
-      it "returns the transformed mappings" do
-        expect(generator.block_device_mappings).to match(
-          [
-            {
-              :ebs => {
-                :volume_size => 13,
-                :delete_on_termination => true
-              },
-              :device_name => "/dev/sda1"
-            },
-            {
-              :ebs => {
-                :volume_size => 15,
-                :volume_type => "gp2",
-                :snapshot_id => "id",
-                :delete_on_termination => false
-              },
-              :device_name => "/dev/sda2",
-              :virtual_name => "test"
-            },
-            {
-              :ebs => {
-                :volume_size => 100,
-                :volume_type => "io1",
-                :iops => 100,
-                :delete_on_termination => true
-              },
-              :device_name => "/dev/sda3"
-            }
-          ]
-        )
-      end
-
-    end
-
-    context "when populatd with deprecated configs" do
-      let(:config) do
-        {
-          :ebs_volume_size => 13,
-          :ebs_delete_on_termination => true,
-          :ebs_device_name => "/dev/sda1",
-          :ebs_volume_type => "gp2"
-        }
-      end
-
-      it "returns the transformed mappings" do
-        expect(generator.block_device_mappings).to match(
-          [
-            {
-              :ebs => {
-                :volume_size => 13,
-                :delete_on_termination => true,
-                :volume_type => "gp2"
-              },
-              :device_name => "/dev/sda1"
-            }
-          ]
-        )
-      end
-    end
-
-    context "when populated with deprecated configs and new configs" do
-      let(:config) do
-        {
-          :ebs_volume_size => 13,
-          :ebs_delete_on_termination => true,
-          :ebs_device_name => "/dev/sda1",
-          :ebs_volume_type => "gp2",
-          :block_device_mappings => [
-            {
-              :ebs_volume_size => 15,
-              :ebs_delete_on_termination => false,
-              :ebs_device_name => "/dev/sda2",
-              :ebs_volume_type => "gp2",
-              :ebs_snapshot_id => "id",
-              :ebs_virtual_name => "test"
-            }
-          ]
-        }
-      end
-
-      it "ignores the old configs" do
-        expect(generator.block_device_mappings).to match(
-          [
-            {
-              :ebs => {
-                :volume_size => 15,
-                :volume_type => "gp2",
-                :snapshot_id => "id",
-                :delete_on_termination => false
-              },
-              :device_name => "/dev/sda2",
-              :virtual_name => "test"
-            }
-          ]
-        )
-      end
-    end
-  end
-
   describe "#ec2_instance_data" do
-    before do
-      expect(generator).to receive(:debug_if_root_device)
-    end
-
     it "returns empty on nil" do
       expect(generator.ec2_instance_data).to eq(
         :instance_type => nil,
@@ -254,6 +83,31 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
 
       it "returns the minimum data" do
+        expect(generator.ec2_instance_data).to eq(
+          :instance_type => "micro",
+          :ebs_optimized => true,
+          :image_id => "ami-123",
+          :key_name => "key",
+          :subnet_id => "s-456",
+          :private_ip_address => "0.0.0.0"
+        )
+      end
+    end
+
+    context "when passed an empty block_device_mappings" do
+      let(:config) do
+        {
+          :instance_type                => "micro",
+          :ebs_optimized                => true,
+          :image_id                     => "ami-123",
+          :aws_ssh_key_id               => "key",
+          :subnet_id                    => "s-456",
+          :private_ip_address           => "0.0.0.0",
+          :block_device_mappings        => []
+        }
+      end
+
+      it "does not return block_device_mappings" do
         expect(generator.ec2_instance_data).to eq(
           :instance_type => "micro",
           :ebs_optimized => true,
@@ -467,12 +321,14 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :private_ip_address           => "0.0.0.0",
           :block_device_mappings => [
             {
-              :ebs_volume_size => 15,
-              :ebs_delete_on_termination => false,
-              :ebs_device_name => "/dev/sda2",
-              :ebs_volume_type => "gp2",
-              :ebs_snapshot_id => "id",
-              :ebs_virtual_name => "test"
+              :device_name => "/dev/sda2",
+              :virtual_name => "test",
+              :ebs => {
+                :volume_size => 15,
+                :delete_on_termination => false,
+                :volume_type => "gp2",
+                :snapshot_id => "id"
+              }
             }
           ],
           :security_group_ids => ["sg-789"],
@@ -490,14 +346,14 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :key_name => "key",
           :block_device_mappings => [
             {
+              :device_name => "/dev/sda2",
+              :virtual_name => "test",
               :ebs => {
                 :volume_size => 15,
                 :delete_on_termination => false,
                 :volume_type => "gp2",
                 :snapshot_id => "id"
-              },
-              :device_name => "/dev/sda2",
-              :virtual_name => "test"
+              }
             }
           ],
           :iam_instance_profile => { :name => "iam-123" },

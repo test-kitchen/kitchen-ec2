@@ -57,22 +57,6 @@ describe Kitchen::Driver::Aws::Client do
       end
     end
 
-    it "loads deprecated credentials fourth to last" do
-      expect(shared).to_not receive(:loadable?)
-      ClimateControl.modify(
-        "AWS_ACCESS_KEY" => "key2",
-        "AWS_SECRET_KEY" => "value2",
-        "AWS_TOKEN" => "token2"
-      ) do
-        expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to \
-          be_a(Aws::Credentials).and have_attributes(
-            :access_key_id => "key2",
-            :secret_access_key => "value2",
-            :session_token => "token2"
-          )
-      end
-    end
-
     it "loads provided credentials first" do
       expect(shared).to_not receive(:loadable?)
       expect(Kitchen::Driver::Aws::Client.get_credentials("profile", "key3", "value3", nil)).to \

@@ -56,7 +56,9 @@ module Kitchen
             end
             i[:placement] = { :availability_zone => availability_zone.downcase }
           end
-          i[:block_device_mappings] = block_device_mappings unless block_device_mappings.empty?
+          unless config[:block_device_mappings].nil? || config[:block_device_mappings].empty?
+            i[:block_device_mappings] = config[:block_device_mappings]
+          end
           i[:security_group_ids] = Array(config[:security_group_ids]) if config[:security_group_ids]
           i[:user_data] = prepared_user_data if prepared_user_data
           if config[:iam_profile_name]
@@ -83,67 +85,6 @@ module Kitchen
             end
           end
           i
-        end
-
-        # Transforms the provided config into the appropriate hash for creating a BDM
-        # in AWS
-        def block_device_mappings # rubocop:disable all
-          return @bdms if defined?(@bdms)
-          bdms = config[:block_device_mappings] || []
-          if bdms.empty?
-            if config[:ebs_volume_size] || config.fetch(:ebs_delete_on_termination, nil) ||
-                config[:ebs_device_name] || config[:ebs_volume_type]
-              # If the user didn't supply block_device_mappings but did supply
-              # the old configs, copy them into the block_device_mappings array correctly
-              # TODO: remove this logic when we remove the deprecated values
-              bdms << {
-                :ebs_volume_size => config[:ebs_volume_size] || 8,
-                :ebs_delete_on_termination => config.fetch(:ebs_delete_on_termination, true),
-                :ebs_device_name => config[:ebs_device_name] || "/dev/sda1",
-                :ebs_volume_type => config[:ebs_volume_type] || "standard"
-              }
-            end
-          end
-
-          # Convert the provided keys to what AWS expects
-          bdms = bdms.map do |bdm|
-            b = {
-              :ebs => {
-                :volume_size           => bdm[:ebs_volume_size],
-                :delete_on_termination => bdm[:ebs_delete_on_termination]
-              },
-              :device_name             => bdm[:ebs_device_name]
-            }
-            b[:ebs][:volume_type] = bdm[:ebs_volume_type] if bdm[:ebs_volume_type]
-            b[:ebs][:iops] = bdm[:ebs_iops] if bdm[:ebs_iops]
-            b[:ebs][:snapshot_id] = bdm[:ebs_snapshot_id] if bdm[:ebs_snapshot_id]
-            b[:virtual_name] = bdm[:ebs_virtual_name] if bdm[:ebs_virtual_name]
-            b
-          end
-
-          debug_if_root_device(bdms)
-
-          @bdms = bdms
-        end
-
-        # If the provided bdms match the root device in the AMI, emit log that
-        # states this
-        def debug_if_root_device(bdms)
-          return if bdms.nil? || bdms.empty?
-          image_id = config[:image_id]
-          image = ec2.resource.image(image_id)
-          begin
-            root_device_name = image.root_device_name
-          rescue ::Aws::EC2::Errors::InvalidAMIIDNotFound
-            # Not raising here because AWS will give a more meaningful message
-            # when we try to create the instance
-            return
-          end
-          bdms.find { |bdm|
-            if bdm[:device_name] == root_device_name
-              logger.info("Overriding root device [#{root_device_name}] from image [#{image_id}]")
-            end
-          }
         end
 
         def prepared_user_data
