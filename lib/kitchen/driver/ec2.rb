@@ -54,7 +54,7 @@ module Kitchen
       end
       default_config :ebs_optimized,      false
       default_config :security_group_ids, nil
-      default_config :tags,                "created-by" => "test-kitchen"
+      default_config :tags,               "created-by" => "test-kitchen"
       default_config :user_data do |driver|
         if driver.windows_os?
           driver.default_windows_user_data
@@ -232,10 +232,6 @@ module Kitchen
         if config[:image_id]
           @image = ec2.resource.image(config[:image_id])
           show_chosen_image
-
-        else
-          raise "Neither image_id nor an image_search specified for instance #{instance.name}!" \
-                " Please specify one or the other."
         end
 
         @image
@@ -273,10 +269,18 @@ module Kitchen
 
       def default_ami
         @default_ami ||= begin
-          search_platform = desired_platform ||
-            Aws::StandardPlatform.from_platform_string(self, "ubuntu")
-          image_search = config[:image_search] || search_platform.image_search
-          search_platform.find_image(image_search)
+          unless desired_platform
+            raise "Neither image_id nor an image_search specified for instance #{instance.name}!" \
+                  " Please specify one or the other, or use a standard platform name like ubuntu or windows in the instance platform's name."
+          end
+
+          image_id = desired_platform.find_image(config[:image_search] || desired_platform.image_search)
+          if config[:image_search]
+            info "image_search returned #{image_id} for platform #{instance.platform.name}."
+          else
+            info "image_id not specified. Using default image #{image_id} for platform #{instance.platform.name}."
+          end
+          image_id
         end
       end
 
@@ -338,7 +342,7 @@ module Kitchen
           w.before_attempt do |attempts|
             c = attempts * config[:retryable_sleep]
             t = config[:retryable_tries] * config[:retryable_sleep]
-            info "Waited #{c}/#{t}s for spot request <#{spot_request_id}> to become fulfilled."
+            info "Waited #{c}/#{t}s for spot request <#{spot_request_id}> to be fulfilled."
           end
         end
         ec2.get_instance_from_spot_request(spot_request_id)
@@ -355,11 +359,21 @@ module Kitchen
       # Normally we could use `server.wait_until_running` but we actually need
       # to check more than just the instance state
       def wait_until_ready(server, state)
-        wait_with_destroy(server, state, "to become ready") do |aws_instance|
+        last_state = nil
+        wait_with_destroy(server, state, "to boot up") do |aws_instance|
           hostname = hostname(aws_instance, config[:interface])
           # We aggressively store the hostname so if the process fails here
           # we still have it, even if it will change later
           state[:hostname] = hostname
+
+          # Print better information as we wait
+          if aws_instance.exists?
+            message = "Instance #{aws_instance.id} state: #{aws_instance.state.name}, hostname: #{hostname}"
+          else
+            message = "Instance #{aws_instance.id} does not exist."
+            warn "Instance #{aws_instance.id} does not exist! This can happen very briefly, but if it's been a while, the server may have been destroyed!"
+          end
+
           # Euca instances often report ready before they have an IP
           ready = aws_instance.exists? &&
             aws_instance.state.name == "running" &&
@@ -370,8 +384,11 @@ module Kitchen
               output = Base64.decode64(output)
               debug "Console output: --- \n#{output}"
             end
-            ready = !!(output =~ /Windows is Ready to use/)
+            ready_to_use = !!(output =~ /Windows is Ready to use/)
+            message << ", windows still installing ..."
+            ready_to_use = ready
           end
+          debug message
           ready
         end
       end
@@ -511,9 +528,8 @@ module Kitchen
         # Print some debug stuff
         debug("Image for #{instance.name}: #{image.name}. #{image_info(image)}")
         if actual_platform
-          info("Detected platform: #{actual_platform.name} version #{actual_platform.version}" \
-               " on #{actual_platform.architecture}. Instance Type: #{config[:instance_type]}." \
-               " Default username: #{actual_platform.username} (default).")
+          debug("Detected platform: #{actual_platform.name} version #{actual_platform.version}" \
+                " on #{actual_platform.architecture}.")
         else
           debug("No platform detected for #{image.name}.")
         end
