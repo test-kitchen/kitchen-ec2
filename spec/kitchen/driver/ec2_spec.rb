@@ -74,11 +74,13 @@ describe Kitchen::Driver::Ec2 do
 
   describe "#hostname" do
     let(:public_dns_name) { nil }
+    let(:private_dns_name) { nil }
     let(:public_ip_address) { nil }
     let(:private_ip_address) { nil }
     let(:server) {
       double("server",
         :public_dns_name => public_dns_name,
+        :private_dns_name => private_dns_name,
         :public_ip_address => public_ip_address,
         :private_ip_address => private_ip_address
       )
@@ -102,9 +104,23 @@ describe Kitchen::Driver::Ec2 do
       it "returns private_ip_address when requested" do
         expect(driver.hostname(server, "private")).to eq(private_ip_address)
       end
+      it "returns private_dns_name when requested" do
+        expect(driver.hostname(server, "private_dns")).to eq(private_dns_name)
+      end
+    end
+
+    context "private_dns_name is populated" do
+      let(:private_dns_name) { "private_dns_name" }
+
+      it "returns the private_dns_name" do
+        expect(driver.hostname(server)).to eq(private_dns_name)
+      end
+
+      include_examples "an interface type provided"
     end
 
     context "private_ip_address is populated" do
+      let(:private_dns_name) { "private_dns_name" }
       let(:private_ip_address) { "10.0.0.1" }
 
       it "returns the private_ip_address" do
@@ -115,6 +131,7 @@ describe Kitchen::Driver::Ec2 do
     end
 
     context "public_ip_address is populated" do
+      let(:private_dns_name) { "private_dns_name" }
       let(:private_ip_address) { "10.0.0.1" }
       let(:public_ip_address) { "127.0.0.1" }
 
@@ -126,6 +143,7 @@ describe Kitchen::Driver::Ec2 do
     end
 
     context "public_dns_name is populated" do
+      let(:private_dns_name) { "private_dns_name" }
       let(:private_ip_address) { "10.0.0.1" }
       let(:public_ip_address) { "127.0.0.1" }
       let(:public_dns_name) { "public_dns_name" }
@@ -147,6 +165,13 @@ describe Kitchen::Driver::Ec2 do
         let(:private_ip_address) { "10.0.0.1" }
         it "returns the private_ip_address" do
           expect(driver.hostname(server)).to eq(private_ip_address)
+        end
+
+        context "and private_dns_name is populated" do
+          let(:private_dns_name) { "private_dns_name" }
+          it "returns the private_ip_address" do
+            expect(driver.hostname(server)).to eq(private_ip_address)
+          end
         end
       end
     end

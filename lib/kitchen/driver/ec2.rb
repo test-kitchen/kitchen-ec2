@@ -424,7 +424,8 @@ module Kitchen
         {
           "dns" => "public_dns_name",
           "public" => "public_ip_address",
-          "private" => "private_ip_address"
+          "private" => "private_ip_address",
+          "private_dns" => "private_dns_name"
         }
 
       #
