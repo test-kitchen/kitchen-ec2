@@ -284,7 +284,7 @@ The EC2 IAM profile name to use.
 
 The default is `nil`.
 
-### `price`
+### `spot_price`
 
 The price you bid in order to submit a spot request. An additional step will be required during the spot request process submission. If no price is set, it will use an on-demand instance.
 

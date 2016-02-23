@@ -25,7 +25,13 @@ describe Kitchen::Driver::Ec2 do
 
   let(:logged_output) { StringIO.new }
   let(:logger)        { Logger.new(logged_output) }
-  let(:config)        { { :aws_ssh_key_id => "key", :image_id => "ami-1234567", :block_duration_minutes => 60 } }
+  let(:config) do
+    {
+      :aws_ssh_key_id => "key",
+      :image_id => "ami-1234567",
+      :block_duration_minutes => 60
+    }
+  end
   let(:platform)      { Kitchen::Platform.new(:name => "fooos-99") }
   let(:transport)     { Kitchen::Transport::Dummy.new }
   let(:generator)     { instance_double(Kitchen::Driver::Aws::InstanceGenerator) }
@@ -361,7 +367,7 @@ describe Kitchen::Driver::Ec2 do
 
     context "config is for a spot instance" do
       before do
-        config[:price] = 1
+        config[:spot_price] = 1
         expect(driver).to receive(:submit_spot).with(state).and_return(server)
       end
 

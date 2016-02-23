@@ -62,7 +62,7 @@ module Kitchen
       end
       default_config :private_ip_address, nil
       default_config :iam_profile_name,   nil
-      default_config :price,              nil
+      default_config :spot_price,         nil
       default_config :block_duration_minutes, nil
       default_config :retryable_tries,    60
       default_config :retryable_sleep,    5
@@ -162,7 +162,7 @@ module Kitchen
           are responsible for your incurred costs.
         END
 
-        if config[:price]
+        if config[:spot_price]
           # Spot instance when a price is set
           server = submit_spot(state)
         else
@@ -321,13 +321,8 @@ module Kitchen
 
       def submit_spot(state) # rubocop:disable Metrics/AbcSize
         debug("Creating EC2 Spot Instance..")
-        request_data = {}
-        request_data[:spot_price] = config[:price].to_s
-        request_data[:launch_specification] = instance_generator.ec2_instance_data
-        request_data[:block_duration_minutes] = config[:block_duration_minutes] if config[:block_duration_minutes]
 
-        response = ec2.client.request_spot_instances(request_data)
-        spot_request_id = response[:spot_instance_requests][0][:spot_instance_request_id]
+        spot_request_id = create_spot_request
         # deleting the instance cancels the request, but deleting the request
         # does not affect the instance
         state[:spot_request_id] = spot_request_id
@@ -344,6 +339,19 @@ module Kitchen
           end
         end
         ec2.get_instance_from_spot_request(spot_request_id)
+      end
+
+      def create_spot_request
+        request_data = {
+          :spot_price => config[:spot_price].to_s,
+          :launch_specification => instance_generator.ec2_instance_data
+        }
+        if config[:block_duration_minutes]
+          request_data[:block_duration_minutes] = config[:block_duration_minutes]
+        end
+
+        response = ec2.client.request_spot_instances(request_data)
+        response[:spot_instance_requests][0][:spot_instance_request_id]
       end
 
       def tag_server(server)
