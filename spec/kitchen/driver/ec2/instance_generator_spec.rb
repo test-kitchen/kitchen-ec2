@@ -20,6 +20,7 @@ require "kitchen/driver/aws/instance_generator"
 require "kitchen/driver/aws/client"
 require "tempfile"
 require "base64"
+require "aws-sdk"
 
 describe Kitchen::Driver::Aws::InstanceGenerator do
 
@@ -59,6 +60,18 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
   end
 
   describe "#ec2_instance_data" do
+    ec2_stub = Aws::EC2::Client.new(stub_responses: true)
+
+    ec2_stub.stub_responses(
+      :describe_subnets,
+      subnets: [
+        {
+          subnet_id: "s-123",
+          tags: [{ key: "foo", value: "bar" }]
+        }
+      ]
+    )
+
     it "returns empty on nil" do
       expect(generator.ec2_instance_data).to eq(
         :instance_type => nil,
@@ -91,6 +104,30 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :subnet_id => "s-456",
           :private_ip_address => "0.0.0.0"
         )
+      end
+    end
+
+    context "when provided subnet tag instead of id" do
+      let(:config) do
+        {
+          :instance_type                => "micro",
+          :ebs_optimized                => true,
+          :image_id                     => "ami-123",
+          :aws_ssh_key_id               => "key",
+          :subnet_id                    => nil,
+          :region                       => "us-west-2",
+          :subnet_filter =>
+            {
+              :tag   => "foo",
+              :value => "bar"
+            }
+        }
+      end
+
+      it "generates id from the provided tag" do
+        allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
+        expect(ec2_stub).to receive(:describe_subnets).with({:filters=>[{:name=>"tag:foo", :values=>["bar"]}]}).and_return(ec2_stub.describe_subnets)
+        expect(generator.ec2_instance_data[:subnet_id]).to eq("s-123")
       end
     end
 
