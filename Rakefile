@@ -25,12 +25,19 @@ task :quality => [:style, :stats]
 require "yard"
 YARD::Rake::YardocTask.new
 
-task :default => [:test, :quality]
+begin
+  task :default => [:test, :quality]
 
-require 'github_changelog_generator/task'
-GitHubChangelogGenerator::RakeTask.new :changelog do |config|
-  config.future_release = Kitchen::Driver::EC2_VERSION
-  config.enhancement_labels = "enhancement,Enhancement,New Feature,Feature".split(",")
-  config.bug_labels = "bug,Bug,Improvement".split(",")
-  config.exclude_labels = "duplicate,question,invalid,wontfix,no_changelog,Exclude From Changelog,Question,Upstream Bug,Discussion".split(",")
+  require "github_changelog_generator/task"
+  GitHubChangelogGenerator::RakeTask.new :changelog do |config|
+    config.future_release = Kitchen::Driver::EC2_VERSION
+    config.enhancement_labels = "enhancement,Enhancement,New Feature,Feature".split(",")
+    config.bug_labels = "bug,Bug,Improvement".split(",")
+    config.exclude_labels = "duplicate,question,invalid,wontfix,no_changelog," \
+                            ",Exclude From Changelog,Question,Upstream Bug,Discussion".split(",")
+  end
+rescue LoadError
+  task :changelog do
+    raise "github_changelog_generator not installed! gem install github_changelog_generator."
+  end
 end

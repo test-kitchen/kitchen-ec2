@@ -29,7 +29,9 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "maruku",    "~> 0.6"
   gem.add_development_dependency "simplecov", "~> 0.7"
   gem.add_development_dependency "yard",      "~> 0.8"
-  gem.add_development_dependency "github_changelog_generator", "1.11.3"
+
+  # conflicts with finstyle 1.4.0
+  # gem.add_development_dependency "github_changelog_generator", "~> 1.11", ">= 1.11.6"
 
   # style and complexity libraries are tightly version pinned as newer releases
   # may introduce new and undesireable style choices which would be immediately
