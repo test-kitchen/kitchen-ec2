@@ -17,7 +17,7 @@
 # limitations under the License.
 
 require "base64"
-require 'aws-sdk'
+require "aws-sdk"
 
 module Kitchen
 
@@ -41,36 +41,39 @@ module Kitchen
         # Transform the provided config into the hash to send to AWS.  Some fields
         # can be passed in null, others need to be ommitted if they are null
         def ec2_instance_data # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
-
           # Support for looking up security group id and subnet id using tags.
 
           if config[:subnet_id].nil? && config[:subnet_filter]
-            config[:subnet_id] = ::Aws::EC2::Client.new(region: config[:region]).describe_subnets(
-              filters: [
-                {
-                  name:   "tag:#{config[:subnet_filter][:tag]}",
-                  values: [config[:subnet_filter][:value]]
-                }
-              ]
-            )[0][0].subnet_id
+            config[:subnet_id] = ::Aws::EC2::Client.
+              new(:region => config[:region]).describe_subnets(
+                :filters => [
+                  {
+                    :name   => "tag:#{config[:subnet_filter][:tag]}",
+                    :values => [config[:subnet_filter][:value]]
+                  }
+                ]
+              )[0][0].subnet_id
 
             if config[:subnet_id].nil?
-              fail "The subnet tagged '#{config[:subnet_filter][:tag]}#{config[:subnet_filter][:value]}' does not exist!"
+              fail "The subnet tagged '#{config[:subnet_filter][:tag]}\
+              #{config[:subnet_filter][:value]}' does not exist!"
             end
           end
 
           if config[:security_group_ids].nil? && config[:security_group_filter]
-            config[:security_group_ids] = [::Aws::EC2::Client.new(region: config[:region]).describe_security_groups(
-              filters: [
-                {
-                  name:   "tag:#{config[:security_group_filter][:tag]}",
-                  values: [config[:security_group_filter][:value]]
-                }
-              ]
-            )[0][0].group_id]
+            config[:security_group_ids] = [::Aws::EC2::Client.
+              new(:region => config[:region]).describe_security_groups(
+                :filters => [
+                  {
+                    :name   => "tag:#{config[:security_group_filter][:tag]}",
+                    :values => [config[:security_group_filter][:value]]
+                  }
+                ]
+              )[0][0].group_id]
 
             if config[:security_group_ids].nil?
-              fail "The group tagged '#{config[:security_group_filter][:tag]}#{config[:security_group_filter][:value]}' does not exist!"
+              fail "The group tagged '#{config[:security_group_filter][:tag]}\
+              #{config[:security_group_filter][:value]}' does not exist!"
             end
           end
 

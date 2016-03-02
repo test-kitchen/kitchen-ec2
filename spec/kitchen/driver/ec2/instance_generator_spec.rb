@@ -60,24 +60,24 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
   end
 
   describe "#ec2_instance_data" do
-    ec2_stub = Aws::EC2::Client.new(stub_responses: true)
+    ec2_stub = Aws::EC2::Client.new(:stub_responses => true)
 
     ec2_stub.stub_responses(
       :describe_subnets,
-      subnets: [
+      :subnets => [
         {
-          subnet_id: "s-123",
-          tags: [{ key: "foo", value: "bar" }]
+          :subnet_id  => "s-123",
+          :tags       => [{ :key => "foo", :value => "bar" }]
         }
       ]
     )
 
     ec2_stub.stub_responses(
       :describe_security_groups,
-      security_groups: [
+      :security_groups => [
         {
-          group_id: "sg-123",
-          tags: [{ key: "foo", value: "bar" }]
+          :group_id => "sg-123",
+          :tags => [{ :key => "foo", :value => "bar" }]
         }
       ]
     )
@@ -136,7 +136,14 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
       it "generates id from the provided tag" do
         allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
-        expect(ec2_stub).to receive(:describe_subnets).with({:filters=>[{:name=>"tag:foo", :values=>["bar"]}]}).and_return(ec2_stub.describe_subnets)
+        expect(ec2_stub).to receive(:describe_subnets).with(
+          :filters => [
+            {
+              :name => "tag:foo",
+              :values => ["bar"]
+            }
+          ]
+        ).and_return(ec2_stub.describe_subnets)
         expect(generator.ec2_instance_data[:subnet_id]).to eq("s-123")
       end
     end
@@ -161,7 +168,14 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
       it "generates id from the provided tag" do
         allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
-        expect(ec2_stub).to receive(:describe_security_groups).with({:filters=>[{:name=>"tag:foo", :values=>["bar"]}]}).and_return(ec2_stub.describe_security_groups)
+        expect(ec2_stub).to receive(:describe_security_groups).with(
+          :filters => [
+            {
+              :name => "tag:foo",
+              :values => ["bar"]
+            }
+          ]
+        ).and_return(ec2_stub.describe_security_groups)
         expect(generator.ec2_instance_data[:security_group_ids]).to eq(["sg-123"])
       end
     end
