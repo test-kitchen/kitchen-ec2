@@ -1,10 +1,12 @@
 # Change Log
 
-## [1.0.0.beta.2](https://github.com/test-kitchen/kitchen-ec2/tree/1.0.0.beta.2) (2016-02-26)
-[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0.beta.1...1.0.0.beta.2)
+## [1.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/1.0.0) (2016-03-03)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0.beta.1...1.0.0)
 
 **Merged pull requests:**
 
+- Use github\_changelog\_generator for changelog [\#231](https://github.com/test-kitchen/kitchen-ec2/pull/231) ([jkeiser](https://github.com/jkeiser))
+- Rename price -\> spot\_price, fix rubocop [\#229](https://github.com/test-kitchen/kitchen-ec2/pull/229) ([jkeiser](https://github.com/jkeiser))
 - support duration for spot instances [\#214](https://github.com/test-kitchen/kitchen-ec2/pull/214) ([wjordan](https://github.com/wjordan))
 - Add support for looking up Private DNS Name for hostname [\#197](https://github.com/test-kitchen/kitchen-ec2/pull/197) ([mekf](https://github.com/mekf))
 
