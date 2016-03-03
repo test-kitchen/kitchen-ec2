@@ -1,231 +1,334 @@
-## 0.10.0 / 2015-06-24
+# Change Log
+
+## [1.0.0.beta.2](https://github.com/test-kitchen/kitchen-ec2/tree/1.0.0.beta.2) (2016-02-26)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0.beta.1...1.0.0.beta.2)
 
-### Bug Fixes
+**Merged pull requests:**
 
-* Pull Request [#165][]: Added `ebs_iops` parameter to block_device_mappings, necessary when specifying volume type of `io1` ([@tyler-ball][])
-* Pull Request [#161][]: Fixing UTF error in hints file on Windows ([@zl4bv][])
-* Pull Request [#166][]: If `security_group_ids` is specified as a string instead of an array we coerce it to an array automatically ([@fnichol][])
+- support duration for spot instances [\#214](https://github.com/test-kitchen/kitchen-ec2/pull/214) ([wjordan](https://github.com/wjordan))
+- Add support for looking up Private DNS Name for hostname [\#197](https://github.com/test-kitchen/kitchen-ec2/pull/197) ([mekf](https://github.com/mekf))
 
-### New Features
+## [v1.0.0.beta.1](https://github.com/test-kitchen/kitchen-ec2/tree/v1.0.0.beta.1) (2016-02-13)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.10.0...v1.0.0.beta.1)
 
-* Pull Request [#150][]: Added support for managing Windows hosts in AWS
-    * Updated `amis.json` to include AMIs for Windows Server 2008 and 2012R2.
-    * Add default user data which enables winrm.  See `ec2.rb` for the exact user data that is uploaded.
-    * Default user data will add a non-`administrator` user to the Administrator group if `username` and `password` transport options are specified.
-    * EC2 will automatically generate the `administrator` user password if it is not specified as `password` transport options.  This will be stored and used for further kitchen commands.
-        * Unfortunately this cannot be passed to the RDP client initiated by `kitchen login`.  Look at `.kitchen/<name>.yml` for the password in this case.
-    * A HUGE thanks to [@zl4bv][] and [@afiune][] for the majority of the work on these changes!
+**Implemented enhancements:**
 
-### Improvements
+- Slow file transference [\#93](https://github.com/test-kitchen/kitchen-ec2/issues/93)
+- Dynamically find default images for many platforms [\#221](https://github.com/test-kitchen/kitchen-ec2/pull/221) ([jkeiser](https://github.com/jkeiser))
+- Query Ubuntu AMI IDs [\#169](https://github.com/test-kitchen/kitchen-ec2/pull/169) ([whiteley](https://github.com/whiteley))
 
-## 0.9.5 / 2015-06-05
+**Fixed bugs:**
 
-### Bug Fixes
+- Improve error handling if kitchen instance is destroy out of band [\#210](https://github.com/test-kitchen/kitchen-ec2/issues/210)
+- SSH prompting password for an instance inside VPC [\#129](https://github.com/test-kitchen/kitchen-ec2/issues/129)
+- amis.json out of date [\#117](https://github.com/test-kitchen/kitchen-ec2/issues/117)
+- Fix sudo dependency. Fixes \#204 [\#219](https://github.com/test-kitchen/kitchen-ec2/pull/219) ([alexpop](https://github.com/alexpop))
+- Use ubuntu user for Ubuntu 15.04 and 15.10 [\#196](https://github.com/test-kitchen/kitchen-ec2/pull/196) ([jaym](https://github.com/jaym))
+- Adding better retry logic to creation, fixes \#179 \(hopefully\) [\#184](https://github.com/test-kitchen/kitchen-ec2/pull/184) ([tyler-ball](https://github.com/tyler-ball))
+- Add support for looking up AMIs with the EC2 API [\#177](https://github.com/test-kitchen/kitchen-ec2/pull/177) ([zl4bv](https://github.com/zl4bv))
+- Trying :instance\_running check before tagging [\#171](https://github.com/test-kitchen/kitchen-ec2/pull/171) ([tyler-ball](https://github.com/tyler-ball))
 
-* Pull Request [#151][]: Fixing a regression where we are fetching the hostname from an old server object even after waiting for it to update, causing us to get back an invalid hostname
+**Closed issues:**
 
-### New Features
+- Requesting to include this plug-in in Chefdk [\#218](https://github.com/test-kitchen/kitchen-ec2/issues/218)
+- Can't ssh to instance after it's created [\#217](https://github.com/test-kitchen/kitchen-ec2/issues/217)
+- No installation instructions [\#216](https://github.com/test-kitchen/kitchen-ec2/issues/216)
+- availability\_zone is always b [\#215](https://github.com/test-kitchen/kitchen-ec2/issues/215)
+- Windows create fails fetching password [\#211](https://github.com/test-kitchen/kitchen-ec2/issues/211)
+- Offering to help maintain this repo [\#209](https://github.com/test-kitchen/kitchen-ec2/issues/209)
+- Support for HVM EC2 instances [\#205](https://github.com/test-kitchen/kitchen-ec2/issues/205)
+- Installation fails due to sudo dependency in test-kitchen [\#204](https://github.com/test-kitchen/kitchen-ec2/issues/204)
+- Not all AMIs in amis.json are public. [\#202](https://github.com/test-kitchen/kitchen-ec2/issues/202)
+- connection\_retries doesn't seem to work? [\#200](https://github.com/test-kitchen/kitchen-ec2/issues/200)
+- kitchen converge needs to be run 2-3 times to work with stock Windows 2012r2 AMI ami-dfccd1ef [\#198](https://github.com/test-kitchen/kitchen-ec2/issues/198)
+- Unable to assign a name to an ec2 instance [\#194](https://github.com/test-kitchen/kitchen-ec2/issues/194)
+- Administrator password not being retrieved on Windows 2008 R2 [\#192](https://github.com/test-kitchen/kitchen-ec2/issues/192)
+- Removing Default Storage when running Kitchen Destroy [\#188](https://github.com/test-kitchen/kitchen-ec2/issues/188)
+- Test Kitchen issues on EC2 using RHEL platform? [\#181](https://github.com/test-kitchen/kitchen-ec2/issues/181)
+- Failure for numeric key name [\#178](https://github.com/test-kitchen/kitchen-ec2/issues/178)
+- Issues under high concurrency [\#176](https://github.com/test-kitchen/kitchen-ec2/issues/176)
+- SSH Connection Expiring Upon Instance Creation [\#173](https://github.com/test-kitchen/kitchen-ec2/issues/173)
+- Throttle requests to EC2 API [\#170](https://github.com/test-kitchen/kitchen-ec2/issues/170)
+- missing aws\_secret\_access\_key causes quiet timeout [\#155](https://github.com/test-kitchen/kitchen-ec2/issues/155)
 
-### Improvements
+**Merged pull requests:**
 
-## 0.9.4 / 2015-06-03
+- Bump revision to 1.0.0.beta.1 [\#224](https://github.com/test-kitchen/kitchen-ec2/pull/224) ([jkeiser](https://github.com/jkeiser))
+- Update travis ruby versions and update badges [\#213](https://github.com/test-kitchen/kitchen-ec2/pull/213) ([tas50](https://github.com/tas50))
+- Allow configuring retry\_limit in Aws.config [\#208](https://github.com/test-kitchen/kitchen-ec2/pull/208) ([jlyheden](https://github.com/jlyheden))
+- Default instance type change, and Ubuntu AMI search options to match [\#207](https://github.com/test-kitchen/kitchen-ec2/pull/207) ([vancluever](https://github.com/vancluever))
+- Add support for CentOS 7 [\#199](https://github.com/test-kitchen/kitchen-ec2/pull/199) ([proffalken](https://github.com/proffalken))
+- Update CHANGELOG.md [\#183](https://github.com/test-kitchen/kitchen-ec2/pull/183) ([failshell](https://github.com/failshell))
 
-### Bug Fixes
+## [v0.10.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.10.0) (2015-06-24)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.10.0.rc.1...v0.10.0)
 
-* Pull Request [#142][]: Fixing NoMethodError, providing logger to instance_generator
+**Fixed bugs:**
 
-### New Features
+- ebs\_volume\_type missing parameters when set to 'io1' [\#157](https://github.com/test-kitchen/kitchen-ec2/issues/157)
+- setting http\_proxy causes no\_proxy to be ignored [\#156](https://github.com/test-kitchen/kitchen-ec2/issues/156)
+- transport configuration options do not work [\#145](https://github.com/test-kitchen/kitchen-ec2/issues/145)
+- expected params\[:network\_interfaces\]\[0\]\[:groups\] to be an array [\#144](https://github.com/test-kitchen/kitchen-ec2/issues/144)
+- Premature timeout when waiting for WinRM for be ready [\#132](https://github.com/test-kitchen/kitchen-ec2/issues/132)
+- Allow `:security\_group\_ids` to accept a string value. [\#166](https://github.com/test-kitchen/kitchen-ec2/pull/166) ([fnichol](https://github.com/fnichol))
+- Adding block\_device\_mapping iops parameter, fixes \#157 [\#165](https://github.com/test-kitchen/kitchen-ec2/pull/165) ([tyler-ball](https://github.com/tyler-ball))
+- Fix 'invalid char in json text' error [\#161](https://github.com/test-kitchen/kitchen-ec2/pull/161) ([zl4bv](https://github.com/zl4bv))
+- Remove useless log message [\#158](https://github.com/test-kitchen/kitchen-ec2/pull/158) ([ustuehler](https://github.com/ustuehler))
+- Remove useless log message [\#158](https://github.com/test-kitchen/kitchen-ec2/pull/158) ([ustuehler](https://github.com/ustuehler))
 
-### Improvements
+**Closed issues:**
 
-## 0.9.3 / 2015-05-29
+- efdk bundle update [\#163](https://github.com/test-kitchen/kitchen-ec2/issues/163)
 
-### Bug Fixes
+**Merged pull requests:**
 
-* Pull Request [#140][]: Wait for an instance to pass existence check before tagging it
+- reference to required IAM settings [\#160](https://github.com/test-kitchen/kitchen-ec2/pull/160) ([gmiranda23](https://github.com/gmiranda23))
 
-### New Features
+## [v0.10.0.rc.1](https://github.com/test-kitchen/kitchen-ec2/tree/v0.10.0.rc.1) (2015-06-19)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.10.0.rc.0...v0.10.0.rc.1)
 
-### Improvements
+## [v0.10.0.rc.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.10.0.rc.0) (2015-06-18)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.5...v0.10.0.rc.0)
 
-## 0.9.2 / 2015-05-27
+**Fixed bugs:**
 
-### Bug Fixes
+- block device examples updated [\#136](https://github.com/test-kitchen/kitchen-ec2/pull/136) ([gmiranda23](https://github.com/gmiranda23))
 
-* Pull Request [#131][]: Adding back support for a proxy via config `http_proxy` which defaults to `ENV[‘HTTPS_PROXY’] || ENV['HTTP_PROXY']`
-* Pull Request [#128][]: 
-    * Fixes [#121][]: Fixing error `Network interfaces and an instance-level security groups may not be specified on the same request` 
-    * Fixes [#127][]: User Data content should be base64 encoded when passed to aws sdk 
+**Closed issues:**
 
-### New Features
+- Documentation - IAM policy document [\#159](https://github.com/test-kitchen/kitchen-ec2/issues/159)
+- kitchen-ec2 version 0.9.4 ssh transport is broken [\#154](https://github.com/test-kitchen/kitchen-ec2/issues/154)
+- Setting multiple non-default transport usernames per platform will soon be broken [\#153](https://github.com/test-kitchen/kitchen-ec2/issues/153)
 
-### Improvements
+**Merged pull requests:**
 
-## 0.9.1 / 2015-05-21
+- Pulling together existing PRs for windows support [\#150](https://github.com/test-kitchen/kitchen-ec2/pull/150) ([tyler-ball](https://github.com/tyler-ball))
 
-### Bug Fixes
+## [v0.9.5](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.5) (2015-06-08)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.4...v0.9.5)
 
-* Pull Request [#124][]: AWS SDK V2 returns `instance.public_dns_name` as empty string instead of nil, and we were only checking for nil.  Caused timeouts trying to connect. ([@tyler-ball][])
-    * Fixed regression: Adding back `interface` config value that I accidently removed, code is now in line with README.
-* Pull Request [#125][]: When specifying `associate_public_ip` we must send the subnet (if provided) in the `network_interfaces` section of the payload instead of the main section. ([@tyler-ball][])
-    * Fixed regression: Accidently renamed config `associate_public_ip` to `associate_public_ip_address`, reverting.
-    * Fixed regression: Accidently renamed config `iam_profile_name` to `iam_instance_profile`, reverting.
+**Fixed bugs:**
 
-### New Features
+- You broke Chef's Travis CI tests =\) [\#148](https://github.com/test-kitchen/kitchen-ec2/issues/148)
 
-### Improvements
+**Closed issues:**
 
-## 0.9.0 / 2015-05-18
+- Race condition logging into RHEL/CentOS instances [\#149](https://github.com/test-kitchen/kitchen-ec2/issues/149)
 
-### Bug Fixes
+**Merged pull requests:**
 
-* Pull Request [#46][]: Don't create multiple instances if `kitchen create` is called multiple times. ([@anl][])
-* Pull Request [#97][], [#69][], [#99][]: Try additional connections to servers which don't have a `public_ip_address`.  This helps connect to nodes over VPN. ([@chuckg][], [@tyler-ball][], [@mumoshu][])
+- Query correct instance object for hostname fixes \#148 [\#151](https://github.com/test-kitchen/kitchen-ec2/pull/151) ([tyler-ball](https://github.com/tyler-ball))
 
-### New Features
+## [v0.9.4](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.4) (2015-06-03)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.3...v0.9.4)
 
-* Pull Request [#35][]: Adding support for specifying the IAM profile on created instance.  Set `:iam_profile_name` in the driver section of your .kitchen.yml to specify this. ([@nicgrayson][])
-* Pull Request [#82][]: Add the ability to specify user data.  Set `:user_data` in the driver section of your .kitchen.yml.  This can either be the user data or the path to a file which contains the user data. ([@sebbrandt87][])
-* Pull Request [#84][]: Add the ability to specify the private ip of the instance.  Set `:private_ip_address` in the driver section of your .kitchen.yml. ([@scarolan][])
-* Pull Request [#68][], [#104][], [#107][]: If provisioning from an EC2 host and credentials are not set use the local nodes's credentials.  If access key & secret are set, do not use local session token - leave it unset. ([@JamesAwesome][], [@Igorshp][], [@daanemanz][])
+**Fixed bugs:**
 
-### Improvements
+- undefined local variable or method `logger' on kitchen create [\#142](https://github.com/test-kitchen/kitchen-ec2/issues/142)
+- Kitchen setup on Centos6.4 fails initial ssh auth with valid credentials [\#137](https://github.com/test-kitchen/kitchen-ec2/issues/137)
+- TK Can't Connect to EC2 Instance via SSH [\#135](https://github.com/test-kitchen/kitchen-ec2/issues/135)
+- Providing logger to instance\_generator, fixes \#142 [\#146](https://github.com/test-kitchen/kitchen-ec2/pull/146) ([tyler-ball](https://github.com/tyler-ball))
 
-* Pull Request [#110][]: Updating to use the AWS SDK V2 instead of Fog. ([@tyler-ball][])
-    * We no longer recommend storing the AWS credentials in the `.kitchen.yml` file.  Instead, specify them as environment variables or in the `~/.aws/credentials` file.  See the README for more details.
-* Pull Request [#112][]: Updating to depend on the latest version of Test Kitchen, 1.4.0. ([@jmundrawala][])
+**Closed issues:**
 
-## 0.8.0 / 2014-02-11
+- kitchen destroy bombs trying to destroy non-existent instances [\#143](https://github.com/test-kitchen/kitchen-ec2/issues/143)
+- EC2-Instance terminates while TK waits on it to become ready [\#130](https://github.com/test-kitchen/kitchen-ec2/issues/130)
 
-### Bug fixes
+**Merged pull requests:**
 
-* Pull request [#29][], pull request [#28][]: Relax Test Kitchen dependency to allow versions 1.0 and up. ([@coderanger][], [@someara][])
+- \#66: changed \[driver\_usage\] link to point to GitHub [\#141](https://github.com/test-kitchen/kitchen-ec2/pull/141) ([dsavinkov](https://github.com/dsavinkov))
 
-## New features
+## [v0.9.3](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.3) (2015-05-29)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.2...v0.9.3)
 
-* Pull request [#29][]: Add `AWS_ACCESS_KEY_ID` and `AWS_SECRET_ACCESS_KEY` fallback environment variable support. ([@coderanger][])
-* Pull request [#27][], pull request [#31][]: Make EC2 endpoint configurable for services implementing the AWS APIs. ([@bozinsky][], [@spheromak][])
-* Pull request [#34][]: Support AWS session tokens for use with IAM roles. ([@coderanger][])
-* Pull request [#22][]: Add ebs_optimized attribute. ([@tiwilliam][])
+**Fixed bugs:**
 
-### Improvements
+- Error trying to tag instance before it exists [\#138](https://github.com/test-kitchen/kitchen-ec2/issues/138)
+- \[Network interfaces and an instance-level security groups may not be specified on the same request\] [\#127](https://github.com/test-kitchen/kitchen-ec2/issues/127)
 
-* Pull request [#20][], pull request [#21][], issue [#14][]: Add configurability around whether to use DNS name, public or private IP addresses when connecting to instances. ([@matheeeny][], [@Atalanta][], [@fnichol][])
-* Pull request [#15][]: In VPC groups must be specified by setting :security_group_ids rather than :groups. ([@eherot][])
-* Pull request [#23][]: README updates for badges. ([@sethvargo][], [@arangamani][])
-
-
-## 0.7.0 / 2013-08-29
-
-### Bug fixes
-
-* Pull request [#13][]: #wait_for_ssh takes 2 arguments. ([@dysinger][])
-
-### Improvements
-
-* Support computed defaults for a select list of pre-determined platforms (see readme for quick example). ([@fnichol][])~
-
-
-## 0.6.0 / 2013-07-23
-
-### Bug fixes
-
-* Pull request [#8][]: Use private ip if the public ip is `nil`. ([@dissonanz][])
-
-### Improvements
-
-* Pull request [#9][]: Match access and secret key env vars in example kitchen config with CLI tools' env vars. ([@juliandunn][])
-
-
-## 0.5.1 / 2013-05-23
-
-### New features
-
-* Pull request [#7][]: Add subnet\_id option for use with VPC. ([@dissonanz][])
-
-
-## 0.5.0 / 2013-05-23
-
-### New features
-
-* Pull request [#5][]: Add the ability to give ec2 instances tags. ([@halcyonCorsair][])
-* Add required_config attributes for driver. ([@fnichol][])
-
-### Improvements
-
-* Write README. ([@fnichol][])
-* Pull request [#2][]: Extra EC2 server creation debugging. ([@mattray][])
-* Remove default_config :port in favor of SSHBase default (also 22). ([@fnichol][])
-
-<!--- The following link definition list is generated by PimpMyChangelog --->
-[#2]: https://github.com/test-kitchen/kitchen-ec2/issues/2
-[#5]: https://github.com/test-kitchen/kitchen-ec2/issues/5
-[#7]: https://github.com/test-kitchen/kitchen-ec2/issues/7
-[#8]: https://github.com/test-kitchen/kitchen-ec2/issues/8
-[#9]: https://github.com/test-kitchen/kitchen-ec2/issues/9
-[#13]: https://github.com/test-kitchen/kitchen-ec2/issues/13
-[#14]: https://github.com/test-kitchen/kitchen-ec2/issues/14
-[#15]: https://github.com/test-kitchen/kitchen-ec2/issues/15
-[#20]: https://github.com/test-kitchen/kitchen-ec2/issues/20
-[#21]: https://github.com/test-kitchen/kitchen-ec2/issues/21
-[#22]: https://github.com/test-kitchen/kitchen-ec2/issues/22
-[#23]: https://github.com/test-kitchen/kitchen-ec2/issues/23
-[#27]: https://github.com/test-kitchen/kitchen-ec2/issues/27
-[#28]: https://github.com/test-kitchen/kitchen-ec2/issues/28
-[#29]: https://github.com/test-kitchen/kitchen-ec2/issues/29
-[#31]: https://github.com/test-kitchen/kitchen-ec2/issues/31
-[#34]: https://github.com/test-kitchen/kitchen-ec2/issues/34
-[#35]: https://github.com/test-kitchen/kitchen-ec2/issues/35
-[#46]: https://github.com/test-kitchen/kitchen-ec2/issues/46
-[#68]: https://github.com/test-kitchen/kitchen-ec2/issues/68
-[#69]: https://github.com/test-kitchen/kitchen-ec2/issues/69
-[#82]: https://github.com/test-kitchen/kitchen-ec2/issues/82
-[#84]: https://github.com/test-kitchen/kitchen-ec2/issues/84
-[#97]: https://github.com/test-kitchen/kitchen-ec2/issues/97
-[#99]: https://github.com/test-kitchen/kitchen-ec2/issues/99
-[#104]: https://github.com/test-kitchen/kitchen-ec2/issues/104
-[#107]: https://github.com/test-kitchen/kitchen-ec2/issues/107
-[#110]: https://github.com/test-kitchen/kitchen-ec2/issues/110
-[#112]: https://github.com/test-kitchen/kitchen-ec2/issues/112
-[#121]: https://github.com/test-kitchen/kitchen-ec2/issues/121
-[#124]: https://github.com/test-kitchen/kitchen-ec2/issues/124
-[#125]: https://github.com/test-kitchen/kitchen-ec2/issues/125
-[#127]: https://github.com/test-kitchen/kitchen-ec2/issues/127
-[#128]: https://github.com/test-kitchen/kitchen-ec2/issues/128
-[#131]: https://github.com/test-kitchen/kitchen-ec2/issues/131
-[#140]: https://github.com/test-kitchen/kitchen-ec2/issues/140
-[#142]: https://github.com/test-kitchen/kitchen-ec2/issues/142
-[#150]: https://github.com/test-kitchen/kitchen-ec2/issues/150
-[#151]: https://github.com/test-kitchen/kitchen-ec2/issues/151
-[#161]: https://github.com/test-kitchen/kitchen-ec2/issues/161
-[#165]: https://github.com/test-kitchen/kitchen-ec2/issues/165
-[#166]: https://github.com/test-kitchen/kitchen-ec2/issues/166
-[@Atalanta]: https://github.com/Atalanta
-[@Igorshp]: https://github.com/Igorshp
-[@JamesAwesome]: https://github.com/JamesAwesome
-[@afiune]: https://github.com/afiune
-[@anl]: https://github.com/anl
-[@arangamani]: https://github.com/arangamani
-[@bozinsky]: https://github.com/bozinsky
-[@chuckg]: https://github.com/chuckg
-[@coderanger]: https://github.com/coderanger
-[@daanemanz]: https://github.com/daanemanz
-[@dissonanz]: https://github.com/dissonanz
-[@dysinger]: https://github.com/dysinger
-[@eherot]: https://github.com/eherot
-[@fnichol]: https://github.com/fnichol
-[@halcyonCorsair]: https://github.com/halcyonCorsair
-[@jmundrawala]: https://github.com/jmundrawala
-[@juliandunn]: https://github.com/juliandunn
-[@matheeeny]: https://github.com/matheeeny
-[@mattray]: https://github.com/mattray
-[@mumoshu]: https://github.com/mumoshu
-[@nicgrayson]: https://github.com/nicgrayson
-[@scarolan]: https://github.com/scarolan
-[@sebbrandt87]: https://github.com/sebbrandt87
-[@sethvargo]: https://github.com/sethvargo
-[@someara]: https://github.com/someara
-[@spheromak]: https://github.com/spheromak
-[@tiwilliam]: https://github.com/tiwilliam
-[@tyler-ball]: https://github.com/tyler-ball
-[@zl4bv]: https://github.com/zl4bv
+**Closed issues:**
+
+- Failure to specify username leads to confusing error message [\#113](https://github.com/test-kitchen/kitchen-ec2/issues/113)
+- Kitchen attempts to log in before sshd is ready [\#85](https://github.com/test-kitchen/kitchen-ec2/issues/85)
+
+**Merged pull requests:**
+
+- Adding an existence check before tagging server [\#140](https://github.com/test-kitchen/kitchen-ec2/pull/140) ([tyler-ball](https://github.com/tyler-ball))
+
+## [v0.9.2](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.2) (2015-05-27)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.1...v0.9.2)
+
+**Fixed bugs:**
+
+- Support for proxy? [\#126](https://github.com/test-kitchen/kitchen-ec2/issues/126)
+- Support for proxy? [\#126](https://github.com/test-kitchen/kitchen-ec2/issues/126)
+- User Data content should be base64 encoded when passed to aws sdk [\#121](https://github.com/test-kitchen/kitchen-ec2/issues/121)
+
+**Closed issues:**
+
+- kitchen-ec2 fails when setting associate\_public\_ip: false [\#106](https://github.com/test-kitchen/kitchen-ec2/issues/106)
+
+**Merged pull requests:**
+
+- Adding proxy support that was present in Fog back [\#131](https://github.com/test-kitchen/kitchen-ec2/pull/131) ([tyler-ball](https://github.com/tyler-ball))
+- Fixing 2 regressions in 0.9.1 [\#128](https://github.com/test-kitchen/kitchen-ec2/pull/128) ([tyler-ball](https://github.com/tyler-ball))
+
+## [v0.9.1](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.1) (2015-05-21)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.0...v0.9.1)
+
+**Fixed bugs:**
+
+- hostname missing when waiting for ssh service in create action  [\#122](https://github.com/test-kitchen/kitchen-ec2/issues/122)
+- ebs\_delete\_on\_termination is not working [\#91](https://github.com/test-kitchen/kitchen-ec2/issues/91)
+- Fixing error where aws returns DNS name as empty string [\#124](https://github.com/test-kitchen/kitchen-ec2/pull/124) ([tyler-ball](https://github.com/tyler-ball))
+
+**Closed issues:**
+
+- Limited Permissions - Failed to complete \#create action: \[You are not authorized to perform this operation.\] [\#120](https://github.com/test-kitchen/kitchen-ec2/issues/120)
+- release 0.8.0 doesn't properly honor instance\_type [\#114](https://github.com/test-kitchen/kitchen-ec2/issues/114)
+- tag\_server: tag key needs to be cast to string [\#111](https://github.com/test-kitchen/kitchen-ec2/issues/111)
+- The specified wait\_for timeout \(600 seconds\) was exceeded [\#103](https://github.com/test-kitchen/kitchen-ec2/issues/103)
+- block\_device\_mappings setting is not optional [\#100](https://github.com/test-kitchen/kitchen-ec2/issues/100)
+- kitchen-ec2 - iam\_profile\_name fog not passing through [\#94](https://github.com/test-kitchen/kitchen-ec2/issues/94)
+- Unable to SSH into VPC Instance [\#77](https://github.com/test-kitchen/kitchen-ec2/issues/77)
+- Can't get a public IP  [\#72](https://github.com/test-kitchen/kitchen-ec2/issues/72)
+- Why no releases since Feb? [\#65](https://github.com/test-kitchen/kitchen-ec2/issues/65)
+
+**Merged pull requests:**
+
+- Fixing :subnet\_id payload placement if :associate\_public\_ip is set [\#125](https://github.com/test-kitchen/kitchen-ec2/pull/125) ([tyler-ball](https://github.com/tyler-ball))
+
+## [v0.9.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.0) (2015-05-19)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.8.0...v0.9.0)
+
+**Implemented enhancements:**
+
+- Support HVM based virtualization [\#25](https://github.com/test-kitchen/kitchen-ec2/issues/25)
+- Support spot-instances [\#6](https://github.com/test-kitchen/kitchen-ec2/issues/6)
+
+**Fixed bugs:**
+
+- Might be leaving orphaned EBS volumes [\#30](https://github.com/test-kitchen/kitchen-ec2/issues/30)
+- `kitchen login` fails if ssh\_key is a relative path. [\#26](https://github.com/test-kitchen/kitchen-ec2/issues/26)
+- Fix security\_group\_ids parameter for spot requests [\#90](https://github.com/test-kitchen/kitchen-ec2/pull/90) ([gfloyd](https://github.com/gfloyd))
+
+**Closed issues:**
+
+- Issue with amazon linux 32 bit and SCP failing \>\>\>\>\>\> Message: Failed to complete \#converge action: \[SCP did not finish successfully \(127\): \] [\#88](https://github.com/test-kitchen/kitchen-ec2/issues/88)
+- The plugin does not create /etc/chef/ohai/hints/ec2.json file [\#86](https://github.com/test-kitchen/kitchen-ec2/issues/86)
+- how do you pass user data to the instance? [\#79](https://github.com/test-kitchen/kitchen-ec2/issues/79)
+- Can't find how to set EBS Volume Size [\#71](https://github.com/test-kitchen/kitchen-ec2/issues/71)
+- Instance created but nothing happens from there [\#62](https://github.com/test-kitchen/kitchen-ec2/issues/62)
+- Use IAM role to authenticate with AWS [\#55](https://github.com/test-kitchen/kitchen-ec2/issues/55)
+- iam\_profile\_name not being added to ec2 [\#54](https://github.com/test-kitchen/kitchen-ec2/issues/54)
+- it always invokes tests as root [\#52](https://github.com/test-kitchen/kitchen-ec2/issues/52)
+- Failing authentication for some larger instances. [\#51](https://github.com/test-kitchen/kitchen-ec2/issues/51)
+- allow to hide aws keys from kitchen.yml [\#50](https://github.com/test-kitchen/kitchen-ec2/issues/50)
+- Configuration option for naming EC2 instances? [\#48](https://github.com/test-kitchen/kitchen-ec2/issues/48)
+- Ohai attribute node\[:ec2\] is nil [\#47](https://github.com/test-kitchen/kitchen-ec2/issues/47)
+- Resolving dependencies on ec2 instead upload resolved cookbooks to ec2  [\#40](https://github.com/test-kitchen/kitchen-ec2/issues/40)
+- fails to connect to ec2 if ip/host is not in known\_hosts entry [\#38](https://github.com/test-kitchen/kitchen-ec2/issues/38)
+- doesn't invoke test while using ec2 driver [\#37](https://github.com/test-kitchen/kitchen-ec2/issues/37)
+- Default to IAM Credentials if aws\_access\_key\_id or aws\_secret\_access\_key Not Provided [\#19](https://github.com/test-kitchen/kitchen-ec2/issues/19)
+
+**Merged pull requests:**
+
+- Test Kitchen 1.4.0 has been released [\#112](https://github.com/test-kitchen/kitchen-ec2/pull/112) ([jaym](https://github.com/jaym))
+- Adding test coverage [\#110](https://github.com/test-kitchen/kitchen-ec2/pull/110) ([tyler-ball](https://github.com/tyler-ball))
+- Updating to depend on TK 1.4 [\#109](https://github.com/test-kitchen/kitchen-ec2/pull/109) ([tyler-ball](https://github.com/tyler-ball))
+- Add explicit option for using iam profile for authentication [\#107](https://github.com/test-kitchen/kitchen-ec2/pull/107) ([JamesAwesome](https://github.com/JamesAwesome))
+- Add support for IAM role credentials [\#104](https://github.com/test-kitchen/kitchen-ec2/pull/104) ([Igorshp](https://github.com/Igorshp))
+- Fix the regression after changes in 23f4d945 [\#99](https://github.com/test-kitchen/kitchen-ec2/pull/99) ([mumoshu](https://github.com/mumoshu))
+- New `block\_device\_mappings` config [\#98](https://github.com/test-kitchen/kitchen-ec2/pull/98) ([tyler-ball](https://github.com/tyler-ball))
+- Fix connection to servers without a "public\_ip\_address" interface \(ie: VPC\) [\#97](https://github.com/test-kitchen/kitchen-ec2/pull/97) ([tyler-ball](https://github.com/tyler-ball))
+- Updating documentation so first-time users have an easier time [\#92](https://github.com/test-kitchen/kitchen-ec2/pull/92) ([tyler-ball](https://github.com/tyler-ball))
+- Added private\_ip\_address support. [\#84](https://github.com/test-kitchen/kitchen-ec2/pull/84) ([scarolan](https://github.com/scarolan))
+- added user\_data for instance preparation [\#82](https://github.com/test-kitchen/kitchen-ec2/pull/82) ([sebbrandt87](https://github.com/sebbrandt87))
+- Fix connection to servers without a "public\_ip\_address" interface \(ie: VPC\) [\#69](https://github.com/test-kitchen/kitchen-ec2/pull/69) ([chuckg](https://github.com/chuckg))
+- Add Ubuntu 13.10 and 14.04 AMIs [\#63](https://github.com/test-kitchen/kitchen-ec2/pull/63) ([justincampbell](https://github.com/justincampbell))
+- Added AWS\_SESSION\_TOKEN parameter to readme [\#60](https://github.com/test-kitchen/kitchen-ec2/pull/60) ([berniedurfee](https://github.com/berniedurfee))
+- Customize ssh\_timeout and ssh\_retries [\#58](https://github.com/test-kitchen/kitchen-ec2/pull/58) ([ekrupnik](https://github.com/ekrupnik))
+- Added .project to .gitignore file [\#57](https://github.com/test-kitchen/kitchen-ec2/pull/57) ([ekrupnik](https://github.com/ekrupnik))
+- Add missing "a" to interface header [\#49](https://github.com/test-kitchen/kitchen-ec2/pull/49) ([eherot](https://github.com/eherot))
+- Don't create multiple instances if "kitchen create" is called multiple t... [\#46](https://github.com/test-kitchen/kitchen-ec2/pull/46) ([anl](https://github.com/anl))
+- Warn about $$$ [\#41](https://github.com/test-kitchen/kitchen-ec2/pull/41) ([sethvargo](https://github.com/sethvargo))
+- IAM Profile Support for Created instance [\#35](https://github.com/test-kitchen/kitchen-ec2/pull/35) ([nicgrayson](https://github.com/nicgrayson))
+
+## [v0.8.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.8.0) (2014-02-12)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.7.0...v0.8.0)
+
+**Fixed bugs:**
+
+- AWS ENV vars not honored [\#17](https://github.com/test-kitchen/kitchen-ec2/issues/17)
+- Periodic failures in kitchen-ec2 [\#10](https://github.com/test-kitchen/kitchen-ec2/issues/10)
+
+**Closed issues:**
+
+- encrypted\_data\_bag\_secret not found [\#24](https://github.com/test-kitchen/kitchen-ec2/issues/24)
+- busser bats tests don't run [\#16](https://github.com/test-kitchen/kitchen-ec2/issues/16)
+- Support for server.dns\_name [\#14](https://github.com/test-kitchen/kitchen-ec2/issues/14)
+
+**Merged pull requests:**
+
+- Support AWS session tokens for use with IAM roles. [\#34](https://github.com/test-kitchen/kitchen-ec2/pull/34) ([coderanger](https://github.com/coderanger))
+- endpoint should have a trailing slash [\#31](https://github.com/test-kitchen/kitchen-ec2/pull/31) ([spheromak](https://github.com/spheromak))
+- Compat with test-kitchen master. [\#29](https://github.com/test-kitchen/kitchen-ec2/pull/29) ([coderanger](https://github.com/coderanger))
+- Support selection of private ip [\#21](https://github.com/test-kitchen/kitchen-ec2/pull/21) ([Atalanta](https://github.com/Atalanta))
+
+## [v0.7.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.7.0) (2013-08-29)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.6.0...v0.7.0)
+
+**Closed issues:**
+
+- Error running kitchen-ec2 0.6.0 [\#12](https://github.com/test-kitchen/kitchen-ec2/issues/12)
+- License missing from gemspec [\#11](https://github.com/test-kitchen/kitchen-ec2/issues/11)
+
+**Merged pull requests:**
+
+- wait\_for\_ssh takes 2 arguments [\#13](https://github.com/test-kitchen/kitchen-ec2/pull/13) ([dysinger](https://github.com/dysinger))
+
+## [v0.6.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.6.0) (2013-07-23)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.5.1...v0.6.0)
+
+**Closed issues:**
+
+- net-scp version is 1.0.4 [\#1](https://github.com/test-kitchen/kitchen-ec2/issues/1)
+
+**Merged pull requests:**
+
+- Match access and secret key env vars in example kitchen config with CLI tools' env vars. [\#9](https://github.com/test-kitchen/kitchen-ec2/pull/9) ([juliandunn](https://github.com/juliandunn))
+- Use private ip if the public ip is nil [\#8](https://github.com/test-kitchen/kitchen-ec2/pull/8) ([dissonanz](https://github.com/dissonanz))
+
+## [v0.5.1](https://github.com/test-kitchen/kitchen-ec2/tree/v0.5.1) (2013-05-23)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.5.0...v0.5.1)
+
+**Merged pull requests:**
+
+- Adding subnet\_id option for use with VPCs [\#7](https://github.com/test-kitchen/kitchen-ec2/pull/7) ([dissonanz](https://github.com/dissonanz))
+
+## [v0.5.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.5.0) (2013-05-23)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.4.0...v0.5.0)
+
+**Closed issues:**
+
+- We should be able to specify tags for ec2 instances [\#4](https://github.com/test-kitchen/kitchen-ec2/issues/4)
+- SSH private key config value needed [\#3](https://github.com/test-kitchen/kitchen-ec2/issues/3)
+
+**Merged pull requests:**
+
+- Add the ability to give ec2 instances tags. [\#5](https://github.com/test-kitchen/kitchen-ec2/pull/5) ([halcyonCorsair](https://github.com/halcyonCorsair))
+- additional ec2 debugging [\#2](https://github.com/test-kitchen/kitchen-ec2/pull/2) ([mattray](https://github.com/mattray))
+
+## [v0.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.4.0) (2013-03-02)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.3.0...v0.4.0)
+
+## [v0.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.3.0) (2013-01-09)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.2.0...v0.3.0)
+
+## [v0.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.2.0) (2013-01-03)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.1.0...v0.2.0)
+
+## [v0.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.1.0) (2012-12-27)
+
+
+\* *This Change Log was automatically generated by [github_changelog_generator](https://github.com/skywinder/Github-Changelog-Generator)*
