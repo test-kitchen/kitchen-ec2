@@ -56,6 +56,14 @@ module Kitchen
             end
             i[:placement] = { :availability_zone => availability_zone.downcase }
           end
+          tenancy = config[:tenancy]
+          if tenancy and ['default', 'dedicated'].include?(tenancy)
+            if i.key?(:placement)
+              i[:placement][:tenancy] = tenancy
+            else
+              i[:placement] = { :tenancy => tenancy }
+            end
+          end
           unless config[:block_device_mappings].nil? || config[:block_device_mappings].empty?
             i[:block_device_mappings] = config[:block_device_mappings]
           end
