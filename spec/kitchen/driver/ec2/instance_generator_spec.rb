@@ -182,7 +182,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         {
           :region => "eu-east-1",
           :availability_zone => "c",
-          :tenancy => 'dedicated'
+          :tenancy => "dedicated"
         }
       end
       it "adds the region to it in the instance data" do
@@ -193,8 +193,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :key_name => nil,
           :subnet_id => nil,
           :private_ip_address => nil,
-          :placement => { :availability_zone => "eu-east-1c" ,
-                          :tenancy => 'dedicated' }
+          :placement => { :availability_zone => "eu-east-1c",
+                          :tenancy => "dedicated" }
         )
       end
     end
@@ -203,7 +203,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       let(:config) do
         {
           :region => "eu-east-1",
-          :tenancy => 'default'
+          :tenancy => "default"
         }
       end
       it "is not added to the instance data" do
@@ -214,7 +214,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :key_name => nil,
           :subnet_id => nil,
           :private_ip_address => nil,
-          :placement => { :tenancy => 'default' }
+          :placement => { :tenancy => "default" }
         )
       end
     end
@@ -223,7 +223,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       let(:config) do
         {
           :region => "eu-east-1",
-          :tenancy => 'ephemeral'
+          :tenancy => "ephemeral"
         }
       end
       it "is not added to the instance data" do
