@@ -77,6 +77,21 @@ module Kitchen
               i[:network_interfaces][0][:groups] = i.delete(:security_group_ids)
             end
           end
+          availability_zone = config[:availability_zone]
+          if availability_zone
+            if availability_zone =~ /^[a-z]$/i
+              availability_zone = "#{config[:region]}#{availability_zone}"
+            end
+            i[:placement] = { :availability_zone => availability_zone.downcase }
+          end
+          tenancy = config[:tenancy]
+          if tenancy and ['default', 'dedicated'].include?(tenancy)
+            if i.key?(:placement)
+              i[:placement][:tenancy] = tenancy
+            else
+              i[:placement] = { :tenancy => tenancy }
+            end
+          end
           i
         end
 
