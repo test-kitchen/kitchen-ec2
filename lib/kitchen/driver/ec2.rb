@@ -79,6 +79,7 @@ module Kitchen
       default_config :interface,           nil
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
       default_config :retry_limit,         3
+      default_config :synced_folders, []
 
       required_config :aws_ssh_key_id
 
@@ -203,6 +204,11 @@ module Kitchen
 
         info("EC2 instance <#{state[:server_id]}> ready.")
         instance.transport.connection(state).wait_until_ready
+        config[:synced_folders].each do |synced_folder|
+          instance.transport.connection(state) do |connection|
+            sync_folder(connection, synced_folder)
+          end
+        end
         create_ec2_json(state)
         debug("ec2:create '#{state[:hostname]}'")
       end
@@ -541,6 +547,10 @@ module Kitchen
         " Created: #{image.creation_date}"
       end
 
+      def sync_folder(connection, synced_folder)
+        info("Uploading #{synced_folder[0]} to #{synced_folder[1]}")
+        connection.upload(synced_folder[0], synced_folder[1])
+      end
     end
   end
 end
