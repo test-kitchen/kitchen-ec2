@@ -312,6 +312,10 @@ The default is `ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]`.  If you have these env
 
 **Note** - The AWS command line utility allow you to specify [two proxies](http://docs.aws.amazon.com/cli/latest/userguide/cli-http-proxy.html), one for HTTP and one for HTTPS.  The AWS Ruby SDK only allows you to specify 1 proxy and because all requests are `https://` this proxy needs to support HTTPS.
 
+### `ssl_verify_peer`
+
+If you need to turn off ssl certificate verification for HTTP calls made to AWS, set `ssl_verify_peer: false`.
+
 ### Disk Configuration
 
 #### <a name="config-block_device_mappings"></a> `block_device_mappings`

@@ -100,7 +100,8 @@ describe Kitchen::Driver::Aws::Client do
           "secret_access_key",
           "session_token",
           "http_proxy",
-          999
+          999,
+          false
         )
       }
       let(:creds) { double("creds") }
@@ -111,6 +112,7 @@ describe Kitchen::Driver::Aws::Client do
         expect(Aws.config[:credentials]).to eq(creds)
         expect(Aws.config[:http_proxy]).to eq("http_proxy")
         expect(Aws.config[:retry_limit]).to eq(999)
+        expect(Aws.config[:ssl_verify_peer]).to eq(false)
       end
     end
   end

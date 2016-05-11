@@ -82,6 +82,7 @@ module Kitchen
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
       default_config :retry_limit,         3
       default_config :instance_initiated_shutdown_behavior, nil
+      default_config :ssl_verify_peer,     true
 
       def initialize(*args, &block)
         super
@@ -313,7 +314,8 @@ module Kitchen
           config[:aws_secret_access_key],
           config[:aws_session_token],
           config[:http_proxy],
-          config[:retry_limit]
+          config[:retry_limit],
+          config[:ssl_verify_peer]
         )
       end
 
