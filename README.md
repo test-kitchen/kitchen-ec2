@@ -92,6 +92,16 @@ get the best results. In order of priority from greatest to least, we prefer:
 - 64-bit over 32-bit
 - The most recently created image (to pick up patch releases)
 
+Note that the image_search method *requires* that the AMI image names be in a specific format.
+Some examples are:
+
+- Windows-2012
+- Windows-2012r2
+- Windows-2012r2sp1
+- RHEL-7.2
+
+It is safest to use the same naming convention as used by the public images published by the OS vendors on the AWS marketplace.
+
 #### `platform.name`
 
 The third way to specify the image is by leaving `image_id` and `image_search`
