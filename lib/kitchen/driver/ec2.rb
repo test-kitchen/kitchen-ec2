@@ -33,6 +33,8 @@ require_relative "aws/standard_platform/windows"
 require "aws-sdk-core/waiters/errors"
 require "retryable"
 
+Aws.eager_autoload!
+
 module Kitchen
 
   module Driver
