@@ -228,6 +228,10 @@ describe Kitchen::Driver::Ec2 do
       )
       driver.tag_server(server)
     end
+    it "does not raise" do
+      config[:tags] = nil
+      expect { driver.tag_server(server) }.not_to raise_error
+    end
   end
 
   describe "#wait_until_ready" do
