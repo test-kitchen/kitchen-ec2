@@ -230,6 +230,23 @@ describe Kitchen::Driver::Ec2 do
     end
   end
 
+  describe "#tag_volumes" do
+    let(:volume) { double("aws volume resource") }
+    before do
+      allow(server).to receive(:volumes).and_return([volume])
+    end
+    it "tags the instance volumes" do
+      config[:tags] = { :key1 => :value1, :key2 => :value2 }
+      expect(volume).to receive(:create_tags).with(
+        :tags => [
+          { :key => :key1, :value => :value1 },
+          { :key => :key2, :value => :value2 }
+        ]
+      )
+      driver.tag_volumes(server)
+    end
+  end
+
   describe "#wait_until_ready" do
     let(:hostname) { "0.0.0.0" }
     let(:msg) { "to become ready" }
@@ -269,6 +286,43 @@ describe Kitchen::Driver::Ec2 do
         expect(aws_instance).to receive(:exists?).and_return(true)
         expect(aws_instance).to receive_message_chain("state.name").and_return("running")
         expect(driver.wait_until_ready(server, state)).to eq(true)
+      end
+    end
+  end
+
+  describe "#wait_until_volumes_ready" do
+    let(:aws_instance) { double("aws instance") }
+    let(:msg) { "volumes to be ready" }
+    let(:volume) { double("aws volume resource") }
+
+    before do
+      expect(driver).to receive(:wait_with_destroy).with(server, state, msg).and_yield(aws_instance)
+    end
+    it "first checks instance existence" do
+      expect(aws_instance).to receive(:exists?).and_return(false)
+      expect(driver.wait_until_volumes_ready(server, state)).to eq(false)
+    end
+    it "second, it checks for prescence of described volumes" do
+      expect(aws_instance).to receive(:exists?).and_return(true)
+      expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length
+      ).and_return(0)
+      expect(aws_instance).to receive(:volumes).and_return([])
+      expect(driver.wait_until_volumes_ready(server, state)).to eq(false)
+    end
+    it "third, it compares the described volumes and instance volumes" do
+      expect(aws_instance).to receive(:exists?).and_return(true)
+      expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length
+      ).and_return(2)
+      expect(aws_instance).to receive(:volumes).and_return([volume])
+      expect(driver.wait_until_volumes_ready(server, state)).to eq(false)
+    end
+    context "when it exists, and both client and instance agree on volumes" do
+      it "returns true" do
+        expect(aws_instance).to receive(:exists?).and_return(true)
+        expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length
+        ).and_return(1)
+        expect(aws_instance).to receive(:volumes).and_return([volume])
+        expect(driver.wait_until_volumes_ready(server, state)).to eq(true)
       end
     end
   end
@@ -349,6 +403,8 @@ describe Kitchen::Driver::Ec2 do
         expect(server).to receive(:wait_until_exists)
         expect(driver).to receive(:update_username)
         expect(driver).to receive(:tag_server).with(server)
+        expect(driver).to receive(:tag_volumes).with(server)
+        expect(driver).to receive(:wait_until_volumes_ready).with(server, state)
         expect(driver).to receive(:wait_until_ready).with(server, state)
         expect(transport).to receive_message_chain("connection.wait_until_ready")
         expect(driver).to receive(:create_ec2_json).with(state)
