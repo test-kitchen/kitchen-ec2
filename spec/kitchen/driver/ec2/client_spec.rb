@@ -31,28 +31,27 @@ describe Kitchen::Driver::Aws::Client do
 
     # nothing else is set, so we default to this
     it "loads IAM credentials last" do
-      expect(shared).to receive(:loadable?).and_return(false)
-      expect(Aws::InstanceProfileCredentials).to receive(:new).and_return(iam)
-      expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to eq(iam)
+      env_creds(nil, nil) do 
+        expect(shared).to receive(:loadable?).and_return(false)
+        expect(Aws::InstanceProfileCredentials).to receive(:new).and_return(iam)
+        expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to eq(iam)
+      end
     end
 
     it "loads shared credentials second to last" do
-      expect(shared).to receive(:loadable?).and_return(true)
-      expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to eq(shared)
+      env_creds(nil, nil) do 
+        expect(shared).to receive(:loadable?).and_return(true)
+        expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to eq(shared)
+      end
     end
 
     it "loads shared credentials third to last" do
       expect(shared).to_not receive(:loadable?)
-      ClimateControl.modify(
-        "AWS_ACCESS_KEY_ID" => "key1",
-        "AWS_SECRET_ACCESS_KEY" => "value1",
-        "AWS_SESSION_TOKEN" => "token1"
-      ) do
+      env_creds("key_id", "secret") do
         expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to \
           be_a(Aws::Credentials).and have_attributes(
-            :access_key_id => "key1",
-            :secret_access_key => "value1",
-            :session_token => "token1"
+            :access_key_id => "key_id",
+            :secret_access_key => "secret"
           )
       end
     end
@@ -123,4 +122,12 @@ describe Kitchen::Driver::Aws::Client do
     expect(client.resource).to be_a(Aws::EC2::Resource)
   end
 
+  def env_creds(key_id, secret, &block) 
+    ClimateControl.modify(
+      "AWS_ACCESS_KEY_ID" => key_id,
+      "AWS_SECRET_ACCESS_KEY" => secret,
+    ) do 
+      block.call
+    end
+  end
 end
