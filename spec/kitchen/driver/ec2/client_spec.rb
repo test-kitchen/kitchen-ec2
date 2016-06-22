@@ -26,7 +26,7 @@ describe Kitchen::Driver::Aws::Client do
 
     # nothing else is set, so we default to this
     it "loads IAM credentials last" do
-      env_creds(nil, nil) do 
+      env_creds(nil, nil) do
         expect(::Aws::SharedCredentials).to receive(:new).and_return(false)
         expect(Aws::InstanceProfileCredentials).to receive(:new).and_return(iam)
         expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to eq(iam)
@@ -34,7 +34,7 @@ describe Kitchen::Driver::Aws::Client do
     end
 
     it "loads shared credentials second to last" do
-      env_creds(nil, nil) do 
+      env_creds(nil, nil) do
         expect(Aws::SharedCredentials).to \
           receive(:new).with(:profile_name => "profile").and_return(shared)
         expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to eq(shared)
@@ -118,11 +118,11 @@ describe Kitchen::Driver::Aws::Client do
     expect(client.resource).to be_a(Aws::EC2::Resource)
   end
 
-  def env_creds(key_id, secret, &block) 
+  def env_creds(key_id, secret, &block)
     ClimateControl.modify(
       "AWS_ACCESS_KEY_ID" => key_id,
-      "AWS_SECRET_ACCESS_KEY" => secret,
-    ) do 
+      "AWS_SECRET_ACCESS_KEY" => secret
+    ) do
       block.call
     end
   end
