@@ -1,7 +1,15 @@
 # Change Log
 
-## [1.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/1.0.0) (2016-03-03)
-[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0.beta.1...1.0.0)
+## [1.0.1](https://github.com/test-kitchen/kitchen-ec2/tree/1.0.1) (2016-07-20)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0...1.0.1)
+
+**Fixed bugs:**
+
+- Default AMIs for Windows not available [\#174](https://github.com/test-kitchen/kitchen-ec2/issues/174)
+- Fix autoload race in Aws::EC2::\* [\#264](https://github.com/test-kitchen/kitchen-ec2/pull/264) ([jkeiser](https://github.com/jkeiser))
+
+## [v1.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.0.0) (2016-03-03)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0.beta.1...v1.0.0)
 
 **Merged pull requests:**
 
