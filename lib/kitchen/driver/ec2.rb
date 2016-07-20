@@ -82,6 +82,13 @@ module Kitchen
 
       required_config :aws_ssh_key_id
 
+      def initialize(*args, &block)
+        super
+        # Access these so they are eagerly loaded (since we'll reference them later)
+        ::Aws::EC2::Client # rubocop:disable Lint/Void
+        ::Aws::EC2::Resource # rubocop:disable Lint/Void
+      end
+
       def self.validation_warn(driver, old_key, new_key)
         driver.warn "WARN: The driver[#{driver.class.name}] config key `#{old_key}` " \
           "is deprecated, please use `#{new_key}`"
