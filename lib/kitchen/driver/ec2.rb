@@ -362,11 +362,13 @@ module Kitchen
       end
 
       def tag_server(server)
-        tags = []
-        config[:tags].each do |k, v|
-          tags << { :key => k, :value => v }
+        if config[:tags]
+          tags = []
+          config[:tags].each do |k, v|
+            tags << { :key => k, :value => v }
+          end
+          server.create_tags(:tags => tags)
         end
-        server.create_tags(:tags => tags)
       end
 
       # Normally we could use `server.wait_until_running` but we actually need
