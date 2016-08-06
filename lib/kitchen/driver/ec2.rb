@@ -66,7 +66,7 @@ module Kitchen
       default_config :associate_public_ip, nil
       default_config :interface,           nil
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
-      default_config :tenancy,             'dedicated'
+      default_config :tenancy,             'default'
 
       required_config :aws_ssh_key_id
       required_config :image_id
