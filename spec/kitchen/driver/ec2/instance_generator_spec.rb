@@ -275,7 +275,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :key_name => nil,
           :subnet_id => nil,
           :private_ip_address => nil,
-          :placement => { :availability_zone => nil, :tenancy => 'default' }
+          :placement => { :tenancy => 'default' }
         )
       end
     end
@@ -294,8 +294,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :image_id => nil,
           :key_name => nil,
           :subnet_id => nil,
-          :private_ip_address => nil,
-          :placement => { :availability_zone => nil }
+          :private_ip_address => nil
         )
       end
     end
