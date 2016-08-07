@@ -79,7 +79,7 @@ module Kitchen
       default_config :interface,           nil
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
       default_config :retry_limit,         3
-      default_config :tenancy,             'default'
+      default_config :tenancy,             "default"
 
       required_config :aws_ssh_key_id
 
