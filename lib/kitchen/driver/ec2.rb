@@ -69,7 +69,7 @@ module Kitchen
       default_config :aws_access_key_id,  nil
       default_config :aws_secret_access_key, nil
       default_config :aws_session_token,  nil
-      default_config :aws_ssh_key_id,     ENV["AWS_SSH_KEY_ID"]
+      default_config :aws_ssh_key_id,     ENV["AWS_SSH_KEY_ID"] || nil
       default_config :image_id do |driver|
         driver.default_ami
       end
@@ -79,8 +79,6 @@ module Kitchen
       default_config :interface,           nil
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
       default_config :retry_limit,         3
-
-      required_config :aws_ssh_key_id
 
       def initialize(*args, &block)
         super
