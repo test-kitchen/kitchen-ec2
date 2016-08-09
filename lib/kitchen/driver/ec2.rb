@@ -84,9 +84,9 @@ module Kitchen
 
       def initialize(*args, &block)
         super
-        # Access these so they are eagerly loaded (since we'll reference them later)
-        ::Aws::EC2::Client # rubocop:disable Lint/Void
-        ::Aws::EC2::Resource # rubocop:disable Lint/Void
+        # AWS Ruby SDK loading isn't thread safe, so as soon as we know we're
+        # going to use EC2, autoload it. Seems to have been fixed in Ruby 2.3+
+        ::Aws.eager_autoload! unless RUBY_VERSION.to_f >= 2.3
       end
 
       def self.validation_warn(driver, old_key, new_key)
