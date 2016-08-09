@@ -1,7 +1,24 @@
 # Change Log
 
-## [1.0.1](https://github.com/test-kitchen/kitchen-ec2/tree/1.0.1) (2016-07-20)
-[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0...1.0.1)
+## [1.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/1.1.0) (2016-08-09)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.1...1.1.0)
+
+**Implemented enhancements:**
+
+- Make tags optional for clients without IAM rights to CreateTags [\#257](https://github.com/test-kitchen/kitchen-ec2/pull/257) ([freimer](https://github.com/freimer))
+
+**Fixed bugs:**
+
+- New transport.ssh\_key does not work in Travis, possibly elsewhere [\#203](https://github.com/test-kitchen/kitchen-ec2/issues/203)
+- not able to connect via winrm [\#175](https://github.com/test-kitchen/kitchen-ec2/issues/175)
+- Fix AWS Ruby SDK autoload for all time [\#270](https://github.com/test-kitchen/kitchen-ec2/pull/270) ([jkeiser](https://github.com/jkeiser))
+
+**Closed issues:**
+
+- Retrieve AMI IDs from the EC2 API [\#147](https://github.com/test-kitchen/kitchen-ec2/issues/147)
+
+## [v1.0.1](https://github.com/test-kitchen/kitchen-ec2/tree/v1.0.1) (2016-07-20)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0...v1.0.1)
 
 **Fixed bugs:**
 
