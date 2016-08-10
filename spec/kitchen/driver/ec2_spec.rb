@@ -70,14 +70,6 @@ describe Kitchen::Driver::Ec2 do
       Kitchen::Driver::EC2_VERSION)
   end
 
-  describe "configuration" do
-    let(:config) { {} }
-    it "requires :aws_ssh_key_id to be provided" do
-      expect { driver.finalize_config!(instance) }.to \
-        raise_error(Kitchen::UserError, /:aws_ssh_key_id/)
-    end
-  end
-
   describe "#hostname" do
     let(:public_dns_name) { nil }
     let(:private_dns_name) { nil }

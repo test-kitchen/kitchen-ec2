@@ -86,6 +86,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
            :instance_type => "micro",
            :ebs_optimized => true,
            :image_id => "ami-123",
+           :key_name => nil,
            :subnet_id => "s-456",
            :private_ip_address => "0.0.0.0"
         )
