@@ -510,6 +510,8 @@ module Kitchen
         Kitchen::Util.outdent!(<<-EOH)
         <powershell>
         $logfile="C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log"
+        # Allow script execution
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
         #PS Remoting and & winrm.cmd basic config
         Enable-PSRemoting -Force -SkipNetworkProfileCheck
         & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
