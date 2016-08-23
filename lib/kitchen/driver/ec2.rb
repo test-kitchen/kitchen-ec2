@@ -80,8 +80,6 @@ module Kitchen
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
       default_config :retry_limit,         3
 
-      required_config :aws_ssh_key_id
-
       def initialize(*args, &block)
         super
         # AWS Ruby SDK loading isn't thread safe, so as soon as we know we're

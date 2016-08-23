@@ -76,6 +76,29 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :instance_type                => "micro",
           :ebs_optimized                => true,
           :image_id                     => "ami-123",
+          :subnet_id                    => "s-456",
+          :private_ip_address           => "0.0.0.0"
+        }
+      end
+
+      it "returns the minimum data" do
+        expect(generator.ec2_instance_data).to eq(
+           :instance_type => "micro",
+           :ebs_optimized => true,
+           :image_id => "ami-123",
+           :key_name => nil,
+           :subnet_id => "s-456",
+           :private_ip_address => "0.0.0.0"
+        )
+      end
+    end
+
+    context "when populated with ssh key" do
+      let(:config) do
+        {
+          :instance_type                => "micro",
+          :ebs_optimized                => true,
+          :image_id                     => "ami-123",
           :aws_ssh_key_id               => "key",
           :subnet_id                    => "s-456",
           :private_ip_address           => "0.0.0.0"

@@ -178,7 +178,8 @@ The ID of the AWS key pair you want to use.
 The default will be read from the `AWS_SSH_KEY_ID` environment variable if set,
 or `nil` otherwise.
 
-This must be one of the KeyName values shown by the AWS CLI: `aws ec2 describe-key-pairs`
+If `aws_ssh_key_id` is specified, it must be one of the KeyName values shown by the AWS CLI: `aws ec2 describe-key-pairs`.
+Otherwise, if not specified, you must either have a user pre-provisioned on the AMI, or provision the user using `user_data`.
 
 #### `transport.ssh_key`
 
