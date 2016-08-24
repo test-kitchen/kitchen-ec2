@@ -246,6 +246,20 @@ instance.
 
 The default is `["default"]`.
 
+### `security_group_filter`
+
+The EC2 [security group][group_docs] which will be applied to the instance,
+specified by tag. Only one group can be specified this way.
+
+The default is unset, or `nil`.
+
+An example of usage:
+```yaml
+security_group_filter:
+  tag:   'Name'
+  value: 'example-group-name'
+```
+
 ### `region`
 
 **Required** The AWS [region][region_docs] to use.
@@ -258,6 +272,19 @@ Otherwise the default is `"us-east-1"`.
 The EC2 [subnet][subnet_docs] to use.
 
 The default is unset, or `nil`.
+
+### `subnet_filter`
+
+The EC2 [subnet][subnet_docs] to use, specified by tag.
+
+The default is unset, or `nil`.
+
+An example of usage:
+```yaml
+subnet_filter:
+  tag:   'Name'
+  value: 'example-subnet-name'
+```
 
 ### `tags`
 
