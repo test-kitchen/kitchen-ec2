@@ -382,6 +382,18 @@ describe Kitchen::Driver::Ec2 do
       include_examples "common create"
     end
 
+    context "instance is not a standard platform" do
+      let(:state) { {} }
+      before do
+        expect(driver).to receive(:actual_platform).and_return(nil)
+      end
+
+      it "doesn't set the state username" do
+        driver.update_username(state)
+        expect(state).to eq({})
+      end
+    end
+
   end
 
   describe "#destroy" do

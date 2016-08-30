@@ -287,9 +287,14 @@ module Kitchen
       end
 
       def update_username(state)
-        # TODO: if the user explicitly specified the transport's default username,
-        # do NOT overwrite it!
-        if instance.transport[:username] == instance.transport.class.defaults[:username]
+        # BUG: With the following equality condition on username, if the user specifies 'root'
+        # as the transport's username then we will overwrite that value with one from the standard
+        # platform definitions.  This seems difficult to handle here as the default username is
+        # provided by the underlying transport classes, and is often non-nil (eg; 'root'), leaving
+        # us no way to distinguish a user-set value from the transport's default.
+        # See https://github.com/test-kitchen/kitchen-ec2/pull/273
+        if actual_platform &&
+            instance.transport[:username] == instance.transport.class.defaults[:username]
           debug("No SSH username specified: using default username #{actual_platform.username} " \
                 " for image #{config[:image_id]}, which we detected as #{actual_platform}.")
           state[:username] = actual_platform.username
