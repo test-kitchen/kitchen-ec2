@@ -291,6 +291,12 @@ The price you bid in order to submit a spot request. An additional step will be 
 
 The default is `nil`.
 
+### `instance_initiated_shutdown_behavior`
+
+Control whether an instance should `stop` or `terminate` when shutdown is initiated from the instance using an operating system command for system shutdown.
+
+The default is `nil`.
+
 ### block_duration_minutes
 
 The [specified duration](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html#fixed-duration-spot-instances) for a spot instance, in minutes. This value must be a multiple of 60 (60, 120, 180, 240, 300, or 360).

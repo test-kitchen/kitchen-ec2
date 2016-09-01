@@ -187,6 +187,23 @@ describe Kitchen::Driver::Ec2 do
     end
   end
 
+  describe "submit_server with terminate shutdown behaviour" do
+    before do
+      config[:instance_initiated_shutdown_behavior] = "terminate"
+      expect(driver).to receive(:instance).at_least(:once).and_return(instance)
+    end
+
+    it "submits the server request" do
+      expect(generator).to receive(:ec2_instance_data).and_return(
+        :instance_initiated_shutdown_behavior => "terminate"
+      )
+      expect(client).to receive(:create_instance).with(
+        :min_count => 1, :max_count => 1, :instance_initiated_shutdown_behavior => "terminate"
+      )
+      driver.submit_server
+    end
+  end
+
   describe "#submit_spot" do
     let(:state) { {} }
     let(:response) {

@@ -79,6 +79,7 @@ module Kitchen
       default_config :interface,           nil
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
       default_config :retry_limit,         3
+      default_config :instance_initiated_shutdown_behavior, nil
 
       def initialize(*args, &block)
         super
@@ -153,6 +154,12 @@ module Kitchen
           raise "#{attr} is no longer valid, please use " \
             "ENV['AWS_SESSION_TOKEN'] or ~/.aws/credentials.  See " \
             "the README for more details"
+        end
+      end
+      validations[:instance_initiated_shutdown_behavior] = lambda do |attr, val, _driver|
+        unless [nil, "stop", "terminate"].include?(val)
+          raise "'#{val}' is an invalid value for option '#{attr}'. " \
+            "Valid values are 'stop' or 'terminate'"
         end
       end
 
