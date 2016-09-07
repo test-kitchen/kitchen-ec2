@@ -84,6 +84,10 @@ module Kitchen
               i[:network_interfaces][0][:groups] = i.delete(:security_group_ids)
             end
           end
+          unless config[:instance_initiated_shutdown_behavior].nil? ||
+              config[:instance_initiated_shutdown_behavior].empty?
+            i[:instance_initiated_shutdown_behavior] = config[:instance_initiated_shutdown_behavior]
+          end
           i
         end
 
