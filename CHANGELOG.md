@@ -1,7 +1,21 @@
 # Change Log
 
-## [1.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/1.1.0) (2016-08-09)
-[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.1...1.1.0)
+## [1.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/1.2.0) (2016-09-12)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.1.0...1.2.0)
+
+**Fixed bugs:**
+
+- Turn on eager loading for AWS resources [\#255](https://github.com/test-kitchen/kitchen-ec2/pull/255) ([hfinucane](https://github.com/hfinucane))
+
+**Merged pull requests:**
+
+- Add optional config for shutdown\_behavior [\#274](https://github.com/test-kitchen/kitchen-ec2/pull/274) ([alexpop](https://github.com/alexpop))
+- pin rack to ~\> 1.0 [\#272](https://github.com/test-kitchen/kitchen-ec2/pull/272) ([mwrock](https://github.com/mwrock))
+- Fix \#268 [\#269](https://github.com/test-kitchen/kitchen-ec2/pull/269) ([gasserk](https://github.com/gasserk))
+- Allow PowerShell script execution [\#234](https://github.com/test-kitchen/kitchen-ec2/pull/234) ([dlukman](https://github.com/dlukman))
+
+## [v1.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.1.0) (2016-08-09)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.1...v1.1.0)
 
 **Implemented enhancements:**
 
@@ -15,6 +29,7 @@
 
 **Closed issues:**
 
+- Do not require aws\_ssh\_key\_id in ec2.rb [\#268](https://github.com/test-kitchen/kitchen-ec2/issues/268)
 - Retrieve AMI IDs from the EC2 API [\#147](https://github.com/test-kitchen/kitchen-ec2/issues/147)
 
 ## [v1.0.1](https://github.com/test-kitchen/kitchen-ec2/tree/v1.0.1) (2016-07-20)
