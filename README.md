@@ -79,9 +79,10 @@ You can learn more about the available filters in the AWS CLI doc under `--filte
 ```yaml
 platforms:
   - name: ubuntu-14.04
-    image_search:
-      owner-id: "099720109477"
-      name: ubuntu/images/*/ubuntu-*-14.04*
+    driver:
+      image_search:
+        owner-id: "099720109477"
+        name: ubuntu/images/*/ubuntu-*-14.04*
 ```
 
 In the event that there are multiple matches (as sometimes happens), we sort to
