@@ -25,6 +25,7 @@ describe Kitchen::Driver::Aws::Client do
     it "loads IAM credentials last" do
       iam = instance_double(Aws::InstanceProfileCredentials)
 
+      allow(Kitchen::Driver::Aws::Client).to receive(:get_shared_creds).and_return(false)
       allow(Aws::InstanceProfileCredentials).to receive(:new).and_return(iam)
 
       env_creds(nil, nil) do
