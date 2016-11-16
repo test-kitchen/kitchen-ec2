@@ -79,8 +79,6 @@ module Kitchen
               :role_session_name => options[:assume_role_session_name]
             )
             ::Aws::AssumeRoleCredentials.new(assume_role_options)
-          elsif profile_name
-            ::Aws::SharedCredentials.new(:profile_name => profile_name)
           else
             ::Aws::InstanceProfileCredentials.new(:retries => 1)
           end
@@ -110,6 +108,14 @@ module Kitchen
 
         def resource
           @resource ||= ::Aws::EC2::Resource.new
+        end
+
+        private
+
+        def self.get_shared_creds(profile_name)
+          ::Aws::SharedCredentials.new(:profile_name => profile_name)
+        rescue ::Aws::Errors::NoSuchProfileError
+          false
         end
 
       end
