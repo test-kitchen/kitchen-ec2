@@ -85,6 +85,12 @@ module Kitchen
         end
         # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
+        def self.get_shared_creds(profile_name)
+          ::Aws::SharedCredentials.new(:profile_name => profile_name)
+        rescue ::Aws::Errors::NoSuchProfileError
+          false
+        end
+
         def create_instance(options)
           resource.create_instances(options)[0]
         end
@@ -108,14 +114,6 @@ module Kitchen
 
         def resource
           @resource ||= ::Aws::EC2::Resource.new
-        end
-
-        private
-
-        def self.get_shared_creds(profile_name)
-          ::Aws::SharedCredentials.new(:profile_name => profile_name)
-        rescue ::Aws::Errors::NoSuchProfileError
-          false
         end
 
       end
