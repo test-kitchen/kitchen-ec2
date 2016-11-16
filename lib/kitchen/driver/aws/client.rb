@@ -79,6 +79,8 @@ module Kitchen
               :role_session_name => options[:assume_role_session_name]
             )
             ::Aws::AssumeRoleCredentials.new(assume_role_options)
+          elsif profile_name
+            ::Aws::SharedCredentials.new(:profile_name => profile_name)
           else
             ::Aws::InstanceProfileCredentials.new(:retries => 1)
           end

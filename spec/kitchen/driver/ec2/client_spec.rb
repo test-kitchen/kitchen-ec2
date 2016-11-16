@@ -21,28 +21,29 @@ require "climate_control"
 
 describe Kitchen::Driver::Aws::Client do
   describe "::get_credentials" do
-    let(:shared) { instance_double(Aws::SharedCredentials) }
-    let(:iam)    { instance_double(Aws::InstanceProfileCredentials) }
-
     # nothing else is set, so we default to this
     it "loads IAM credentials last" do
+      iam = instance_double(Aws::InstanceProfileCredentials)
+
+      allow(Aws::InstanceProfileCredentials).to receive(:new).and_return(iam)
+
       env_creds(nil, nil) do
-        expect(::Aws::SharedCredentials).to receive(:new).and_return(false)
-        expect(Aws::InstanceProfileCredentials).to receive(:new).and_return(iam)
-        expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to eq(iam)
+        expect(Kitchen::Driver::Aws::Client.get_credentials(nil, nil, nil, nil)).to eq(iam)
       end
     end
 
-    it "loads shared credentials second to last" do
+    it "loads the shared credentials file second to last" do
+      shared = instance_double(Aws::SharedCredentials)
+
+      allow(Aws::SharedCredentials).to \
+        receive(:new).with(:profile_name => "profile").and_return(shared)
+
       env_creds(nil, nil) do
-        expect(Aws::SharedCredentials).to \
-          receive(:new).with(:profile_name => "profile").and_return(shared)
         expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to eq(shared)
       end
     end
 
-    it "loads shared credentials third to last" do
-      expect(shared).to_not receive(:loadable?)
+    it "loads credentials from the environment third to last" do
       env_creds("key_id", "secret") do
         expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to \
           be_a(Aws::Credentials).and have_attributes(
