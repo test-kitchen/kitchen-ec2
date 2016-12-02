@@ -1,7 +1,47 @@
 # Change Log
 
-## [1.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/1.0.0) (2016-03-03)
-[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0.beta.1...1.0.0)
+## [1.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/1.2.0) (2016-09-12)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.1.0...1.2.0)
+
+**Fixed bugs:**
+
+- Turn on eager loading for AWS resources [\#255](https://github.com/test-kitchen/kitchen-ec2/pull/255) ([hfinucane](https://github.com/hfinucane))
+
+**Merged pull requests:**
+
+- Add optional config for shutdown\_behavior [\#274](https://github.com/test-kitchen/kitchen-ec2/pull/274) ([alexpop](https://github.com/alexpop))
+- pin rack to ~\> 1.0 [\#272](https://github.com/test-kitchen/kitchen-ec2/pull/272) ([mwrock](https://github.com/mwrock))
+- Fix \#268 [\#269](https://github.com/test-kitchen/kitchen-ec2/pull/269) ([gasserk](https://github.com/gasserk))
+- Allow PowerShell script execution [\#234](https://github.com/test-kitchen/kitchen-ec2/pull/234) ([dlukman](https://github.com/dlukman))
+
+## [v1.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.1.0) (2016-08-09)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.1...v1.1.0)
+
+**Implemented enhancements:**
+
+- Make tags optional for clients without IAM rights to CreateTags [\#257](https://github.com/test-kitchen/kitchen-ec2/pull/257) ([freimer](https://github.com/freimer))
+
+**Fixed bugs:**
+
+- New transport.ssh\_key does not work in Travis, possibly elsewhere [\#203](https://github.com/test-kitchen/kitchen-ec2/issues/203)
+- not able to connect via winrm [\#175](https://github.com/test-kitchen/kitchen-ec2/issues/175)
+- Fix AWS Ruby SDK autoload for all time [\#270](https://github.com/test-kitchen/kitchen-ec2/pull/270) ([jkeiser](https://github.com/jkeiser))
+
+**Closed issues:**
+
+- Do not require aws\_ssh\_key\_id in ec2.rb [\#268](https://github.com/test-kitchen/kitchen-ec2/issues/268)
+- Retrieve AMI IDs from the EC2 API [\#147](https://github.com/test-kitchen/kitchen-ec2/issues/147)
+
+## [v1.0.1](https://github.com/test-kitchen/kitchen-ec2/tree/v1.0.1) (2016-07-20)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0...v1.0.1)
+
+**Fixed bugs:**
+
+- Default AMIs for Windows not available [\#174](https://github.com/test-kitchen/kitchen-ec2/issues/174)
+- Fix autoload race in Aws::EC2::\* [\#264](https://github.com/test-kitchen/kitchen-ec2/pull/264) ([jkeiser](https://github.com/jkeiser))
+
+## [v1.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.0.0) (2016-03-03)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0.beta.1...v1.0.0)
 
 **Merged pull requests:**
 

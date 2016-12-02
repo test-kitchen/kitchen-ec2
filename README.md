@@ -79,9 +79,10 @@ You can learn more about the available filters in the AWS CLI doc under `--filte
 ```yaml
 platforms:
   - name: ubuntu-14.04
-    image_search:
-      owner-id: "099720109477"
-      name: ubuntu/images/*/ubuntu-*-14.04*
+    driver:
+      image_search:
+        owner-id: "099720109477"
+        name: ubuntu/images/*/ubuntu-*-14.04*
 ```
 
 In the event that there are multiple matches (as sometimes happens), we sort to
@@ -91,6 +92,16 @@ get the best results. In order of priority from greatest to least, we prefer:
 - SSD support over magnetic drives
 - 64-bit over 32-bit
 - The most recently created image (to pick up patch releases)
+
+Note that the image_search method *requires* that the AMI image names be in a specific format.
+Some examples are:
+
+- Windows-2012
+- Windows-2012r2
+- Windows-2012r2sp1
+- RHEL-7.2
+
+It is safest to use the same naming convention as used by the public images published by the OS vendors on the AWS marketplace.
 
 #### `platform.name`
 
@@ -178,7 +189,8 @@ The ID of the AWS key pair you want to use.
 The default will be read from the `AWS_SSH_KEY_ID` environment variable if set,
 or `nil` otherwise.
 
-This must be one of the KeyName values shown by the AWS CLI: `aws ec2 describe-key-pairs`
+If `aws_ssh_key_id` is specified, it must be one of the KeyName values shown by the AWS CLI: `aws ec2 describe-key-pairs`.
+Otherwise, if not specified, you must either have a user pre-provisioned on the AMI, or provision the user using `user_data`.
 
 #### `transport.ssh_key`
 
@@ -287,6 +299,12 @@ The default is `nil`.
 ### `spot_price`
 
 The price you bid in order to submit a spot request. An additional step will be required during the spot request process submission. If no price is set, it will use an on-demand instance.
+
+The default is `nil`.
+
+### `instance_initiated_shutdown_behavior`
+
+Control whether an instance should `stop` or `terminate` when shutdown is initiated from the instance using an operating system command for system shutdown.
 
 The default is `nil`.
 

@@ -106,6 +106,9 @@ module Kitchen
             else
               i[:placement] = { :tenancy => tenancy }
             end
+          unless config[:instance_initiated_shutdown_behavior].nil? ||
+              config[:instance_initiated_shutdown_behavior].empty?
+            i[:instance_initiated_shutdown_behavior] = config[:instance_initiated_shutdown_behavior]
           end
           i
         end

@@ -70,14 +70,6 @@ describe Kitchen::Driver::Ec2 do
       Kitchen::Driver::EC2_VERSION)
   end
 
-  describe "configuration" do
-    let(:config) { {} }
-    it "requires :aws_ssh_key_id to be provided" do
-      expect { driver.finalize_config!(instance) }.to \
-        raise_error(Kitchen::UserError, /:aws_ssh_key_id/)
-    end
-  end
-
   describe "#hostname" do
     let(:public_dns_name) { nil }
     let(:private_dns_name) { nil }
@@ -195,6 +187,23 @@ describe Kitchen::Driver::Ec2 do
     end
   end
 
+  describe "submit_server with terminate shutdown behaviour" do
+    before do
+      config[:instance_initiated_shutdown_behavior] = "terminate"
+      expect(driver).to receive(:instance).at_least(:once).and_return(instance)
+    end
+
+    it "submits the server request" do
+      expect(generator).to receive(:ec2_instance_data).and_return(
+        :instance_initiated_shutdown_behavior => "terminate"
+      )
+      expect(client).to receive(:create_instance).with(
+        :min_count => 1, :max_count => 1, :instance_initiated_shutdown_behavior => "terminate"
+      )
+      driver.submit_server
+    end
+  end
+
   describe "#submit_spot" do
     let(:state) { {} }
     let(:response) {
@@ -227,6 +236,10 @@ describe Kitchen::Driver::Ec2 do
         ]
       )
       driver.tag_server(server)
+    end
+    it "does not raise" do
+      config[:tags] = nil
+      expect { driver.tag_server(server) }.not_to raise_error
     end
   end
 
@@ -384,6 +397,18 @@ describe Kitchen::Driver::Ec2 do
       end
 
       include_examples "common create"
+    end
+
+    context "instance is not a standard platform" do
+      let(:state) { {} }
+      before do
+        expect(driver).to receive(:actual_platform).and_return(nil)
+      end
+
+      it "doesn't set the state username" do
+        driver.update_username(state)
+        expect(state).to eq({})
+      end
     end
 
   end

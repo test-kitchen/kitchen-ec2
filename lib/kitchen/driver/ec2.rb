@@ -33,6 +33,8 @@ require_relative "aws/standard_platform/windows"
 require "aws-sdk-core/waiters/errors"
 require "retryable"
 
+Aws.eager_autoload!
+
 module Kitchen
 
   module Driver
@@ -80,8 +82,14 @@ module Kitchen
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
       default_config :retry_limit,         3
       default_config :tenancy,             "default"
+      default_config :instance_initiated_shutdown_behavior, nil
 
-      required_config :aws_ssh_key_id
+      def initialize(*args, &block)
+        super
+        # AWS Ruby SDK loading isn't thread safe, so as soon as we know we're
+        # going to use EC2, autoload it. Seems to have been fixed in Ruby 2.3+
+        ::Aws.eager_autoload! unless RUBY_VERSION.to_f >= 2.3
+      end
 
       def self.validation_warn(driver, old_key, new_key)
         driver.warn "WARN: The driver[#{driver.class.name}] config key `#{old_key}` " \
@@ -149,6 +157,12 @@ module Kitchen
           raise "#{attr} is no longer valid, please use " \
             "ENV['AWS_SESSION_TOKEN'] or ~/.aws/credentials.  See " \
             "the README for more details"
+        end
+      end
+      validations[:instance_initiated_shutdown_behavior] = lambda do |attr, val, _driver|
+        unless [nil, "stop", "terminate"].include?(val)
+          raise "'#{val}' is an invalid value for option '#{attr}'. " \
+            "Valid values are 'stop' or 'terminate'"
         end
       end
 
@@ -283,9 +297,14 @@ module Kitchen
       end
 
       def update_username(state)
-        # TODO: if the user explicitly specified the transport's default username,
-        # do NOT overwrite it!
-        if instance.transport[:username] == instance.transport.class.defaults[:username]
+        # BUG: With the following equality condition on username, if the user specifies 'root'
+        # as the transport's username then we will overwrite that value with one from the standard
+        # platform definitions.  This seems difficult to handle here as the default username is
+        # provided by the underlying transport classes, and is often non-nil (eg; 'root'), leaving
+        # us no way to distinguish a user-set value from the transport's default.
+        # See https://github.com/test-kitchen/kitchen-ec2/pull/273
+        if actual_platform &&
+            instance.transport[:username] == instance.transport.class.defaults[:username]
           debug("No SSH username specified: using default username #{actual_platform.username} " \
                 " for image #{config[:image_id]}, which we detected as #{actual_platform}.")
           state[:username] = actual_platform.username
@@ -356,11 +375,13 @@ module Kitchen
       end
 
       def tag_server(server)
-        tags = []
-        config[:tags].each do |k, v|
-          tags << { :key => k, :value => v }
+        if config[:tags]
+          tags = []
+          config[:tags].each do |k, v|
+            tags << { :key => k, :value => v }
+          end
+          server.create_tags(:tags => tags)
         end
-        server.create_tags(:tags => tags)
       end
 
       # Normally we could use `server.wait_until_running` but we actually need
@@ -502,6 +523,8 @@ module Kitchen
         Kitchen::Util.outdent!(<<-EOH)
         <powershell>
         $logfile="C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log"
+        # Allow script execution
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
         #PS Remoting and & winrm.cmd basic config
         Enable-PSRemoting -Force -SkipNetworkProfileCheck
         & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
