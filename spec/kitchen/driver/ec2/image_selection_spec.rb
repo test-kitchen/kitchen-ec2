@@ -221,7 +221,8 @@ describe "Default images for various platforms" do
         Windows_Server-*-RTM-English-*-Base-*
         Windows_Server-*-SP*-English-*-Base-*
         Windows_Server-*-R*_RTM-English-*-Base-*
-        Windows_Server-*-R*_SP*-English-*-Base-*] }
+        Windows_Server-*-R*_SP*-English-*-Base-*
+        Windows_Server-*-English-Full-Base-*] }
     ],
     "windows-2008" => [
       { :name => "owner-alias", :values => %w[amazon] },
@@ -267,7 +268,8 @@ describe "Default images for various platforms" do
         Windows_Server-*-RTM-English-*-Base-*
         Windows_Server-*-SP*-English-*-Base-*
         Windows_Server-*-R*_RTM-English-*-Base-*
-        Windows_Server-*-R*_SP*-English-*-Base-*] },
+        Windows_Server-*-R*_SP*-English-*-Base-*
+        Windows_Server-*-English-Full-Base-*] },
       { :name => "architecture", :values => %w[x86_64] }
     ],
     "windows-2012r2-x86_64" => [
@@ -283,7 +285,8 @@ describe "Default images for various platforms" do
         Windows_Server-*-RTM-English-*-Base-*
         Windows_Server-*-SP*-English-*-Base-*
         Windows_Server-*-R*_RTM-English-*-Base-*
-        Windows_Server-*-R*_SP*-English-*-Base-*] }
+        Windows_Server-*-R*_SP*-English-*-Base-*
+        Windows_Server-*-English-Full-Base-*] }
     ],
     "windows-server-2012r2-x86_64" => [
       { :name => "owner-alias", :values => %w[amazon] },
@@ -291,7 +294,12 @@ describe "Default images for various platforms" do
         Windows_Server-2012-R2_RTM-English-*-Base-*
         Windows_Server-2012-R2_SP*-English-*-Base-*] },
       { :name => "architecture", :values => %w[x86_64] }
-    ]
+    ],
+    "windows-2016" => [
+      { :name => "owner-alias", :values => %w[amazon] },
+      { :name => "name", :values => %w[
+        Windows_Server-2016-English-Full-Base-*] }
+    ],
   }
 
   describe "Platform defaults" do

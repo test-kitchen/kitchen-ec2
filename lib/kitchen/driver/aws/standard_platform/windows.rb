@@ -16,7 +16,8 @@ module Kitchen
           #
           # "windows" -> [nil, nil, nil]
           #   Windows_Server-*-R*_RTM-, Windows_Server-*-R*_SP*-,
-          #   Windows_Server-*-RTM-, Windows_Server-*-SP*-
+          #   Windows_Server-*-RTM-, Windows_Server-*-SP*-,
+          #   Windows_Server-*-
           # "windows-2012" -> [2012, 0, nil]
           #   Windows_Server-2012-RTM-, Windows_Server-2012-SP*-
           # "windows-2012r2" -> [2012, 2, nil]
@@ -29,6 +30,8 @@ module Kitchen
           #   Windows_Server-2012-R2_SP1-
           # "windows-2012r2rtm" -> [2012, 2, 0]
           #   Windows_Server-2012-R2_RTM-
+          # "windows-2016" -> [2016, 0, nil]
+          #   Windows_Server-2016-
           def image_search
             search = {
               "owner-alias" => "amazon",
@@ -75,6 +78,7 @@ module Kitchen
           # 2012r2sp4 -> [ 2012, 2, 4 ]
           # 2012sp4 -> [ 2012, 0, 4 ]
           # 2012rtm -> [ 2012, 0, 0 ]
+          # 2016 -> [ 2016, 0, nil ]
           def windows_version_parts
             version = self.version
             if version
@@ -109,26 +113,32 @@ module Kitchen
           def windows_name_filter
             major, revision, service_pack = windows_version_parts
 
-            case revision
-            when nil
-              revision_strings = ["", "R*_"]
-            when 0
-              revision_strings = [""]
+            if major == 2016
+              "Windows_Server-2016-English-Full-Base-*"
             else
-              revision_strings = ["R#{revision}_"]
-            end
+              case revision
+              when nil
+                revision_strings = ["", "R*_"]
+              when 0
+                revision_strings = [""]
+              else
+                revision_strings = ["R#{revision}_"]
+              end
 
-            case service_pack
-            when nil
-              revision_strings = revision_strings.flat_map { |r| ["#{r}RTM", "#{r}SP*"] }
-            when 0
-              revision_strings = revision_strings.map { |r| "#{r}RTM" }
-            else
-              revision_strings = revision_strings.map { |r| "#{r}SP#{service_pack}" }
-            end
+              case service_pack
+              when nil
+                revision_strings = revision_strings.flat_map { |r| ["#{r}RTM", "#{r}SP*"] }
+              when 0
+                revision_strings = revision_strings.map { |r| "#{r}RTM" }
+              else
+                revision_strings = revision_strings.map { |r| "#{r}SP#{service_pack}" }
+              end
 
-            revision_strings.map do |r|
-              "Windows_Server-#{major || "*"}-#{r}-English-*-Base-*"
+              name_filter = revision_strings.map do |r|
+                "Windows_Server-#{major || "*"}-#{r}-English-*-Base-*"
+              end
+              name_filter << "Windows_Server-*-English-Full-Base-*" if major == nil
+              name_filter
             end
           end
         end
