@@ -518,10 +518,15 @@ module Kitchen
           EOH
         end
 
+        if actual_platform.version =~ /2016/
+          logfile_name = 'C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
+        else
+          logfile_name = 'C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
+        end
         # Returning the fully constructed PowerShell script to user_data
         Kitchen::Util.outdent!(<<-EOH)
         <powershell>
-        $logfile="C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log"
+        $logfile=#{logfile_name}
         # Allow script execution
         Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
         #PS Remoting and & winrm.cmd basic config
