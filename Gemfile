@@ -8,7 +8,7 @@ gem "winrm-fs"
 gem "activesupport", "~> 4.0"
 
 group :test do
-  gem "rake"
+  gem "rake", "< 12"
   gem "pry"
 end
 
