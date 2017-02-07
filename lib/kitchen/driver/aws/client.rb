@@ -59,25 +59,29 @@ module Kitchen
         def self.get_credentials(profile_name, access_key_id, secret_access_key, session_token,
                                  region, options = {})
           if access_key_id && secret_access_key
-            ::Aws::Credentials.new(access_key_id, secret_access_key, session_token)
+            source_creds = ::Aws::Credentials.new(access_key_id, secret_access_key, session_token)
           elsif ENV["AWS_ACCESS_KEY_ID"] && ENV["AWS_SECRET_ACCESS_KEY"]
             ::Aws::Credentials.new(
               ENV["AWS_ACCESS_KEY_ID"],
               ENV["AWS_SECRET_ACCESS_KEY"],
               ENV["AWS_SESSION_TOKEN"]
             )
-          elsif shared_creds = ::Aws::SharedCredentials.new(:profile_name => profile_name)
-            source_creds = shared_creds
+          elsif profile_name
+            # require 'pry'; binding.pry
+            source_creds = ::Aws::SharedCredentials.new(:profile_name => profile_name)
           else
             source_creds = ::Aws::InstanceProfileCredentials.new(:retries => 1)
           end
+
           if options[:assume_role_arn] && options[:assume_role_session_name]
             sts = ::Aws::STS::Client.new(:credentials => source_creds, :region => region)
+
             assume_role_options = (options[:assume_role_options] || {}).merge(
               :client => sts,
               :role_arn => options[:assume_role_arn],
               :role_session_name => options[:assume_role_session_name]
             )
+
             ::Aws::AssumeRoleCredentials.new(assume_role_options)
           else
             ::Aws::InstanceProfileCredentials.new(:retries => 1)
