@@ -84,10 +84,6 @@ module Kitchen
       default_config :tenancy,             "default"
       default_config :instance_initiated_shutdown_behavior, nil
 
-      default_config :assume_role_arn, nil
-      default_config :assume_role_session_name, nil
-      default_config :assume_role_options, {}
-
       def initialize(*args, &block)
         super
         # AWS Ruby SDK loading isn't thread safe, so as soon as we know we're
@@ -327,10 +323,7 @@ module Kitchen
           config[:aws_secret_access_key],
           config[:aws_session_token],
           config[:http_proxy],
-          config[:retry_limit],
-          :assume_role_arn => config[:assume_role_arn],
-          :assume_role_session_name => config[:assume_role_session_name],
-          :assume_role_options => config[:assume_role_options]
+          config[:retry_limit]
         )
       end
 
