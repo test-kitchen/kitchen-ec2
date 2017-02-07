@@ -110,7 +110,7 @@ module Kitchen
 
           private
 
-          def windows_name_filter
+          def windows_name_filter # rubocop:disable Metrics/MethodLength
             major, revision, service_pack = windows_version_parts
 
             if major == 2016
@@ -137,7 +137,7 @@ module Kitchen
               name_filter = revision_strings.map do |r|
                 "Windows_Server-#{major || "*"}-#{r}-English-*-Base-*"
               end
-              name_filter << "Windows_Server-*-English-Full-Base-*" if major == nil
+              name_filter << "Windows_Server-*-English-Full-Base-*" if major.nil?
               name_filter
             end
           end

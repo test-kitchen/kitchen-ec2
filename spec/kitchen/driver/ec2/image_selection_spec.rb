@@ -299,7 +299,7 @@ describe "Default images for various platforms" do
       { :name => "owner-alias", :values => %w[amazon] },
       { :name => "name", :values => %w[
         Windows_Server-2016-English-Full-Base-*] }
-    ],
+    ]
   }
 
   describe "Platform defaults" do

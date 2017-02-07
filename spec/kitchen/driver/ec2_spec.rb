@@ -69,7 +69,7 @@ describe Kitchen::Driver::Ec2 do
     expect(driver.diagnose_plugin[:version]).to eq(
       Kitchen::Driver::EC2_VERSION)
   end
-  
+
   describe "default_config" do
     context "Windows" do
       let(:resource) { instance_double(::Aws::EC2::Resource, :image => image) }
@@ -79,15 +79,21 @@ describe Kitchen::Driver::Ec2 do
         allow(instance).to receive(:name).and_return("instance_name")
       end
       context "Windows 2016" do
-        let(:image) { FakeImage.new(:name => "Windows_Server-2016-English-Full-Base-2017.01.11") }
+        let(:image) {
+          FakeImage.new(:name => "Windows_Server-2016-English-Full-Base-2017.01.11")
+        }
         it "sets :user_data to something" do
-          expect(driver[:user_data]).to include '$logfile=C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
+          expect(driver[:user_data]).to include
+          '$logfile=C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
         end
       end
       context "Windows 2012R2" do
-        let(:image) { FakeImage.new(:name => "Windows_Server-2012-R2_RTM-English-64Bit-Base-2017.01.11") }
+        let(:image) {
+          FakeImage.new(:name => "Windows_Server-2012-R2_RTM-English-64Bit-Base-2017.01.11")
+        }
         it "sets :user_data to something" do
-          expect(driver[:user_data]).to include '$logfile=C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
+          expect(driver[:user_data]).to include
+          '$logfile=C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
         end
       end
     end
