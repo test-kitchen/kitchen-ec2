@@ -56,6 +56,14 @@ module Kitchen
             end
             i[:placement] = { :availability_zone => availability_zone.downcase }
           end
+          tenancy = config[:tenancy]
+          if tenancy && %w[default dedicated].include?(tenancy)
+            if i.key?(:placement)
+              i[:placement][:tenancy] = tenancy
+            else
+              i[:placement] = { :tenancy => tenancy }
+            end
+          end
           unless config[:block_device_mappings].nil? || config[:block_device_mappings].empty?
             i[:block_device_mappings] = config[:block_device_mappings]
           end
@@ -82,6 +90,21 @@ module Kitchen
             end
             if config[:security_group_ids]
               i[:network_interfaces][0][:groups] = i.delete(:security_group_ids)
+            end
+          end
+          availability_zone = config[:availability_zone]
+          if availability_zone
+            if availability_zone =~ /^[a-z]$/i
+              availability_zone = "#{config[:region]}#{availability_zone}"
+            end
+            i[:placement] = { :availability_zone => availability_zone.downcase }
+          end
+          tenancy = config[:tenancy]
+          if tenancy && %w[default dedicated].include?(tenancy)
+            if i.key?(:placement)
+              i[:placement][:tenancy] = tenancy
+            else
+              i[:placement] = { :tenancy => tenancy }
             end
           end
           unless config[:instance_initiated_shutdown_behavior].nil? ||
