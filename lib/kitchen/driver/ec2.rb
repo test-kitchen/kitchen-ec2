@@ -199,6 +199,8 @@ module Kitchen
         # Tagging can fail with a NotFound error even though we waited until the server exists
         # Waiting can also fail, so we have to also retry on that.  If it means we re-tag the
         # instance, so be it.
+        # Tagging an instance is possible before volumes are attached. Tagging the volumes after
+        # instance creation is consistent.
         Retryable.retryable(
           :tries => 10,
           :sleep => lambda { |n| [2**n, 30].min },
@@ -209,6 +211,8 @@ module Kitchen
 
           state[:server_id] = server.id
           info("EC2 instance <#{state[:server_id]}> created.")
+          wait_until_volumes_ready(server, state)
+          tag_volumes(server)
           wait_until_ready(server, state)
         end
 
@@ -390,6 +394,34 @@ module Kitchen
             tags << { :key => k, :value => v }
           end
           server.create_tags(:tags => tags)
+        end
+      end
+
+      def tag_volumes(server)
+        tags = []
+        config[:tags].each do |k, v|
+          tags << { :key => k, :value => v }
+        end
+        server.volumes.each do |volume|
+          volume.create_tags(:tags => tags)
+        end
+      end
+
+      # Compares the requested volume count vs what has actually been set to be
+      # attached to the instance. The information requested through
+      # ec2.client.described_volumes is updated before the instance volume
+      # information.
+      def wait_until_volumes_ready(server, state)
+        wait_with_destroy(server, state, "volumes to be ready") do |aws_instance|
+          described_volume_count = 0
+          ready_volume_count = 0
+          if aws_instance.exists?
+            described_volume_count = ec2.client.describe_volumes(:filters => [
+              { :name => "attachment.instance-id", :values => ["#{state[:server_id]}"] }]
+              ).volumes.length
+            aws_instance.volumes.each { ready_volume_count += 1 }
+          end
+          (described_volume_count > 0) && (described_volume_count == ready_volume_count)
         end
       end
 
