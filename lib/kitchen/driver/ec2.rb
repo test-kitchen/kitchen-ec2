@@ -369,9 +369,11 @@ module Kitchen
       end
 
       def create_spot_request
+        request_duration = config[:retryable_tries] * config[:retryable_sleep]
         request_data = {
           :spot_price => config[:spot_price].to_s,
-          :launch_specification => instance_generator.ec2_instance_data
+          :launch_specification => instance_generator.ec2_instance_data,
+          :valid_until => Time.now + request_duration
         }
         if config[:block_duration_minutes]
           request_data[:block_duration_minutes] = config[:block_duration_minutes]

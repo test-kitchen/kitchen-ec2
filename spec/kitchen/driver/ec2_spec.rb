@@ -212,12 +212,16 @@ describe Kitchen::Driver::Ec2 do
 
     before do
       expect(driver).to receive(:instance).at_least(:once).and_return(instance)
+      allow(Time).to receive(:now).and_return(Time.now)
     end
 
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
       expect(actual_client).to receive(:request_spot_instances).with(
-        :spot_price => "", :launch_specification => {}, :block_duration_minutes => 60
+        :spot_price => "",
+        :launch_specification => {},
+        :valid_until => Time.now + (config[:retryable_tries] * config[:retryable_sleep]),
+        :block_duration_minutes => 60
       ).and_return(response)
       expect(actual_client).to receive(:wait_until)
       expect(client).to receive(:get_instance_from_spot_request).with("id")
