@@ -70,6 +70,35 @@ describe Kitchen::Driver::Ec2 do
       Kitchen::Driver::EC2_VERSION)
   end
 
+  describe "default_config" do
+    context "Windows" do
+      let(:resource) { instance_double(::Aws::EC2::Resource, :image => image) }
+      before do
+        allow(driver).to receive(:windows_os?).and_return(true)
+        allow(client).to receive(:resource).and_return(resource)
+        allow(instance).to receive(:name).and_return("instance_name")
+      end
+      context "Windows 2016" do
+        let(:image) {
+          FakeImage.new(:name => "Windows_Server-2016-English-Full-Base-2017.01.11")
+        }
+        it "sets :user_data to something" do
+          expect(driver[:user_data]).to include
+          '$logfile=C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
+        end
+      end
+      context "Windows 2012R2" do
+        let(:image) {
+          FakeImage.new(:name => "Windows_Server-2012-R2_RTM-English-64Bit-Base-2017.01.11")
+        }
+        it "sets :user_data to something" do
+          expect(driver[:user_data]).to include
+          '$logfile=C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
+        end
+      end
+    end
+  end
+
   describe "#hostname" do
     let(:public_dns_name) { nil }
     let(:private_dns_name) { nil }

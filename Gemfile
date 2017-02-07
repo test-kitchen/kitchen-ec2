@@ -9,7 +9,7 @@ gem "activesupport", "~> 4.0"
 gem "faraday-http-cache", "~> 1.3"
 
 group :test do
-  gem "rake"
+  gem "rake", "< 12"
   gem "pry"
 end
 
