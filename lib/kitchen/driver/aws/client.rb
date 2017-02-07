@@ -39,11 +39,10 @@ module Kitchen
           secret_access_key = nil,
           session_token = nil,
           http_proxy = nil,
-          retry_limit = nil,
-          options = {}
+          retry_limit = nil
         )
           creds = self.class.get_credentials(
-            profile_name, access_key_id, secret_access_key, session_token, region, options
+            profile_name, access_key_id, secret_access_key, session_token
           )
           ::Aws.config.update(
             :region => region,
@@ -56,34 +55,20 @@ module Kitchen
         # Try and get the credentials from an ordered list of locations
         # http://docs.aws.amazon.com/sdkforruby/api/index.html#Configuration
         # rubocop:disable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
-        # rubocop:disable Metrics/ParameterLists, Metrics/MethodLength
-        def self.get_credentials(profile_name, access_key_id, secret_access_key, session_token,
-                                 region, options = {})
+        def self.get_credentials(profile_name, access_key_id, secret_access_key, session_token)
           shared_creds = ::Aws::SharedCredentials.new(:profile_name => profile_name)
           if access_key_id && secret_access_key
-            source_creds = ::Aws::Credentials.new(access_key_id, secret_access_key, session_token)
-
+            ::Aws::Credentials.new(access_key_id, secret_access_key, session_token)
           elsif ENV["AWS_ACCESS_KEY_ID"] && ENV["AWS_SECRET_ACCESS_KEY"]
-            source_creds = ::Aws::Credentials.new(
+            ::Aws::Credentials.new(
               ENV["AWS_ACCESS_KEY_ID"],
               ENV["AWS_SECRET_ACCESS_KEY"],
               ENV["AWS_SESSION_TOKEN"]
             )
           elsif shared_creds.loadable?
-            source_creds = shared_creds
+            shared_creds
           else
-            source_creds = ::Aws::InstanceProfileCredentials.new(:retries => 1)
-          end
-          if options[:assume_role_arn] && options[:assume_role_session_name]
-            sts = ::Aws::STS::Client.new(:credentials => source_creds, :region => region)
-            assume_role_options = (options[:assume_role_options] || {}).merge(
-              :client => sts,
-              :role_arn => options[:assume_role_arn],
-              :role_session_name => options[:assume_role_session_name]
-            )
-            ::Aws::AssumeRoleCredentials.new(assume_role_options)
-          else
-            source_creds
+            ::Aws::InstanceProfileCredentials.new(:retries => 1)
           end
         end
         # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity

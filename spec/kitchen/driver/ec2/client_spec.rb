@@ -33,24 +33,12 @@ describe Kitchen::Driver::Aws::Client do
     it "loads IAM credentials last" do
       expect(shared).to receive(:loadable?).and_return(false)
       expect(Aws::InstanceProfileCredentials).to receive(:new).and_return(iam)
-      expect(Kitchen::Driver::Aws::Client.get_credentials(
-        "profile",
-        nil,
-        nil,
-        nil,
-        "us-west-1"
-      )).to eq(iam)
+      expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to eq(iam)
     end
 
     it "loads shared credentials second to last" do
       expect(shared).to receive(:loadable?).and_return(true)
-      expect(Kitchen::Driver::Aws::Client.get_credentials(
-        "profile",
-        nil,
-        nil,
-        nil,
-        "us-west-1"
-      )).to eq(shared)
+      expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to eq(shared)
     end
 
     it "loads shared credentials third to last" do
@@ -60,13 +48,7 @@ describe Kitchen::Driver::Aws::Client do
         "AWS_SECRET_ACCESS_KEY" => "value1",
         "AWS_SESSION_TOKEN" => "token1"
       ) do
-        expect(Kitchen::Driver::Aws::Client.get_credentials(
-          "profile",
-          nil,
-          nil,
-          nil,
-          "us-west-1"
-        )).to \
+        expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil)).to \
           be_a(Aws::Credentials).and have_attributes(
             :access_key_id => "key1",
             :secret_access_key => "value1",
@@ -77,13 +59,7 @@ describe Kitchen::Driver::Aws::Client do
 
     it "loads provided credentials first" do
       expect(shared).to_not receive(:loadable?)
-      expect(Kitchen::Driver::Aws::Client.get_credentials(
-        "profile",
-        "key3",
-        "value3",
-        nil,
-        "us-west-1"
-      )).to \
+      expect(Kitchen::Driver::Aws::Client.get_credentials("profile", "key3", "value3", nil)).to \
         be_a(Aws::Credentials).and have_attributes(
          :access_key_id => "key3",
          :secret_access_key => "value3",
@@ -93,68 +69,12 @@ describe Kitchen::Driver::Aws::Client do
 
     it "uses a session token if provided" do
       expect(shared).to_not receive(:loadable?)
-      expect(Kitchen::Driver::Aws::Client.get_credentials(
-        "profile",
-        "key3",
-        "value3",
-        "t",
-        "us-west-1"
-      )).to \
+      expect(Kitchen::Driver::Aws::Client.get_credentials("profile", "key3", "value3", "t")).to \
         be_a(Aws::Credentials).and have_attributes(
          :access_key_id => "key3",
          :secret_access_key => "value3",
          :session_token => "t"
        )
-    end
-  end
-
-  describe "::get_credentials + STS AssumeRole" do
-    let(:shared) { instance_double(Aws::SharedCredentials) }
-    let(:iam) { instance_double(Aws::InstanceProfileCredentials) }
-    let(:assume_role) { instance_double(Aws::AssumeRoleCredentials) }
-    let(:sts_client) { instance_double(Aws::STS::Client) }
-
-    before do
-      expect(Aws::SharedCredentials).to \
-        receive(:new).with(:profile_name => "profile").and_return(shared)
-      expect(Aws::AssumeRoleCredentials).to \
-        receive(:new).with(
-          :client => sts_client,
-          :role_arn => "role_arn",
-          :role_session_name => "role_session_name"
-        ).and_return(assume_role)
-    end
-
-    # nothing else is set, so we default to this
-    it "loads IAM credentials last" do
-      expect(Aws::STS::Client).to \
-        receive(:new).with(:credentials => iam, :region => "us-west-1").and_return(sts_client)
-
-      expect(shared).to receive(:loadable?).and_return(false)
-      expect(Aws::InstanceProfileCredentials).to receive(:new).and_return(iam)
-      expect(Kitchen::Driver::Aws::Client.get_credentials(
-        "profile",
-        nil,
-        nil,
-        nil,
-        "us-west-1",
-        :assume_role_arn => "role_arn", :assume_role_session_name => "role_session_name"
-      )).to eq(assume_role)
-    end
-
-    it "loads shared credentials second to last" do
-      expect(Aws::STS::Client).to \
-        receive(:new).with(:credentials => shared, :region => "us-west-1").and_return(sts_client)
-
-      expect(shared).to receive(:loadable?).and_return(true)
-      expect(Kitchen::Driver::Aws::Client.get_credentials(
-        "profile",
-        nil,
-        nil,
-        nil,
-        "us-west-1",
-        :assume_role_arn => "role_arn", :assume_role_session_name => "role_session_name"
-      )).to eq(assume_role)
     end
   end
 
