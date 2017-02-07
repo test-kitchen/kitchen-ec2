@@ -67,7 +67,6 @@ module Kitchen
               ENV["AWS_SESSION_TOKEN"]
             )
           elsif profile_name
-            # require 'pry'; binding.pry
             source_creds = ::Aws::SharedCredentials.new(:profile_name => profile_name)
           else
             source_creds = ::Aws::InstanceProfileCredentials.new(:retries => 1)
