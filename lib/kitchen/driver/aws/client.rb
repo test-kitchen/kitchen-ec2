@@ -42,7 +42,7 @@ module Kitchen
           retry_limit = nil
         )
           creds = self.class.get_credentials(
-            profile_name, access_key_id, secret_access_key, session_token
+            profile_name, access_key_id, secret_access_key, session_token, region
           )
           ::Aws.config.update(
             :region => region,
@@ -58,19 +58,19 @@ module Kitchen
         # rubocop:disable Metrics/ParameterLists, Metrics/MethodLength
         def self.get_credentials(profile_name, access_key_id, secret_access_key, session_token,
                                  region, options = {})
-          if access_key_id && secret_access_key
-            source_creds = ::Aws::Credentials.new(access_key_id, secret_access_key, session_token)
-          elsif ENV["AWS_ACCESS_KEY_ID"] && ENV["AWS_SECRET_ACCESS_KEY"]
-            ::Aws::Credentials.new(
-              ENV["AWS_ACCESS_KEY_ID"],
-              ENV["AWS_SECRET_ACCESS_KEY"],
-              ENV["AWS_SESSION_TOKEN"]
-            )
-          elsif profile_name
-            source_creds = ::Aws::SharedCredentials.new(:profile_name => profile_name)
-          else
-            source_creds = ::Aws::InstanceProfileCredentials.new(:retries => 1)
-          end
+          source_creds = if access_key_id && secret_access_key
+                           ::Aws::Credentials.new(access_key_id, secret_access_key, session_token)
+                         elsif ENV["AWS_ACCESS_KEY_ID"] && ENV["AWS_SECRET_ACCESS_KEY"]
+                           ::Aws::Credentials.new(
+                             ENV["AWS_ACCESS_KEY_ID"],
+                             ENV["AWS_SECRET_ACCESS_KEY"],
+                             ENV["AWS_SESSION_TOKEN"]
+                           )
+                         elsif profile_name
+                           ::Aws::SharedCredentials.new(:profile_name => profile_name)
+                         else
+                           ::Aws::InstanceProfileCredentials.new(:retries => 1)
+                         end
 
           if options[:assume_role_arn] && options[:assume_role_session_name]
             sts = ::Aws::STS::Client.new(:credentials => source_creds, :region => region)
@@ -83,7 +83,7 @@ module Kitchen
 
             ::Aws::AssumeRoleCredentials.new(assume_role_options)
           else
-            ::Aws::InstanceProfileCredentials.new(:retries => 1)
+            source_creds
           end
         end
         # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity

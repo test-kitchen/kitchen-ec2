@@ -46,7 +46,7 @@ describe Kitchen::Driver::Aws::Client do
 
     it "loads credentials from the environment third to last" do
       env_creds("key_id", "secret") do
-        expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil, nil)).to \
+        expect(Kitchen::Driver::Aws::Client.get_credentials(nil, nil, nil, nil, nil)).to \
           be_a(Aws::Credentials).and have_attributes(
             :access_key_id => "key_id",
             :secret_access_key => "secret"
