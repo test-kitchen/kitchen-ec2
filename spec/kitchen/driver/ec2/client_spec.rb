@@ -40,7 +40,8 @@ describe Kitchen::Driver::Aws::Client do
         receive(:new).with(:profile_name => "profile").and_return(shared)
 
       env_creds(nil, nil) do
-        expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil, nil)).to eq(shared)
+        expect(Kitchen::Driver::Aws::Client.get_credentials("profile", nil, nil, nil, nil)).to \
+          eq(shared)
       end
     end
 
@@ -118,7 +119,8 @@ describe Kitchen::Driver::Aws::Client do
     end
 
     it "loads shared credentials second to last" do
-      expect(::Aws::SharedCredentials).to receive(:new).with(profile_name: "profile").and_return(shared)
+      expect(::Aws::SharedCredentials).to \
+        receive(:new).with(:profile_name => "profile").and_return(shared)
       expect(Aws::STS::Client).to \
         receive(:new).with(:credentials => shared, :region => "us-west-1").and_return(sts_client)
 
