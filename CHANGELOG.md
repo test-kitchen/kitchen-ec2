@@ -1,7 +1,22 @@
 # Change Log
 
-## [1.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/1.2.0) (2016-09-12)
-[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.1.0...1.2.0)
+## [v1.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.3.0) (2017-02-10)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.2.0...v1.3.0)
+
+**Implemented Enhancements:**
+
+- Support Windows 2016 [\#291](https://github.com/test-kitchen/kitchen-ec2/pull/291) ([gdavison](https://github.com/gdavison))
+- Add expiration to spot requests [\#285](https://github.com/test-kitchen/kitchen-ec2/pull/285) ([alanbrent](https://github.com/alanbrent))
+- Don't break if we're using a custom "platform" AMI [\#273](https://github.com/test-kitchen/kitchen-ec2/pull/273) ([hynd](https://github.com/hynd))
+- Propagate tags to volumes [\#260](https://github.com/test-kitchen/kitchen-ec2/pull/260) ([mrbobbytables](https://github.com/mrbobbytables))
+- In the client, only source creds from the shared file when necessary [\#259](https://github.com/test-kitchen/kitchen-ec2/pull/259) ([davidcpell](https://github.com/davidcpell))
+- Add notes for AMI image name requirements [\#252](https://github.com/test-kitchen/kitchen-ec2/pull/252) ([freimer](https://github.com/freimer))
+- Provide the option to set ssl\_peer\_verify to false [\#251](https://github.com/test-kitchen/kitchen-ec2/pull/251) ([mwrock](https://github.com/mwrock))
+- Adding support for tenancy parameter in placement config. [\#235](https://github.com/test-kitchen/kitchen-ec2/pull/235) ([jcastillocano](https://github.com/jcastillocano))
+- Lookup ID from tag [\#232](https://github.com/test-kitchen/kitchen-ec2/pull/232) ([dlukman](https://github.com/dlukman))
+
+## [v1.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.2.0) (2016-09-12)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.1.0...v1.2.0)
 
 **Fixed bugs:**
 
