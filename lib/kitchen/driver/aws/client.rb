@@ -71,6 +71,8 @@ module Kitchen
             )
           elsif profile_name
             ::Aws::SharedCredentials.new(:profile_name => profile_name)
+          elsif default_shared_credentials?
+            ::Aws::SharedCredentials.new
           else
             ::Aws::InstanceProfileCredentials.new(:retries => 1)
           end
@@ -91,8 +93,8 @@ module Kitchen
         end
         # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
-        def self.get_shared_creds(profile_name)
-          ::Aws::SharedCredentials.new(:profile_name => profile_name)
+        def self.default_shared_credentials?
+          ::Aws::SharedCredentials.new.loadable?
         rescue ::Aws::Errors::NoSuchProfileError
           false
         end
