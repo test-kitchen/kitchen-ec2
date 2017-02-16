@@ -25,7 +25,7 @@ describe Kitchen::Driver::Aws::Client do
     it "loads IAM credentials last" do
       iam = instance_double(Aws::InstanceProfileCredentials)
 
-      allow(Kitchen::Driver::Aws::Client).to receive(:get_shared_creds).and_return(false)
+      allow(Kitchen::Driver::Aws::Client).to receive(:default_shared_credentials?).and_return(false)
       allow(Aws::InstanceProfileCredentials).to receive(:new).and_return(iam)
 
       env_creds(nil, nil) do
@@ -33,7 +33,20 @@ describe Kitchen::Driver::Aws::Client do
       end
     end
 
-    it "loads the shared credentials file second to last" do
+    it "loads the default shared creds profile second to last" do
+      shared = instance_double(Aws::SharedCredentials)
+
+      allow(Kitchen::Driver::Aws::Client).to receive(:default_shared_credentials?).and_return(true)
+      allow(Aws::SharedCredentials).to \
+        receive(:new).and_return(shared)
+
+      env_creds(nil, nil) do
+        expect(Kitchen::Driver::Aws::Client.get_credentials(nil, nil, nil, nil, nil)).to \
+          eq(shared)
+      end
+    end
+
+    it "loads a custom shared credentials profile third to last" do
       shared = instance_double(Aws::SharedCredentials)
 
       allow(Aws::SharedCredentials).to \
@@ -103,6 +116,8 @@ describe Kitchen::Driver::Aws::Client do
 
     # nothing else is set, so we default to this
     it "loads an Instance Profile last" do
+      allow(Kitchen::Driver::Aws::Client).to receive(:default_shared_credentials?).and_return(false)
+
       expect(Aws::InstanceProfileCredentials).to \
         receive(:new).and_return(iam)
       expect(Aws::STS::Client).to \
