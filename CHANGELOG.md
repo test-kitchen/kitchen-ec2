@@ -1,6 +1,19 @@
 # Change Log
 
-## [v1.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.3.0) (2017-02-10)
+## [v1.3.1](https://github.com/test-kitchen/kitchen-ec2/tree/v1.3.1) (2017-02-16)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.3.0...v1.3.1)
+
+**Closed issues:**
+
+- Shared AWS credentials file being ignored. [\#295](https://github.com/test-kitchen/kitchen-ec2/issues/295)
+- Missing AMI generates Nil::NilClass error [\#284](https://github.com/test-kitchen/kitchen-ec2/issues/284)
+- `kitchen converge` failing - not prioritizing env vars over ~/.aws/credentials [\#258](https://github.com/test-kitchen/kitchen-ec2/issues/258)
+
+**Merged pull requests:**
+
+- reinstate default shared creds option [\#296](https://github.com/test-kitchen/kitchen-ec2/pull/296) ([davidcpell](https://github.com/davidcpell))
+
+## [v1.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.3.0) (2017-02-11)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.2.0...v1.3.0)
 
 **Implemented Enhancements:**
