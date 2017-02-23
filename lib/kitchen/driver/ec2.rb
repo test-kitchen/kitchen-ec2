@@ -383,22 +383,22 @@ module Kitchen
       end
 
       def tag_server(server)
-        if config[:tags]
-          tags = []
-          config[:tags].each do |k, v|
-            tags << { :key => k, :value => v }
+        if config[:tags] && !config[:tags].empty?
+          tags = config[:tags].map do |k, v|
+            { :key => k, :value => v }
           end
           server.create_tags(:tags => tags)
         end
       end
 
       def tag_volumes(server)
-        tags = []
-        config[:tags].each do |k, v|
-          tags << { :key => k, :value => v }
-        end
-        server.volumes.each do |volume|
-          volume.create_tags(:tags => tags)
+        if config[:tags] && !config[:tags].empty?
+          tags = config[:tags].map do |k, v|
+            { :key => k, :value => v }
+          end
+          server.volumes.each do |volume|
+            volume.create_tags(:tags => tags)
+          end
         end
       end
 
