@@ -1,5 +1,12 @@
 # Change Log
 
+## [v1.3.2](https://github.com/test-kitchen/kitchen-ec2/tree/v1.3.2) (2017-02-24)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.3.1...v1.3.2)
+
+**Improvements:**
+
+- Don't try to set tags if there aren't any. [\#298](https://github.com/test-kitchen/kitchen-ec2/pull/298) ([coderanger](https://github.com/coderanger))
+
 ## [v1.3.1](https://github.com/test-kitchen/kitchen-ec2/tree/v1.3.1) (2017-02-16)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.3.0...v1.3.1)
 
