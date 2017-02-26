@@ -138,7 +138,7 @@ module Kitchen
         #
         # The list of supported architectures
         #
-        ARCHITECTURE = %w[x86_64 i386 i86pc sun4v powerpc]
+        ARCHITECTURE = %w{x86_64 i386 i86pc sun4v powerpc}
 
         protected
 
@@ -162,7 +162,7 @@ module Kitchen
           images.group_by do |image|
             platform = self.class.from_image(driver, image)
             platform ? platform.version : nil
-          end.sort_by { |k, _v| k ? k.to_f : nil }.reverse.map { |_k, v| v }.flatten(1)
+          end.sort_by { |k, _v| k ? k.to_f : nil }.reverse.flat_map { |_k, v| v }
         end
 
         # Not supported yet: aix mac_os_x nexus solaris

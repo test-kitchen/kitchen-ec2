@@ -18,7 +18,7 @@ module Kitchen
           def image_search
             search = {
               "owner-id" => "118940168514",
-              "name" => ["FreeBSD #{version}*-RELEASE*", "FreeBSD/EC2 #{version}*-RELEASE*"]
+              "name" => ["FreeBSD #{version}*-RELEASE*", "FreeBSD/EC2 #{version}*-RELEASE*"],
             }
             search["architecture"] = architecture if architecture
             search

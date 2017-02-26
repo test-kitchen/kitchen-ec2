@@ -61,21 +61,21 @@ module Kitchen
         def self.get_credentials(profile_name, access_key_id, secret_access_key, session_token,
                                  region, options = {})
           source_creds =
-          if access_key_id && secret_access_key
-            ::Aws::Credentials.new(access_key_id, secret_access_key, session_token)
-          elsif ENV["AWS_ACCESS_KEY_ID"] && ENV["AWS_SECRET_ACCESS_KEY"]
-            ::Aws::Credentials.new(
-              ENV["AWS_ACCESS_KEY_ID"],
-              ENV["AWS_SECRET_ACCESS_KEY"],
-              ENV["AWS_SESSION_TOKEN"]
-            )
-          elsif profile_name
-            ::Aws::SharedCredentials.new(:profile_name => profile_name)
-          elsif default_shared_credentials?
-            ::Aws::SharedCredentials.new
-          else
-            ::Aws::InstanceProfileCredentials.new(:retries => 1)
-          end
+            if access_key_id && secret_access_key
+              ::Aws::Credentials.new(access_key_id, secret_access_key, session_token)
+            elsif ENV["AWS_ACCESS_KEY_ID"] && ENV["AWS_SECRET_ACCESS_KEY"]
+              ::Aws::Credentials.new(
+                ENV["AWS_ACCESS_KEY_ID"],
+                ENV["AWS_SECRET_ACCESS_KEY"],
+                ENV["AWS_SESSION_TOKEN"]
+              )
+            elsif profile_name
+              ::Aws::SharedCredentials.new(:profile_name => profile_name)
+            elsif default_shared_credentials?
+              ::Aws::SharedCredentials.new
+            else
+              ::Aws::InstanceProfileCredentials.new(:retries => 1)
+            end
 
           if options[:assume_role_arn] && options[:assume_role_session_name]
             sts = ::Aws::STS::Client.new(:credentials => source_creds, :region => region)
@@ -111,7 +111,7 @@ module Kitchen
           resource.instances(
             :filters => [{
               :name => "spot-instance-request-id",
-              :values => [request_id]
+              :values => [request_id],
             }]
           ).to_a[0]
         end

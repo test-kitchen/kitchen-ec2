@@ -49,13 +49,13 @@ module Kitchen
                 :filters => [
                   {
                     :name   => "tag:#{config[:subnet_filter][:tag]}",
-                    :values => [config[:subnet_filter][:value]]
-                  }
+                    :values => [config[:subnet_filter][:value]],
+                  },
                 ]
               )[0][0].subnet_id
 
             if config[:subnet_id].nil?
-              fail "The subnet tagged '#{config[:subnet_filter][:tag]}\
+              raise "The subnet tagged '#{config[:subnet_filter][:tag]}\
               #{config[:subnet_filter][:value]}' does not exist!"
             end
           end
@@ -66,13 +66,13 @@ module Kitchen
                 :filters => [
                   {
                     :name   => "tag:#{config[:security_group_filter][:tag]}",
-                    :values => [config[:security_group_filter][:value]]
-                  }
+                    :values => [config[:security_group_filter][:value]],
+                  },
                 ]
               )[0][0].group_id]
 
             if config[:security_group_ids].nil?
-              fail "The group tagged '#{config[:security_group_filter][:tag]}\
+              raise "The group tagged '#{config[:security_group_filter][:tag]}\
               #{config[:security_group_filter][:value]}' does not exist!"
             end
           end
@@ -83,7 +83,7 @@ module Kitchen
             :image_id                     => config[:image_id],
             :key_name                     => config[:aws_ssh_key_id],
             :subnet_id                    => config[:subnet_id],
-            :private_ip_address           => config[:private_ip_address]
+            :private_ip_address           => config[:private_ip_address],
           }
 
           availability_zone = config[:availability_zone]
@@ -94,7 +94,7 @@ module Kitchen
             i[:placement] = { :availability_zone => availability_zone.downcase }
           end
           tenancy = config[:tenancy]
-          if tenancy && %w[default dedicated].include?(tenancy)
+          if tenancy && %w{default dedicated}.include?(tenancy)
             if i.key?(:placement)
               i[:placement][:tenancy] = tenancy
             else
@@ -114,7 +114,7 @@ module Kitchen
               [{
                 :device_index => 0,
                 :associate_public_ip_address => config[:associate_public_ip],
-                :delete_on_termination => true
+                :delete_on_termination => true,
               }]
             # If specifying `:network_interfaces` in the request, you must specify
             # network specific configs in the network_interfaces block and not at
@@ -137,7 +137,7 @@ module Kitchen
             i[:placement] = { :availability_zone => availability_zone.downcase }
           end
           tenancy = config[:tenancy]
-          if tenancy && %w[default dedicated].include?(tenancy)
+          if tenancy && %w{default dedicated}.include?(tenancy)
             if i.key?(:placement)
               i[:placement][:tenancy] = tenancy
             else

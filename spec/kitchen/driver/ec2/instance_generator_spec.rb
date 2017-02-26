@@ -27,7 +27,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
   let(:config) { Hash.new }
   let(:resource) { instance_double(Aws::EC2::Resource) }
   let(:ec2) { instance_double(Kitchen::Driver::Aws::Client, :resource => resource) }
-  let(:logger)        { instance_double(Logger) }
+  let(:logger) { instance_double(Logger) }
   let(:generator) { Kitchen::Driver::Aws::InstanceGenerator.new(config, ec2, logger) }
 
   describe "#prepared_user_data" do
@@ -67,8 +67,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       :subnets => [
         {
           :subnet_id  => "s-123",
-          :tags       => [{ :key => "foo", :value => "bar" }]
-        }
+          :tags       => [{ :key => "foo", :value => "bar" }],
+        },
       ]
     )
 
@@ -77,8 +77,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       :security_groups => [
         {
           :group_id => "sg-123",
-          :tags => [{ :key => "foo", :value => "bar" }]
-        }
+          :tags => [{ :key => "foo", :value => "bar" }],
+        },
       ]
     )
 
@@ -100,7 +100,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :ebs_optimized                => true,
           :image_id                     => "ami-123",
           :subnet_id                    => "s-456",
-          :private_ip_address           => "0.0.0.0"
+          :private_ip_address           => "0.0.0.0",
         }
       end
 
@@ -124,7 +124,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :image_id                     => "ami-123",
           :aws_ssh_key_id               => "key",
           :subnet_id                    => "s-456",
-          :private_ip_address           => "0.0.0.0"
+          :private_ip_address           => "0.0.0.0",
         }
       end
 
@@ -152,8 +152,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :subnet_filter =>
             {
               :tag   => "foo",
-              :value => "bar"
-            }
+              :value => "bar",
+            },
         }
       end
 
@@ -163,8 +163,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :filters => [
             {
               :name => "tag:foo",
-              :values => ["bar"]
-            }
+              :values => ["bar"],
+            },
           ]
         ).and_return(ec2_stub.describe_subnets)
         expect(generator.ec2_instance_data[:subnet_id]).to eq("s-123")
@@ -184,8 +184,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :security_group_filter =>
             {
               :tag   => "foo",
-              :value => "bar"
-            }
+              :value => "bar",
+            },
         }
       end
 
@@ -195,8 +195,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :filters => [
             {
               :name => "tag:foo",
-              :values => ["bar"]
-            }
+              :values => ["bar"],
+            },
           ]
         ).and_return(ec2_stub.describe_security_groups)
         expect(generator.ec2_instance_data[:security_group_ids]).to eq(["sg-123"])
@@ -212,7 +212,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :aws_ssh_key_id               => "key",
           :subnet_id                    => "s-456",
           :private_ip_address           => "0.0.0.0",
-          :block_device_mappings        => []
+          :block_device_mappings        => [],
         }
       end
 
@@ -232,7 +232,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       let(:config) do
         {
           :region => "eu-east-1",
-          :availability_zone => "eu-west-1c"
+          :availability_zone => "eu-west-1c",
         }
       end
       it "returns that in the instance data" do
@@ -252,7 +252,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       let(:config) do
         {
           :region => "eu-east-1",
-          :availability_zone => "c"
+          :availability_zone => "c",
         }
       end
       it "adds the region to it in the instance data" do
@@ -271,7 +271,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when availability_zone is not provided" do
       let(:config) do
         {
-          :region => "eu-east-1"
+          :region => "eu-east-1",
         }
       end
       it "is not added to the instance data" do
@@ -291,7 +291,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         {
           :region => "eu-east-1",
           :availability_zone => "c",
-          :tenancy => "dedicated"
+          :tenancy => "dedicated",
         }
       end
       it "adds the region to it in the instance data" do
@@ -312,7 +312,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       let(:config) do
         {
           :region => "eu-east-1",
-          :tenancy => "default"
+          :tenancy => "default",
         }
       end
       it "is not added to the instance data" do
@@ -332,7 +332,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       let(:config) do
         {
           :region => "eu-east-1",
-          :tenancy => "ephemeral"
+          :tenancy => "ephemeral",
         }
       end
       it "is not added to the instance data" do
@@ -352,7 +352,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         {
           :region => "eu-east-1",
           :availability_zone => "c",
-          :tenancy => "dedicated"
+          :tenancy => "dedicated",
         }
       end
       it "adds the region to it in the instance data" do
@@ -373,7 +373,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       let(:config) do
         {
           :region => "eu-east-1",
-          :tenancy => "default"
+          :tenancy => "default",
         }
       end
       it "is not added to the instance data" do
@@ -393,7 +393,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       let(:config) do
         {
           :region => "eu-east-1",
-          :tenancy => "ephemeral"
+          :tenancy => "ephemeral",
         }
       end
       it "is not added to the instance data" do
@@ -411,7 +411,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when subnet_id is provided" do
       let(:config) do
         {
-          :subnet_id => "s-456"
+          :subnet_id => "s-456",
         }
       end
 
@@ -430,7 +430,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when associate_public_ip is provided" do
       let(:config) do
         {
-          :associate_public_ip => true
+          :associate_public_ip => true,
         }
       end
 
@@ -445,7 +445,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :network_interfaces => [{
             :device_index => 0,
             :associate_public_ip_address => true,
-            :delete_on_termination => true
+            :delete_on_termination => true,
           }]
         )
       end
@@ -454,7 +454,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         let(:config) do
           {
             :associate_public_ip => true,
-            :subnet_id => "s-456"
+            :subnet_id => "s-456",
           }
         end
 
@@ -469,7 +469,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               :device_index => 0,
               :associate_public_ip_address => true,
               :delete_on_termination => true,
-              :subnet_id => "s-456"
+              :subnet_id => "s-456",
             }]
           )
         end
@@ -479,7 +479,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         let(:config) do
           {
             :associate_public_ip => true,
-            :security_group_ids => ["sg-789"]
+            :security_group_ids => ["sg-789"],
           }
         end
 
@@ -495,7 +495,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               :device_index => 0,
               :associate_public_ip_address => true,
               :delete_on_termination => true,
-              :groups => ["sg-789"]
+              :groups => ["sg-789"],
             }]
           )
         end
@@ -508,7 +508,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               :device_index => 0,
               :associate_public_ip_address => true,
               :delete_on_termination => true,
-              :groups => ["only-one"]
+              :groups => ["only-one"],
             }]
           )
         end
@@ -518,7 +518,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         let(:config) do
           {
             :associate_public_ip => true,
-            :private_ip_address => "0.0.0.0"
+            :private_ip_address => "0.0.0.0",
           }
         end
 
@@ -533,7 +533,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               :device_index => 0,
               :associate_public_ip_address => true,
               :delete_on_termination => true,
-              :private_ip_address => "0.0.0.0"
+              :private_ip_address => "0.0.0.0",
             }]
           )
         end
@@ -558,14 +558,14 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
                 :volume_size => 15,
                 :delete_on_termination => false,
                 :volume_type => "gp2",
-                :snapshot_id => "id"
-              }
-            }
+                :snapshot_id => "id",
+              },
+            },
           ],
           :security_group_ids => ["sg-789"],
           :user_data => "foo",
           :iam_profile_name => "iam-123",
-          :associate_public_ip => true
+          :associate_public_ip => true,
         }
       end
 
@@ -583,9 +583,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
                 :volume_size => 15,
                 :delete_on_termination => false,
                 :volume_type => "gp2",
-                :snapshot_id => "id"
-              }
-            }
+                :snapshot_id => "id",
+              },
+            },
           ],
           :iam_instance_profile => { :name => "iam-123" },
           :network_interfaces => [{
@@ -594,7 +594,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
             :subnet_id => "s-456",
             :delete_on_termination => true,
             :groups => ["sg-789"],
-            :private_ip_address =>  "0.0.0.0"
+            :private_ip_address =>  "0.0.0.0",
           }],
           :placement => { :availability_zone => "eu-west-1a" },
           :user_data => Base64.encode64("foo")

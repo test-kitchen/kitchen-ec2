@@ -164,7 +164,7 @@ describe Kitchen::Driver::Aws::Client do
     end
 
     context "when provided all optional parameters" do
-      let(:client) {
+      let(:client) do
         Kitchen::Driver::Aws::Client.new(
           "us-west-1",
           "profile_name",
@@ -175,7 +175,7 @@ describe Kitchen::Driver::Aws::Client do
           999,
           false
         )
-      }
+      end
       let(:creds) { double("creds") }
       it "Sets the AWS config" do
         expect(Kitchen::Driver::Aws::Client).to receive(:get_credentials).and_return(creds)
@@ -202,7 +202,7 @@ describe Kitchen::Driver::Aws::Client do
       "AWS_ACCESS_KEY_ID" => key_id,
       "AWS_SECRET_ACCESS_KEY" => secret
     ) do
-      block.call
+      yield
     end
   end
 end

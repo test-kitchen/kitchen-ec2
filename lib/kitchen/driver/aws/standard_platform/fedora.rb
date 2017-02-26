@@ -15,7 +15,7 @@ module Kitchen
           def image_search
             search = {
               "owner-id" => "125523088429",
-              "name" => version ? "Fedora-Cloud-Base-#{version}-*" : "Fedora-Cloud-Base-*"
+              "name" => version ? "Fedora-Cloud-Base-#{version}-*" : "Fedora-Cloud-Base-*",
             }
             search["architecture"] = architecture if architecture
             search

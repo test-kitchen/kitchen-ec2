@@ -21,7 +21,7 @@ module Kitchen
           def image_search
             search = {
               "owner-id" => "309956199498",
-              "name" => "RHEL-#{version}*"
+              "name" => "RHEL-#{version}*",
             }
             search["architecture"] = architecture if architecture
             search
