@@ -101,7 +101,7 @@ module Kitchen
 
               # Turn service_pack into an integer. rtm = 0, spN = N.
               if service_pack
-                service_pack = (service_pack.casecmp("rtm").zero?) ? 0 : service_pack[2..-1].to_i
+                service_pack = (service_pack.casecmp("rtm") == 0) ? 0 : service_pack[2..-1].to_i
               end
             end
 
