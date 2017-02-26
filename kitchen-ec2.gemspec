@@ -30,8 +30,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "simplecov", "~> 0.7"
   gem.add_development_dependency "yard",      "~> 0.8"
 
-  # conflicts with finstyle 1.4.0
-  # gem.add_development_dependency "github_changelog_generator"
+  gem.add_development_dependency "github_changelog_generator"
 
   # style and complexity libraries are tightly version pinned as newer releases
   # may introduce new and undesireable style choices which would be immediately
