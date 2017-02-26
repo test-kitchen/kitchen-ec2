@@ -37,8 +37,4 @@ Gem::Specification.new do |gem|
   # enforced in CI
   gem.add_development_dependency "chefstyle", "= 0.5.0"
   gem.add_development_dependency "climate_control"
-
-  # github_changelog_generator -> github-api -> oauth2 -> rack
-  # rack being unconstrained breaks Ruby 2.1 installs
-  gem.add_development_dependency "rack", "~> 1.0"
 end
