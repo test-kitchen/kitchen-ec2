@@ -30,7 +30,7 @@ Once
 that is done, create your kitchen file in your cookbook directory (or an empty
 directory if you just want to get a feel for it):
 
-1. `kitchen init -D ec2`
+1. `kitchen init -D kitchen-ec2`
 2. Edit `.kitchen.yml` and add the aws_ssh_key_id to driver and a transport with
    an ssh_key:
 
