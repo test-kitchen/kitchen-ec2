@@ -169,7 +169,6 @@ module Kitchen
 
       def create(state) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         return if state[:server_id]
-        update_username(state)
 
         info(Kitchen::Util.outdent!(<<-END))
           If you are not using an account that qualifies under the AWS
@@ -178,17 +177,26 @@ module Kitchen
           are responsible for your incurred costs.
         END
 
-        if config[:spot_price]
-          # Spot instance when a price is set
-          server = submit_spot(state)
-        else
-          # On-demand instance
-          server = submit_server
-        end
-        info("Instance <#{server.id}> requested.")
-        server.wait_until_exists do |w|
-          w.before_attempt do |attempts|
-            info("Polling AWS for existence, attempt #{attempts}...")
+        server = nil
+
+        retry_action do |r|
+          update_username(state)
+
+          info("Attepmpting to request instance, #{r} retries")
+
+          if config[:spot_price]
+            # Spot instance when a price is set
+            server = submit_spot(state)
+          else
+            # On-demand instance
+            server = submit_server
+          end
+
+          info("Instance <#{server.id}> requested.")
+          server.wait_until_exists do |w|
+            w.before_attempt do |attempts|
+              info("Polling AWS for existence, attempt #{attempts}...")
+            end
           end
         end
 
@@ -198,11 +206,10 @@ module Kitchen
         # instance, so be it.
         # Tagging an instance is possible before volumes are attached. Tagging the volumes after
         # instance creation is consistent.
-        Retryable.retryable(
-          :tries => 10,
-          :sleep => lambda { |n| [2**n, 30].min },
-          :on => ::Aws::EC2::Errors::InvalidInstanceIDNotFound
-        ) do |r, _|
+        retry_action([
+          ::Aws::EC2::Errors::InvalidInstanceIDNotFound,
+          ::Aws::EC2::Errors::RequestLimitExceeded
+        ]) do |r|
           info("Attempting to tag the instance, #{r} retries")
           tag_server(server)
 
@@ -230,21 +237,24 @@ module Kitchen
       def destroy(state)
         return if state[:server_id].nil?
 
-        server = ec2.get_instance(state[:server_id])
-        unless server.nil?
-          instance.transport.connection(state).close
-          server.terminate
+        retry_action do |r|
+          info("Attepmpting to destroy instance <#{state[:server_id]}>, #{r} retries")
+          server = ec2.get_instance(state[:server_id])
+          unless server.nil?
+            instance.transport.connection(state).close
+            server.terminate
+          end
+          if state[:spot_request_id]
+            debug("Deleting spot request <#{state[:server_id]}>")
+            ec2.client.cancel_spot_instance_requests(
+              :spot_instance_request_ids => [state[:spot_request_id]]
+            )
+            state.delete(:spot_request_id)
+          end
+          info("EC2 instance <#{state[:server_id]}> destroyed.")
+          state.delete(:server_id)
+          state.delete(:hostname)
         end
-        if state[:spot_request_id]
-          debug("Deleting spot request <#{state[:server_id]}>")
-          ec2.client.cancel_spot_instance_requests(
-            :spot_instance_request_ids => [state[:spot_request_id]]
-          )
-          state.delete(:spot_request_id)
-        end
-        info("EC2 instance <#{state[:server_id]}> destroyed.")
-        state.delete(:server_id)
-        state.delete(:hostname)
       end
 
       def image
@@ -604,6 +614,18 @@ module Kitchen
         " Virtualization: #{image.virtualization_type}," \
         " Storage: #{image.root_device_type}#{volume_type}," \
         " Created: #{image.creation_date}"
+      end
+
+      private
+
+      def retry_action(exception = ::Aws::EC2::Errors::RequestLimitExceeded)
+        Retryable.retryable(
+          :tries => 10,
+          :sleep => lambda { |n| [2**n, 30].min },
+          :on => exception
+        ) do |r, _|
+          yield(r)
+        end
       end
 
     end
