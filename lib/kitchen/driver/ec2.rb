@@ -84,6 +84,7 @@ module Kitchen
       default_config :tenancy,             "default"
       default_config :instance_initiated_shutdown_behavior, nil
       default_config :ssl_verify_peer,     true
+      default_config :retry_on_aws_error_tries, 10
 
       def initialize(*args, &block)
         super
@@ -179,7 +180,7 @@ module Kitchen
 
         server = nil
 
-        retry_action do |r|
+        retry_on_aws_error do |r|
           update_username(state)
 
           info("Attepmpting to request instance, #{r} retries")
@@ -206,7 +207,7 @@ module Kitchen
         # instance, so be it.
         # Tagging an instance is possible before volumes are attached. Tagging the volumes after
         # instance creation is consistent.
-        retry_action([
+        retry_on_aws_error([
           ::Aws::EC2::Errors::InvalidInstanceIDNotFound,
           ::Aws::EC2::Errors::RequestLimitExceeded
         ]) do |r|
@@ -237,7 +238,7 @@ module Kitchen
       def destroy(state)
         return if state[:server_id].nil?
 
-        retry_action do |r|
+        retry_on_aws_error do |r|
           info("Attepmpting to destroy instance <#{state[:server_id]}>, #{r} retries")
           server = ec2.get_instance(state[:server_id])
           unless server.nil?
@@ -618,13 +619,13 @@ module Kitchen
 
       private
 
-      def retry_action(exception = ::Aws::EC2::Errors::RequestLimitExceeded)
+      def retry_on_aws_error(exception = ::Aws::EC2::Errors::RequestLimitExceeded)
         Retryable.retryable(
-          :tries => 10,
+          :tries => config[:retry_on_aws_error_tries],
           :sleep => lambda { |n| [2**n, 30].min },
           :on => exception
         ) do |r, _|
-          yield(r)
+          yield r
         end
       end
 
