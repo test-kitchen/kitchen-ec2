@@ -181,9 +181,11 @@ module Kitchen
         server = nil
 
         retry_on_aws_error do |r|
-          update_username(state)
+          return unless server.nil?
 
-          info("Attepmpting to request instance, #{r} retries")
+          info("Attepmpting to request EC2 instance, #{r} retries")
+
+          update_username(state)
 
           if config[:spot_price]
             # Spot instance when a price is set
@@ -194,6 +196,9 @@ module Kitchen
           end
 
           info("Instance <#{server.id}> requested.")
+        end
+
+        retry_on_aws_error do
           server.wait_until_exists do |w|
             w.before_attempt do |attempts|
               info("Polling AWS for existence, attempt #{attempts}...")

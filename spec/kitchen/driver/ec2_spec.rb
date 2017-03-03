@@ -444,9 +444,9 @@ describe Kitchen::Driver::Ec2 do
       expect(driver.create(state)).to eq(nil)
     end
 
-    it "calls #retry_on_aws_error twice" do
+    it "calls #retry_on_aws_error 3 times" do
       allow(driver).to receive(:create_ec2_json).with(state)
-      expect(driver).to receive(:retry_on_aws_error).twice
+      expect(driver).to receive(:retry_on_aws_error).exactly(3).times
       driver.create(state)
     end
 
