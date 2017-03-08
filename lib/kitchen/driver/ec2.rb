@@ -183,7 +183,7 @@ module Kitchen
         retry_on_aws_error do |r|
           return unless server.nil?
 
-          info("Attepmpting to request EC2 instance, #{r} retries")
+          info("Attempting to request EC2 instance, #{r} retries")
 
           update_username(state)
 
@@ -244,7 +244,7 @@ module Kitchen
         return if state[:server_id].nil?
 
         retry_on_aws_error do |r|
-          info("Attepmpting to destroy instance <#{state[:server_id]}>, #{r} retries")
+          info("Attempting to destroy instance <#{state[:server_id]}>, #{r} retries")
           server = ec2.get_instance(state[:server_id])
           unless server.nil?
             instance.transport.connection(state).close
