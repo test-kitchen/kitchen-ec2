@@ -192,27 +192,10 @@ module Kitchen
           end
         end
 
-        # See https://github.com/aws/aws-sdk-ruby/issues/859
-        # Tagging can fail with a NotFound error even though we waited until the server exists
-        # Waiting can also fail, so we have to also retry on that.  If it means we re-tag the
-        # instance, so be it.
-        # Tagging an instance is possible before volumes are attached. Tagging the volumes after
-        # instance creation is consistent.
-        Retryable.retryable(
-          :tries => 10,
-          :sleep => lambda { |n| [2**n, 30].min },
-          :on => ::Aws::EC2::Errors::InvalidInstanceIDNotFound
-        ) do |r, _|
-          info("Attempting to tag the instance, #{r} retries")
-          tag_server(server)
-
-          state[:server_id] = server.id
-          info("EC2 instance <#{state[:server_id]}> created.")
-          wait_until_volumes_ready(server, state)
-          tag_volumes(server)
-          wait_until_ready(server, state)
-        end
-
+        state[:server_id] = server.id
+        info("EC2 instance <#{state[:server_id]}> created.")
+        wait_until_ready(server, state)
+        
         if windows_os? &&
             instance.transport[:username] =~ /administrator/i &&
             instance.transport[:password].nil?
@@ -342,6 +325,21 @@ module Kitchen
         end
         instance_data[:min_count] = 1
         instance_data[:max_count] = 1
+        if config[:tags] && !config[:tags].empty?
+          tags = config[:tags].map do |k, v|
+            { :key => k, :value => v }
+          end
+          instance_data[:tag_specifications] = [
+            {
+              resource_type: "instance",
+              tags: tags
+            },
+            {
+              resource_type: "volume",
+              tags: tags
+            }
+          ]
+        end
         ec2.create_instance(instance_data)
       end
 
@@ -380,44 +378,6 @@ module Kitchen
 
         response = ec2.client.request_spot_instances(request_data)
         response[:spot_instance_requests][0][:spot_instance_request_id]
-      end
-
-      def tag_server(server)
-        if config[:tags] && !config[:tags].empty?
-          tags = config[:tags].map do |k, v|
-            { :key => k, :value => v }
-          end
-          server.create_tags(:tags => tags)
-        end
-      end
-
-      def tag_volumes(server)
-        if config[:tags] && !config[:tags].empty?
-          tags = config[:tags].map do |k, v|
-            { :key => k, :value => v }
-          end
-          server.volumes.each do |volume|
-            volume.create_tags(:tags => tags)
-          end
-        end
-      end
-
-      # Compares the requested volume count vs what has actually been set to be
-      # attached to the instance. The information requested through
-      # ec2.client.described_volumes is updated before the instance volume
-      # information.
-      def wait_until_volumes_ready(server, state)
-        wait_with_destroy(server, state, "volumes to be ready") do |aws_instance|
-          described_volume_count = 0
-          ready_volume_count = 0
-          if aws_instance.exists?
-            described_volume_count = ec2.client.describe_volumes(:filters => [
-              { :name => "attachment.instance-id", :values => ["#{state[:server_id]}"] }]
-              ).volumes.length
-            aws_instance.volumes.each { ready_volume_count += 1 }
-          end
-          (described_volume_count > 0) && (described_volume_count == ready_volume_count)
-        end
       end
 
       # Normally we could use `server.wait_until_running` but we actually need
