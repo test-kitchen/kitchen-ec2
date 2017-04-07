@@ -13,7 +13,7 @@ task :stats do
   sh "countloc -r spec features"
 end
 
-require "finstyle"
+require "chefstyle"
 require "rubocop/rake_task"
 RuboCop::RakeTask.new(:style) do |task|
   task.options << "--display-cop-names"

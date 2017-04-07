@@ -11,7 +11,7 @@ module Kitchen
           DEBIAN_CODENAMES = {
             "8" => "jessie",
             "7" => "wheezy",
-            "6" => "squeeze"
+            "6" => "squeeze",
           }
 
           def username
@@ -25,7 +25,7 @@ module Kitchen
           def image_search
             search = {
               "owner-id" => "379101102735",
-              "name" => "debian-#{codename}-*"
+              "name" => "debian-#{codename}-*",
             }
             search["architecture"] = architecture if architecture
             search

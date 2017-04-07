@@ -35,7 +35,7 @@ module Kitchen
           def image_search
             search = {
               "owner-alias" => "amazon",
-              "name" => windows_name_filter
+              "name" => windows_name_filter,
             }
             search["architecture"] = architecture if architecture
             search
@@ -47,7 +47,7 @@ module Kitchen
             # ...
             images.group_by { |image| self.class.from_image(driver, image).windows_version_parts }.
               sort_by { |version, _platform_images| version }.
-              reverse.map { |_version, platform_images| platform_images }.flatten(1)
+              reverse.flat_map { |_version, platform_images| platform_images }
           end
 
           def self.from_image(driver, image)
@@ -101,7 +101,7 @@ module Kitchen
 
               # Turn service_pack into an integer. rtm = 0, spN = N.
               if service_pack
-                service_pack = (service_pack.downcase == "rtm") ? 0 : service_pack[2..-1].to_i
+                service_pack = (service_pack.casecmp("rtm") == 0) ? 0 : service_pack[2..-1].to_i
               end
             end
 

@@ -18,6 +18,8 @@ Gem::Specification.new do |gem|
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
+  gem.required_ruby_version = ">= 2.2.2"
+
   gem.add_dependency "test-kitchen", "~> 1.4", ">= 1.4.1"
   gem.add_dependency "excon"
   gem.add_dependency "multi_json"
@@ -30,16 +32,11 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "simplecov", "~> 0.7"
   gem.add_development_dependency "yard",      "~> 0.8"
 
-  # conflicts with finstyle 1.4.0
-  # gem.add_development_dependency "github_changelog_generator"
+  gem.add_development_dependency "github_changelog_generator"
 
   # style and complexity libraries are tightly version pinned as newer releases
   # may introduce new and undesireable style choices which would be immediately
   # enforced in CI
-  gem.add_development_dependency "finstyle",  "1.4.0"
+  gem.add_development_dependency "chefstyle", "= 0.5.0"
   gem.add_development_dependency "climate_control"
-
-  # github_changelog_generator -> github-api -> oauth2 -> rack
-  # rack being unconstrained breaks Ruby 2.1 installs
-  gem.add_development_dependency "rack", "~> 1.0"
 end

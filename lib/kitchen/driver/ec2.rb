@@ -48,15 +48,15 @@ module Kitchen
 
       plugin_version Kitchen::Driver::EC2_VERSION
 
-      default_config :region,             ENV["AWS_REGION"] || "us-east-1"
+      default_config :region, ENV["AWS_REGION"] || "us-east-1"
       default_config :shared_credentials_profile, nil
-      default_config :availability_zone,  nil
+      default_config :availability_zone, nil
       default_config :instance_type do |driver|
         driver.default_instance_type
       end
       default_config :ebs_optimized,      false
       default_config :security_group_ids, nil
-      default_config :tags,                "created-by" => "test-kitchen"
+      default_config :tags, "created-by" => "test-kitchen"
       default_config :user_data do |driver|
         if driver.windows_os?
           driver.default_windows_user_data
@@ -83,7 +83,7 @@ module Kitchen
       default_config :retry_limit,         3
       default_config :tenancy,             "default"
       default_config :instance_initiated_shutdown_behavior, nil
-      default_config :ssl_verify_peer,     true
+      default_config :ssl_verify_peer, true
 
       def initialize(*args, &block)
         super
@@ -372,7 +372,7 @@ module Kitchen
         request_data = {
           :spot_price => config[:spot_price].to_s,
           :launch_specification => instance_generator.ec2_instance_data,
-          :valid_until => Time.now + request_duration
+          :valid_until => Time.now + request_duration,
         }
         if config[:block_duration_minutes]
           request_data[:block_duration_minutes] = config[:block_duration_minutes]
@@ -491,7 +491,7 @@ module Kitchen
           "dns" => "public_dns_name",
           "public" => "public_ip_address",
           "private" => "private_ip_address",
-          "private_dns" => "private_dns_name"
+          "private_dns" => "private_dns_name",
         }
 
       #
