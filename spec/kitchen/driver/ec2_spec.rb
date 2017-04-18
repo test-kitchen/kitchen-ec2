@@ -563,7 +563,7 @@ describe Kitchen::Driver::Ec2 do
 
   describe "#retry_on_aws_error" do
     let(:tries) { 111 }
-    given_block = lambda do; end
+    given_block = lambda {}
 
     before do
       config[:retry_on_aws_error_tries] = tries

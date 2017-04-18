@@ -214,7 +214,7 @@ module Kitchen
         # instance creation is consistent.
         retry_on_aws_error([
           ::Aws::EC2::Errors::InvalidInstanceIDNotFound,
-          ::Aws::EC2::Errors::RequestLimitExceeded
+          ::Aws::EC2::Errors::RequestLimitExceeded,
         ]) do |r|
           info("Attempting to tag the instance, #{r} retries")
           tag_server(server)
