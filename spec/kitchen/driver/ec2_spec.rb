@@ -29,7 +29,7 @@ describe Kitchen::Driver::Ec2 do
     {
       :aws_ssh_key_id => "key",
       :image_id => "ami-1234567",
-      :block_duration_minutes => 60
+      :block_duration_minutes => 60,
     }
   end
   let(:platform)      { Kitchen::Platform.new(:name => "fooos-99") }
@@ -79,18 +79,18 @@ describe Kitchen::Driver::Ec2 do
         allow(instance).to receive(:name).and_return("instance_name")
       end
       context "Windows 2016" do
-        let(:image) {
+        let(:image) do
           FakeImage.new(:name => "Windows_Server-2016-English-Full-Base-2017.01.11")
-        }
+        end
         it "sets :user_data to something" do
           expect(driver[:user_data]).to include
           '$logfile=C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
         end
       end
       context "Windows 2012R2" do
-        let(:image) {
+        let(:image) do
           FakeImage.new(:name => "Windows_Server-2012-R2_RTM-English-64Bit-Base-2017.01.11")
-        }
+        end
         it "sets :user_data to something" do
           expect(driver[:user_data]).to include
           '$logfile=C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
@@ -104,14 +104,14 @@ describe Kitchen::Driver::Ec2 do
     let(:private_dns_name) { nil }
     let(:public_ip_address) { nil }
     let(:private_ip_address) { nil }
-    let(:server) {
+    let(:server) do
       double("server",
         :public_dns_name => public_dns_name,
         :private_dns_name => private_dns_name,
         :public_ip_address => public_ip_address,
         :private_ip_address => private_ip_address
       )
-    }
+    end
 
     it "returns nil if all sources are nil" do
       expect(driver.hostname(server)).to eq(nil)
@@ -235,9 +235,9 @@ describe Kitchen::Driver::Ec2 do
 
   describe "#submit_spot" do
     let(:state) { {} }
-    let(:response) {
+    let(:response) do
       { :spot_instance_requests => [{ :spot_instance_request_id => "id" }] }
-    }
+    end
 
     before do
       expect(driver).to receive(:instance).at_least(:once).and_return(instance)
@@ -265,7 +265,7 @@ describe Kitchen::Driver::Ec2 do
       expect(server).to receive(:create_tags).with(
         :tags => [
           { :key => :key1, :value => :value1 },
-          { :key => :key2, :value => :value2 }
+          { :key => :key2, :value => :value2 },
         ]
       )
       driver.tag_server(server)
@@ -286,7 +286,7 @@ describe Kitchen::Driver::Ec2 do
       expect(volume).to receive(:create_tags).with(
         :tags => [
           { :key => :key1, :value => :value1 },
-          { :key => :key2, :value => :value2 }
+          { :key => :key2, :value => :value2 },
         ]
       )
       driver.tag_volumes(server)
@@ -407,7 +407,7 @@ describe Kitchen::Driver::Ec2 do
     let(:tries) { 111 }
     let(:sleep) { 222 }
     let(:msg) { "msg" }
-    given_block = lambda do; end
+    given_block = lambda { ; }
 
     before do
       config[:retryable_sleep] = sleep
@@ -429,9 +429,9 @@ describe Kitchen::Driver::Ec2 do
       expect(server).to receive(:wait_until).and_raise(::Aws::Waiters::Errors::WaiterFailed)
       expect(driver).to receive(:destroy).with(state)
       expect(driver).to receive(:error).with(/#{msg}/)
-      expect {
+      expect do
         driver.wait_with_destroy(server, state, msg, &given_block)
-      }.to raise_error(::Aws::Waiters::Errors::WaiterFailed)
+      end.to raise_error(::Aws::Waiters::Errors::WaiterFailed)
     end
   end
 

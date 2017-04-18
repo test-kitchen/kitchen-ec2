@@ -15,7 +15,7 @@ module Kitchen
           def image_search
             search = {
               "owner-id" => "099720109477",
-              "name" => "ubuntu/images/*/ubuntu-*-#{version}*"
+              "name" => "ubuntu/images/*/ubuntu-*-#{version}*",
             }
             search["architecture"] = architecture if architecture
             search

@@ -18,7 +18,7 @@ module Kitchen
           def image_search
             search = {
               "owner-alias" => "aws-marketplace",
-              "name" => ["CentOS Linux #{version}*", "CentOS-#{version}*-GA-*"]
+              "name" => ["CentOS Linux #{version}*", "CentOS-#{version}*-GA-*"],
             }
             search["architecture"] = architecture if architecture
             search
@@ -30,7 +30,7 @@ module Kitchen
             # ...
             images.group_by { |image| self.class.from_image(driver, image).version }.
               sort_by { |k, _v| (k && k.include?(".") ? k.to_f : "#{k}.999".to_f) }.
-              reverse.map { |_k, v| v }.flatten(1)
+              reverse.flat_map { |_k, v| v }
           end
 
           def self.from_image(driver, image)
