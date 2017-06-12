@@ -453,12 +453,14 @@ module Kitchen
           info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> #{status_msg}."
         end
         begin
-          server.wait_until(
-            :max_attempts => config[:retryable_tries],
-            :delay => config[:retryable_sleep],
-            :before_attempt => wait_log,
-            &block
-          )
+          with_request_limit_backoff(state) do
+            server.wait_until(
+              :max_attempts => config[:retryable_tries],
+              :delay => config[:retryable_sleep],
+              :before_attempt => wait_log,
+              &block
+            )
+          end
         rescue ::Aws::Waiters::Errors::WaiterFailed
           error("Ran out of time waiting for the server with id [#{state[:server_id]}]" \
             " #{status_msg}, attempting to destroy it")
@@ -476,11 +478,27 @@ module Kitchen
           # Password data is blank until password is available
           !enc.nil? && !enc.empty?
         end
-        pass = server.decrypt_windows_password(File.expand_path(instance.transport[:ssh_key]))
+        pass = with_request_limit_backoff(state) do
+          server.decrypt_windows_password(File.expand_path(instance.transport[:ssh_key]))
+        end
         state[:password] = pass
         info("Retrieved Windows password for instance <#{state[:server_id]}>.")
       end
       # rubocop:enable Lint/UnusedBlockArgument
+
+      def with_request_limit_backoff(state)
+        retries = 0
+        begin
+          yield
+        rescue ::Aws::EC2::Errors::RequestLimitExceeded, ::Aws::Waiters::Errors::UnexpectedError => e
+          raise unless retries < 5 && e.message.include?("Request limit exceeded")
+          retries += 1
+          info("Request limit exceeded for instance <#{state[:server_id]}>." \
+               " Trying again in #{retries**2} seconds.")
+          sleep(retries**2)
+          retry
+        end
+      end
 
       #
       # Ordered mapping from config name to Fog name.  Ordered by preference
