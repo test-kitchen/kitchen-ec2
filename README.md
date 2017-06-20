@@ -124,6 +124,8 @@ platforms:
   - name: rhel-6
   # The latest patch release of CentOS 6.3
   - name: centos-6.3
+  # The latest patch release of Amazon Linux 2017.03
+  - name: amazon-2017.03
   # 32-bit version of latest major+minor+patch release of Ubuntu
   - name: ubuntu-i386
   # 32-bit version of Debian 6

@@ -59,6 +59,37 @@ describe "Default images for various platforms" do
   end
 
   PLATFORM_SEARCHES = {
+    "amazon" => [
+      { :name => "owner-id", :values => %w{137112412989} },
+      { :name => "name", :values => %w{amzn-ami-*} },
+    ],
+    "amazon-x86_64" => [
+      { :name => "owner-id", :values => %w{137112412989} },
+      { :name => "name", :values => %w{amzn-ami-*} },
+      { :name => "architecture", :values => ["x86_64"] },
+    ],
+    "amazon-2016" => [
+      { :name => "owner-id", :values => %w{137112412989} },
+      { :name => "name", :values => %w{amzn-ami-*-2016*} },
+    ],
+    "amazon-2017" => [
+      { :name => "owner-id", :values => %w{137112412989} },
+      { :name => "name", :values => %w{amzn-ami-*-2017*} },
+    ],
+    "amazon-2016.09" => [
+      { :name => "owner-id", :values => %w{137112412989} },
+      { :name => "name", :values => %w{amzn-ami-*-2016.09*} },
+    ],
+    "amazon-2017.03" => [
+      { :name => "owner-id", :values => %w{137112412989} },
+      { :name => "name", :values => %w{amzn-ami-*-2017.03*} },
+    ],
+    "amazon-2017.03-x86_64" => [
+      { :name => "owner-id", :values => %w{137112412989} },
+      { :name => "name", :values => %w{amzn-ami-*-2017.03*} },
+      { :name => "architecture", :values => ["x86_64"] },
+    ],
+
     "centos" => [
       { :name => "owner-alias", :values => %w{aws-marketplace} },
       { :name => "name", :values => ["CentOS Linux *", "CentOS-*-GA-*"] },
