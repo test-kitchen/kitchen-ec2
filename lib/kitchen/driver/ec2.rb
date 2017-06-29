@@ -535,10 +535,28 @@ module Kitchen
       end
 
       def default_windows_user_data
+        custom_admin_script = Kitchen::Util.outdent!(<<-EOH)
+        $logfile=C:\\kitchen-ec2.log
+        # Allow script execution
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
+        #PS Remoting and & winrm.cmd basic config
+        $enableArgs=@{Force=$true}
+        $command=Get-Command Enable-PSRemoting
+        if($command.Parameters.Keys -contains "skipnetworkprofilecheck"){
+            $enableArgs.skipnetworkprofilecheck=$true
+        }
+        Enable-PSRemoting @enableArgs
+        & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
+        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
+        & winrm.cmd set winrm/config/winrs '@{MaxShellsPerUser="50"}' >> $logfile
+        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
+        #Firewall Config
+        & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
+        EOH
+
         # Preparing custom static admin user if we defined something other than Administrator
-        custom_admin_script = ""
         if !(instance.transport[:username] =~ /administrator/i) && instance.transport[:password]
-          custom_admin_script = Kitchen::Util.outdent!(<<-EOH)
+          custom_admin_script << Kitchen::Util.outdent!(<<-EOH)
           "Disabling Complex Passwords" >> $logfile
           $seccfg = [IO.Path]::GetTempFileName()
           & secedit.exe /export /cfg $seccfg >> $logfile
@@ -555,30 +573,9 @@ module Kitchen
           EOH
         end
 
-        if actual_platform.version =~ /2016/
-          logfile_name = 'C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
-        else
-          logfile_name = 'C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
-        end
         # Returning the fully constructed PowerShell script to user_data
         Kitchen::Util.outdent!(<<-EOH)
         <powershell>
-        $logfile=#{logfile_name}
-        # Allow script execution
-        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
-        #PS Remoting and & winrm.cmd basic config
-        $enableArgs=@{Force=$true}
-        $command=Get-Command Enable-PSRemoting
-        if($command.Parameters.Keys -contains "skipnetworkprofilecheck"){
-            $enableArgs.skipnetworkprofilecheck=$true
-        }
-        Enable-PSRemoting @enableArgs
-        & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
-        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
-        & winrm.cmd set winrm/config/winrs '@{MaxShellsPerUser="50"}' >> $logfile
-        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
-        #Firewall Config
-        & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
         #{custom_admin_script}
         </powershell>
         EOH
