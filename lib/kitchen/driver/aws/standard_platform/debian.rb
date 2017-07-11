@@ -9,6 +9,7 @@ module Kitchen
           StandardPlatform.platforms["debian"] = self
 
           DEBIAN_CODENAMES = {
+            "9" => "stretch",
             "8" => "jessie",
             "7" => "wheezy",
             "6" => "squeeze",
