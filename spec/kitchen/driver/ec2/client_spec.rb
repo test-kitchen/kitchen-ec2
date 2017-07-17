@@ -163,11 +163,11 @@ describe Kitchen::Driver::Aws::Client do
       expect(Aws.config[:region]).to eq("us-west-1")
     end
 
-    context "when provided all optional parameters" do
+    context "when not provided profile_name" do
       let(:client) do
         Kitchen::Driver::Aws::Client.new(
           "us-west-1",
-          "profile_name",
+          nil,
           "access_key_id",
           "secret_access_key",
           "session_token",
@@ -182,6 +182,29 @@ describe Kitchen::Driver::Aws::Client do
         client
         expect(Aws.config[:region]).to eq("us-west-1")
         expect(Aws.config[:credentials]).to eq(creds)
+        expect(Aws.config[:http_proxy]).to eq("http_proxy")
+        expect(Aws.config[:retry_limit]).to eq(999)
+        expect(Aws.config[:ssl_verify_peer]).to eq(false)
+      end
+    end
+
+    context "when provided profile_name" do
+      let(:client) do
+        Kitchen::Driver::Aws::Client.new(
+          "us-west-1",
+          "my_profile",
+          "access_key_id",
+          "secret_access_key",
+          "session_token",
+          "http_proxy",
+          999,
+          false
+        )
+      end
+      it "Sets the AWS config" do
+        client
+        expect(Aws.config[:region]).to eq("us-west-1")
+        expect(Aws.config[:profile]).to eq("my_profile")
         expect(Aws.config[:http_proxy]).to eq("http_proxy")
         expect(Aws.config[:retry_limit]).to eq(999)
         expect(Aws.config[:ssl_verify_peer]).to eq(false)
