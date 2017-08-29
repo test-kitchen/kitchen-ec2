@@ -444,7 +444,7 @@ The tags to apply to a resource when the resource is being created.
 
 **ResourceType**
 
-The type of resource to tag. For kitchen-ec2, the resource types will be `instance`.
+The type of resource to tag. For kitchen-ec2, the resource type will be `instance`.
 
 **Tags**
 
