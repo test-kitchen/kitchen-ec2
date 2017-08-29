@@ -438,6 +438,29 @@ driver:
   interface: private_dns
 ```
 
+#### `tag_specifications`
+
+The tags to apply to a resource when the resource is being created.
+
+**ResourceType**
+
+The type of resource to tag. For kitchen-ec2, the resource types will be `instance`.
+
+**Tags**
+
+The tags to apply to the resource.
+
+```ruby
+driver:
+  tag_specifications:
+    resource_type: instance
+    tags:
+      name: name
+      app: app
+      appowner: app
+      environment: env
+```
+
 ## Example
 
 The following could be used in a `.kitchen.yml` or in a `.kitchen.local.yml`

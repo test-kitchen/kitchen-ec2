@@ -540,6 +540,49 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
     end
 
+    context "when tag_specifications provided" do
+      let(:config) do
+        {
+          :tag_specifications => {
+              :resource_type => 'instance',
+              :tags => {
+                  :name => 'name',
+                  :app => 'app',
+                  :environment => 'environment'
+              }
+          }
+        }
+      end
+
+      it "adds tag_specifications" do
+        expect(generator.ec2_instance_data).to eq(
+          :instance_type => nil,
+          :ebs_optimized => nil,
+          :image_id => nil,
+          :key_name => nil,
+          :subnet_id => nil,
+          :private_ip_address => nil,
+          :tag_specifications => [{
+            :resource_type => 'instance',
+            :tags => [
+              {
+                :key=>:name,
+                :value=>"name"
+              },
+              {
+                :key=>:app,
+                :value=>"app"
+              },
+              {
+                :key=>:environment,
+                :value=>"environment"
+              }
+            ]
+          }]
+        )
+      end
+    end
+
     context "when provided the maximum config" do
       let(:config) do
         {
