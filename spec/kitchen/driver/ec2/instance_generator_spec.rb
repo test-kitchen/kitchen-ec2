@@ -544,13 +544,13 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       let(:config) do
         {
           :tag_specifications => {
-              :resource_type => 'instance',
+              :resource_type => "instance",
               :tags => {
-                  :name => 'name',
-                  :app => 'app',
-                  :environment => 'environment'
-              }
-          }
+                  :name => "name",
+                  :app => "app",
+                  :environment => "environment",
+              },
+          },
         }
       end
 
@@ -563,21 +563,21 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :subnet_id => nil,
           :private_ip_address => nil,
           :tag_specifications => [{
-            :resource_type => 'instance',
+            :resource_type => "instance",
             :tags => [
               {
-                :key=>:name,
-                :value=>"name"
+                :key => :name,
+                :value => "name",
               },
               {
-                :key=>:app,
-                :value=>"app"
+                :key => :app,
+                :value => "app",
               },
               {
-                :key=>:environment,
-                :value=>"environment"
-              }
-            ]
+                :key => :environment,
+                :value => "environment",
+              },
+            ],
           }]
         )
       end

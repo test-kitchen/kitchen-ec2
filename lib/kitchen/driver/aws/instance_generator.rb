@@ -155,8 +155,8 @@ module Kitchen
             i[:tag_specifications] = [
               {
                 resource_type: config[:tag_specifications][:resource_type],
-                tags: tags
-              }
+                tags: tags,
+              },
             ]
           end
           i
