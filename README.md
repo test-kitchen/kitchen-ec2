@@ -245,21 +245,21 @@ the letter designation - will attach this to the region used.
 If not specified, your instances will be placed in an AZ of AWS's choice in your
 region.
 
-### <a name="config-instance_type"></a> `instance_type`
+#### <a name="config-instance_type"></a> `instance_type`
 
 The EC2 [instance type][instance_docs] (also known as size) to use.
 
 The default is `t2.micro` or `t1.micro`, depending on whether the image is `hvm`
 or `paravirtual`. (`paravirtual` images are incompatible with `t2.micro`.)
 
-### `security_group_ids`
+#### `security_group_ids`
 
 An Array of EC2 [security groups][group_docs] which will be applied to the
 instance.
 
 The default is `["default"]`.
 
-### `security_group_filter`
+#### `security_group_filter`
 
 The EC2 [security group][group_docs] which will be applied to the instance,
 specified by tag. Only one group can be specified this way.
@@ -273,20 +273,20 @@ security_group_filter:
   value: 'example-group-name'
 ```
 
-### `region`
+#### `region`
 
 **Required** The AWS [region][region_docs] to use.
 
 If the environment variable `AWS_REGION` is populated that will be used.
 Otherwise the default is `"us-east-1"`.
 
-### `subnet_id`
+#### `subnet_id`
 
 The EC2 [subnet][subnet_docs] to use.
 
 The default is unset, or `nil`.
 
-### `subnet_filter`
+#### `subnet_filter`
 
 The EC2 [subnet][subnet_docs] to use, specified by tag.
 
@@ -299,13 +299,13 @@ subnet_filter:
   value: 'example-subnet-name'
 ```
 
-### `tags`
+#### `tags`
 
 The Hash of EC tag name/value pairs which will be applied to the instance.
 
 The default is `{ "created-by" => "test-kitchen" }`.
 
-### `user_data`
+#### `user_data`
 
 The user_data script or the path to a script to feed the instance.
 Use bash to install dependencies or download artifacts before chef runs.
@@ -318,32 +318,55 @@ On Windows instances we specify a default that enables winrm and
 adds a non-administrator user specified in the `username` transport
 options to the Administrator's User Group.
 
-### `iam_profile_name`
+#### `iam_profile_name`
 
-The EC2 IAM profile name to use.
+The EC2 IAM profile name to use. The default is `nil`.
 
-The default is `nil`.
+Note: The user, whose AWS credentials you have defined, not only needs `AmazonEC2FullAccess` permissions, but also the ability to execute `iam:PassRole`.
+Hence, use a policy like below when using this option:
+```json
+{
+    "Version": "2012-10-17",
+    "Statement": [
+        {
+            "Effect": "Allow",
+            "Action": [
+                "ec2:*"
+            ],
+            "Resource": "*"
+        },
+        {
+            "Effect": "Allow",
+            "Action": "iam:PassRole",
+            "Resource": "arn:aws:iam::123456789:role/RoleName"
+        }
+    ]
+}
+```
 
-### `spot_price`
+See [AWS documentation](https://aws.amazon.com/de/blogs/security/granting-permission-to-launch-ec2-instances-with-iam-roles-passrole-permission/) for more details.
+
+
+#### `spot_price`
 
 The price you bid in order to submit a spot request. An additional step will be required during the spot request process submission. If no price is set, it will use an on-demand instance.
 
 The default is `nil`.
 
-### `instance_initiated_shutdown_behavior`
+#### `instance_initiated_shutdown_behavior`
 
 Control whether an instance should `stop` or `terminate` when shutdown is initiated from the instance using an operating system command for system shutdown.
 
 The default is `nil`.
 
-### block_duration_minutes
+#### `block_duration_minutes`
 
 The [specified duration](http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/spot-requests.html#fixed-duration-spot-instances) for a spot instance, in minutes. This value must be a multiple of 60 (60, 120, 180, 240, 300, or 360).
 If no duration is set, the spot instance will remain active until it is terminated.
 
 The default is `nil`.
 
-### `http_proxy`
+#### `http_proxy`
 
 Specify a proxy to send AWS requests through.  Should be of the format `http://<host>:<port>`.
 
@@ -351,9 +374,17 @@ The default is `ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]`.  If you have these env
 
 **Note** - The AWS command line utility allow you to specify [two proxies](http://docs.aws.amazon.com/cli/latest/userguide/cli-http-proxy.html), one for HTTP and one for HTTPS.  The AWS Ruby SDK only allows you to specify 1 proxy and because all requests are `https://` this proxy needs to support HTTPS.
 
-### `ssl_verify_peer`
+#### `ssl_verify_peer`
 
 If you need to turn off ssl certificate verification for HTTP calls made to AWS, set `ssl_verify_peer: false`.
+
+#### `vpc_mode`
+
+Can be used to place ec2 instance into vpc. Requires `vpc_id` and `subnet_id` to be set.
+
+#### `vpc_id`
+
+Needs `vpc_mode` to be set to true. Represents the ID of the vpc in which the instance should be placed.
 
 ### Disk Configuration
 
