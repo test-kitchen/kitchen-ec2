@@ -154,14 +154,14 @@ module Kitchen
         def prepared_user_data
           # If user_data is a file reference, lets read it as such
           return nil if config[:user_data].nil?
-          @user_data ||= begin
-            if File.file?(config[:user_data])
-              @user_data = File.read(config[:user_data])
-            else
-              @user_data = config[:user_data]
-            end
-            @user_data = Base64.encode64(@user_data)
+          return @user_data if @user_data
+
+          raw_user_data = config.fetch(:user_data)
+          if !raw_user_data.include?("\0") && File.file?(raw_user_data)
+            raw_user_data = File.read(raw_user_data)
           end
+
+          @user_data = Base64.encode64(raw_user_data)
         end
 
       end
