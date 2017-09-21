@@ -93,7 +93,11 @@ describe "Default images for various platforms" do
 
     "debian" => [
       { :name => "owner-id", :values => %w{379101102735} },
-      { :name => "name", :values => %w{debian-jessie-*} },
+      { :name => "name", :values => %w{debian-stretch-*} },
+    ],
+    "debian-9" => [
+      { :name => "owner-id", :values => %w{379101102735} },
+      { :name => "name", :values => %w{debian-stretch-*} },
     ],
     "debian-8" => [
       { :name => "owner-id", :values => %w{379101102735} },
@@ -109,7 +113,7 @@ describe "Default images for various platforms" do
     ],
     "debian-x86_64" => [
       { :name => "owner-id", :values => %w{379101102735} },
-      { :name => "name", :values => %w{debian-jessie-*} },
+      { :name => "name", :values => %w{debian-stretch-*} },
       { :name => "architecture", :values => %w{x86_64} },
     ],
     "debian-6-x86_64" => [
