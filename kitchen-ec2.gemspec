@@ -22,7 +22,7 @@ Gem::Specification.new do |gem|
   gem.add_dependency "test-kitchen", "~> 1.4", ">= 1.4.1"
   gem.add_dependency "excon"
   gem.add_dependency "multi_json"
-  gem.add_dependency "aws-sdk", "~> 2"
+  gem.add_dependency "aws-sdk-ec2", "~> 1.42"
   gem.add_dependency "retryable", "~> 2.0"
 
   gem.add_development_dependency "rspec",     "~> 3.2"

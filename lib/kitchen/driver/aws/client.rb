@@ -17,7 +17,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "aws-sdk"
+require "aws-sdk-ec2"
 require "aws-sdk-core/credentials"
 require "aws-sdk-core/shared_credentials"
 require "aws-sdk-core/instance_profile_credentials"
@@ -50,7 +50,7 @@ module Kitchen
         end
 
         def create_instance(options)
-          resource.create_instances(options)[0]
+          resource.create_instances(options).first
         end
 
         def get_instance(id)

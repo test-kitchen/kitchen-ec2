@@ -38,16 +38,14 @@ require "time"
 require "etc"
 require "socket"
 
-Aws.eager_autoload!
+require "aws-sdk-ec2"
 
 module Kitchen
-
   module Driver
-
     # Amazon EC2 driver for Test Kitchen.
     #
     # @author Fletcher Nichol <fnichol@nichol.ca>
-    class Ec2 < Kitchen::Driver::Base
+    class Ec2 < Kitchen::Driver::Base # rubocop:disable Metrics/ClassLength
 
       kitchen_driver_api_version 2
 
@@ -56,17 +54,13 @@ module Kitchen
       default_config :region, ENV["AWS_REGION"] || "us-east-1"
       default_config :shared_credentials_profile, nil
       default_config :availability_zone, nil
-      default_config :instance_type do |driver|
-        driver.default_instance_type
-      end
+      default_config :instance_type, &:default_instance_type
       default_config :ebs_optimized,      false
       default_config :security_group_ids, nil
       default_config :security_group_filter, nil
       default_config :tags, "created-by" => "test-kitchen"
       default_config :user_data do |driver|
-        if driver.windows_os?
-          driver.default_windows_user_data
-        end
+        driver.default_windows_user_data if driver.windows_os?
       end
       default_config :private_ip_address, nil
       default_config :iam_profile_name,   nil
@@ -78,9 +72,7 @@ module Kitchen
       default_config :aws_secret_access_key, nil
       default_config :aws_session_token,  nil
       default_config :aws_ssh_key_id,     ENV["AWS_SSH_KEY_ID"]
-      default_config :image_id do |driver|
-        driver.default_ami
-      end
+      default_config :image_id, &:default_ami
       default_config :image_search,       nil
       default_config :username,           nil
       default_config :associate_public_ip, nil
@@ -120,9 +112,7 @@ module Kitchen
         end
       end
       validations[:ssh_key] = lambda do |attr, val, driver|
-        unless val.nil?
-          validation_error(driver, attr, "transport.ssh_key")
-        end
+        validation_error(driver, attr, "transport.ssh_key") unless val.nil?
       end
       validations[:ssh_timeout] = lambda do |attr, val, driver|
         unless val.nil?
@@ -135,14 +125,10 @@ module Kitchen
         end
       end
       validations[:username] = lambda do |attr, val, driver|
-        unless val.nil?
-          validation_error(driver, attr, "transport.username")
-        end
+        validation_error(driver, attr, "transport.username") unless val.nil?
       end
       validations[:flavor_id] = lambda do |attr, val, driver|
-        unless val.nil?
-          validation_error(driver, attr, "instance_type")
-        end
+        validation_error(driver, attr, "instance_type") unless val.nil?
       end
 
       # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dedicated-instance.html
@@ -236,6 +222,7 @@ module Kitchen
           # On-demand instance
           server = submit_server
         end
+
         info("Instance <#{server.id}> requested.")
         server.wait_until_exists do |w|
           w.before_attempt do |attempts|
@@ -250,9 +237,9 @@ module Kitchen
         # Tagging an instance is possible before volumes are attached. Tagging the volumes after
         # instance creation is consistent.
         Retryable.retryable(
-          :tries => 10,
-          :sleep => lambda { |n| [2**n, 30].min },
-          :on => ::Aws::EC2::Errors::InvalidInstanceIDNotFound
+          tries: 10,
+          sleep: ->(n) { [2**n, 30].min },
+          on: ::Aws::EC2::Errors::InvalidInstanceIDNotFound
         ) do |r, _|
           info("Attempting to tag the instance, #{r} retries")
           tag_server(server)
@@ -431,7 +418,7 @@ module Kitchen
         state[:spot_request_id] = spot_request_id
         ec2.client.wait_until(
           :spot_instance_request_fulfilled,
-          :spot_instance_request_ids => [spot_request_id]
+          spot_instance_request_ids: [spot_request_id]
         ) do |w|
           w.max_attempts = config[:retryable_tries]
           w.delay = config[:retryable_sleep]
@@ -447,9 +434,9 @@ module Kitchen
       def create_spot_request
         request_duration = config[:retryable_tries] * config[:retryable_sleep]
         request_data = {
-          :spot_price => config[:spot_price].to_s,
-          :launch_specification => instance_generator.ec2_instance_data,
-          :valid_until => Time.now + request_duration,
+          spot_price: config[:spot_price].to_s,
+          launch_specification: instance_generator.ec2_instance_data,
+          valid_until: Time.now + request_duration,
         }
         if config[:block_duration_minutes]
           request_data[:block_duration_minutes] = config[:block_duration_minutes]
@@ -465,19 +452,19 @@ module Kitchen
             # we convert the value to a string because
             # nils should be passed as an empty String
             # and Integers need to be represented as Strings
-            { :key => k, :value => v.to_s }
+            { :key => k.to_s, :value => v.to_s }
           end
-          server.create_tags(:tags => tags)
+          server.create_tags(tags: tags)
         end
       end
 
       def tag_volumes(server)
         if config[:tags] && !config[:tags].empty?
           tags = config[:tags].map do |k, v|
-            { :key => k, :value => v.to_s }
+            { :key => k.to_s, :value => v.to_s }
           end
           server.volumes.each do |volume|
-            volume.create_tags(:tags => tags)
+            volume.create_tags(tags: tags)
           end
         end
       end
@@ -491,9 +478,9 @@ module Kitchen
           described_volume_count = 0
           ready_volume_count = 0
           if aws_instance.exists?
-            described_volume_count = ec2.client.describe_volumes(:filters => [
-              { :name => "attachment.instance-id", :values => ["#{state[:server_id]}"] }]
-              ).volumes.length
+            described_volume_count = ec2.client.describe_volumes(filters: [
+                                                                   { name: "attachment.instance-id", values: [(state[:server_id]).to_s] },
+                                                                 ]).volumes.length
             aws_instance.volumes.each { ready_volume_count += 1 }
           end
           (described_volume_count > 0) && (described_volume_count == ready_volume_count)
@@ -535,9 +522,9 @@ module Kitchen
         begin
           with_request_limit_backoff(state) do
             server.wait_until(
-              :max_attempts => config[:retryable_tries],
-              :delay => config[:retryable_sleep],
-              :before_attempt => wait_log,
+              max_attempts: config[:retryable_tries],
+              delay: config[:retryable_sleep],
+              before_attempt: wait_log,
               &block
             )
           end
@@ -552,7 +539,7 @@ module Kitchen
       def fetch_windows_admin_password(server, state)
         wait_with_destroy(server, state, "to fetch windows admin password") do |aws_instance|
           enc = server.client.get_password_data(
-            :instance_id => state[:server_id]
+            instance_id: state[:server_id]
           ).password_data
           # Password data is blank until password is available
           !enc.nil? && !enc.empty?
@@ -588,7 +575,7 @@ module Kitchen
           "public" => "public_ip_address",
           "private" => "private_ip_address",
           "private_dns" => "private_dns_name",
-        }
+        }.freeze
 
       #
       # Lookup hostname of provided server. If interface_type is provided use
@@ -621,7 +608,7 @@ module Kitchen
 
       def create_ec2_json(state)
         if windows_os?
-          cmd = "New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File"
+          cmd = 'New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File'
         else
           debug "Using sudo_command='#{sudo_command}' for ohai hints"
           cmd = "#{sudo_command} mkdir -p /etc/chef/ohai/hints; #{sudo_command} touch /etc/chef/ohai/hints/ec2.json"
@@ -706,8 +693,8 @@ module Kitchen
       end
 
       def image_info(image)
-        root_device = image.block_device_mappings.
-          find { |b| b.device_name == image.root_device_name }
+        root_device = image.block_device_mappings
+                           .find { |b| b.device_name == image.root_device_name }
         volume_type = " #{root_device.ebs.volume_type}" if root_device && root_device.ebs
 
         " Architecture: #{image.architecture}," \
@@ -823,7 +810,6 @@ module Kitchen
         state.delete(:auto_key_id)
         File.unlink("#{config[:kitchen_root]}/.kitchen/#{instance.name}.pem")
       end
-
     end
   end
 end
