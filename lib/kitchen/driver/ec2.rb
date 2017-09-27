@@ -84,6 +84,7 @@ module Kitchen
       default_config :tenancy,             "default"
       default_config :instance_initiated_shutdown_behavior, nil
       default_config :ssl_verify_peer, true
+      default_config :retry_on_error_tries, 10
 
       def initialize(*args, &block)
         super
@@ -169,7 +170,6 @@ module Kitchen
 
       def create(state) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
         return if state[:server_id]
-        update_username(state)
 
         info(Kitchen::Util.outdent!(<<-END))
           If you are not using an account that qualifies under the AWS
@@ -178,17 +178,31 @@ module Kitchen
           are responsible for your incurred costs.
         END
 
-        if config[:spot_price]
-          # Spot instance when a price is set
-          server = submit_spot(state)
-        else
-          # On-demand instance
-          server = submit_server
+        server = nil
+
+        retry_on_aws_ec2_error do |r|
+          return unless server.nil?
+
+          info("Attempting to request EC2 instance, #{r} retries")
+
+          update_username(state)
+
+          if config[:spot_price]
+            # Spot instance when a price is set
+            server = submit_spot(state)
+          else
+            # On-demand instance
+            server = submit_server
+          end
+
+          info("Instance <#{server.id}> requested.")
         end
-        info("Instance <#{server.id}> requested.")
-        server.wait_until_exists do |w|
-          w.before_attempt do |attempts|
-            info("Polling AWS for existence, attempt #{attempts}...")
+
+        retry_on_aws_waiters_error do
+          server.wait_until_exists do |w|
+            w.before_attempt do |attempts|
+              info("Polling AWS for existence, attempt #{attempts}...")
+            end
           end
         end
 
@@ -198,11 +212,10 @@ module Kitchen
         # instance, so be it.
         # Tagging an instance is possible before volumes are attached. Tagging the volumes after
         # instance creation is consistent.
-        Retryable.retryable(
-          :tries => 10,
-          :sleep => lambda { |n| [2**n, 30].min },
-          :on => ::Aws::EC2::Errors::InvalidInstanceIDNotFound
-        ) do |r, _|
+        retry_on_aws_ec2_error([
+          ::Aws::EC2::Errors::InvalidInstanceIDNotFound,
+          ::Aws::EC2::Errors::RequestLimitExceeded,
+        ]) do |r|
           info("Attempting to tag the instance, #{r} retries")
           tag_server(server)
 
@@ -222,7 +235,11 @@ module Kitchen
         end
 
         info("EC2 instance <#{state[:server_id]}> ready.")
-        instance.transport.connection(state).wait_until_ready
+
+        retry_on_aws_waiters_error do
+          instance.transport.connection(state).wait_until_ready
+        end
+
         create_ec2_json(state)
         debug("ec2:create '#{state[:hostname]}'")
       end
@@ -230,21 +247,24 @@ module Kitchen
       def destroy(state)
         return if state[:server_id].nil?
 
-        server = ec2.get_instance(state[:server_id])
-        unless server.nil?
-          instance.transport.connection(state).close
-          server.terminate
+        retry_on_aws_ec2_error do |r|
+          info("Attempting to destroy instance <#{state[:server_id]}>, #{r} retries")
+          server = ec2.get_instance(state[:server_id])
+          unless server.nil?
+            instance.transport.connection(state).close
+            server.terminate
+          end
+          if state[:spot_request_id]
+            debug("Deleting spot request <#{state[:server_id]}>")
+            ec2.client.cancel_spot_instance_requests(
+              :spot_instance_request_ids => [state[:spot_request_id]]
+            )
+            state.delete(:spot_request_id)
+          end
+          info("EC2 instance <#{state[:server_id]}> destroyed.")
+          state.delete(:server_id)
+          state.delete(:hostname)
         end
-        if state[:spot_request_id]
-          debug("Deleting spot request <#{state[:server_id]}>")
-          ec2.client.cancel_spot_instance_requests(
-            :spot_instance_request_ids => [state[:spot_request_id]]
-          )
-          state.delete(:spot_request_id)
-        end
-        info("EC2 instance <#{state[:server_id]}> destroyed.")
-        state.delete(:server_id)
-        state.delete(:hostname)
       end
 
       def image
@@ -352,16 +372,18 @@ module Kitchen
         # deleting the instance cancels the request, but deleting the request
         # does not affect the instance
         state[:spot_request_id] = spot_request_id
-        ec2.client.wait_until(
-          :spot_instance_request_fulfilled,
-          :spot_instance_request_ids => [spot_request_id]
-        ) do |w|
-          w.max_attempts = config[:retryable_tries]
-          w.delay = config[:retryable_sleep]
-          w.before_attempt do |attempts|
-            c = attempts * config[:retryable_sleep]
-            t = config[:retryable_tries] * config[:retryable_sleep]
-            info "Waited #{c}/#{t}s for spot request <#{spot_request_id}> to become fulfilled."
+        retry_on_aws_waiters_error do
+          ec2.client.wait_until(
+            :spot_instance_request_fulfilled,
+            :spot_instance_request_ids => [spot_request_id]
+          ) do |w|
+            w.max_attempts = config[:retryable_tries]
+            w.delay = config[:retryable_sleep]
+            w.before_attempt do |attempts|
+              c = attempts * config[:retryable_sleep]
+              t = config[:retryable_tries] * config[:retryable_sleep]
+              info "Waited #{c}/#{t}s for spot request <#{spot_request_id}> to become fulfilled."
+            end
           end
         end
         ec2.get_instance_from_spot_request(spot_request_id)
@@ -453,12 +475,14 @@ module Kitchen
           info "Waited #{c}/#{t}s for instance <#{state[:server_id]}> #{status_msg}."
         end
         begin
-          server.wait_until(
-            :max_attempts => config[:retryable_tries],
-            :delay => config[:retryable_sleep],
-            :before_attempt => wait_log,
-            &block
-          )
+          retry_on_aws_waiters_error do
+            server.wait_until(
+              :max_attempts => config[:retryable_tries],
+              :delay => config[:retryable_sleep],
+              :before_attempt => wait_log,
+              &block
+            )
+          end
         rescue ::Aws::Waiters::Errors::WaiterFailed
           error("Ran out of time waiting for the server with id [#{state[:server_id]}]" \
             " #{status_msg}, attempting to destroy it")
@@ -606,6 +630,27 @@ module Kitchen
         " Virtualization: #{image.virtualization_type}," \
         " Storage: #{image.root_device_type}#{volume_type}," \
         " Created: #{image.creation_date}"
+      end
+
+      private
+
+      def retry_on_error(on = ::StandardError, matching = /.*/)
+        Retryable.retryable(
+          :tries => config[:retry_on_error_tries],
+          :sleep => lambda { |n| [2**n, 30].min },
+          :matching => matching,
+          :on => on
+        ) do |r, _|
+          yield r
+        end
+      end
+
+      def retry_on_aws_ec2_error(on = ::Aws::EC2::Errors::RequestLimitExceeded, &block)
+        retry_on_error(on, &block)
+      end
+
+      def retry_on_aws_waiters_error(on = ::Aws::Waiters::Errors::UnexpectedError, matching = /Request limit exceeded/, &block)
+        retry_on_error(on, matching, &block)
       end
 
     end

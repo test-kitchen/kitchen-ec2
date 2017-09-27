@@ -444,6 +444,13 @@ describe Kitchen::Driver::Ec2 do
       expect(driver.create(state)).to eq(nil)
     end
 
+    it "calls #retry_on_aws_error 3 times" do
+      allow(driver).to receive(:create_ec2_json).with(state)
+      expect(driver).to receive(:retry_on_aws_ec2_error).exactly(2).times
+      expect(driver).to receive(:retry_on_aws_waiters_error).exactly(2).times
+      driver.create(state)
+    end
+
     shared_examples "common create" do
       it "successfully creates and tags the instance" do
         expect(server).to receive(:wait_until_exists)
@@ -507,10 +514,20 @@ describe Kitchen::Driver::Ec2 do
       it "returns nil" do
         expect(driver.destroy(state)).to eq(nil)
       end
+
+      it "never calls #retry_on_aws_ec2_error" do
+        expect(driver).to_not receive(:retry_on_aws_ec2_error)
+        driver.destroy(state)
+      end
     end
 
     context "when state has a normal server_id" do
       let(:state) { { :server_id => "id", :hostname => "name" } }
+
+      it "calls #retry_on_aws_ec2_error once" do
+        expect(driver).to receive(:retry_on_aws_ec2_error).once
+        driver.destroy(state)
+      end
 
       context "the server is already destroyed" do
         it "does nothing" do
@@ -542,6 +559,47 @@ describe Kitchen::Driver::Ec2 do
         driver.destroy(state)
         expect(state).to eq({})
       end
+    end
+  end
+
+  describe "#retry_on_error" do
+    let(:tries) { 111 }
+    given_block = lambda {}
+
+    before do
+      config[:retry_on_error_tries] = tries
+    end
+
+    it "takes the correct arguments" do
+      expect(driver).to receive(:retry_on_error) do |exception, matching, &block|
+        expect(exception).to eq(StandardError)
+        expect(matching).to eq("test")
+        expect(block).to eq(given_block)
+      end
+      driver.send(:retry_on_error, StandardError, "test", &given_block)
+    end
+
+    it "calls Retryable.retryable" do
+      expect(Retryable).to receive(:retryable)
+      driver.send(:retry_on_error, StandardError, "test", &given_block)
+    end
+
+    it "yields given block" do
+      expect { |b| driver.send(:retry_on_error, StandardError, "test", &b) }.to yield_control
+    end
+  end
+
+  describe "#retry_on_aws_ec2_error" do
+    it "delegates to #retry_on_error" do
+      expect(driver).to receive(:retry_on_error).with(::Aws::EC2::Errors::RequestLimitExceeded)
+      driver.send(:retry_on_aws_ec2_error)
+    end
+  end
+
+  describe "#retry_on_aws_waiters_error" do
+    it "delegates to #retry_on_error" do
+      expect(driver).to receive(:retry_on_error).with(::Aws::Waiters::Errors::UnexpectedError, /Request limit exceeded/)
+      driver.send(:retry_on_aws_waiters_error)
     end
   end
 
