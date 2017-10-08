@@ -206,10 +206,18 @@ module Kitchen
           info("Attempting to tag the instance, #{r} retries")
           tag_server(server)
 
+          # Get information about the AMI (image) used to create the image.
+          image_data = ec2.client.describe_images({:image_ids => [server.image_id]})[0][0]
+
           state[:server_id] = server.id
           info("EC2 instance <#{state[:server_id]}> created.")
-          wait_until_volumes_ready(server, state)
-          tag_volumes(server)
+
+          # instance-store backed images do not have attached volumes, so only
+          # wait for the volumes to be ready if the instance EBS-backed.
+          if image_data.root_device_type == "ebs"
+            wait_until_volumes_ready(server, state)
+            tag_volumes(server)
+          end
           wait_until_ready(server, state)
         end
 
