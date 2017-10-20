@@ -207,7 +207,7 @@ module Kitchen
           tag_server(server)
 
           # Get information about the AMI (image) used to create the image.
-          image_data = ec2.client.describe_images({:image_ids => [server.image_id]})[0][0]
+          image_data = ec2.client.describe_images({ :image_ids => [server.image_id] })[0][0]
 
           state[:server_id] = server.id
           info("EC2 instance <#{state[:server_id]}> created.")

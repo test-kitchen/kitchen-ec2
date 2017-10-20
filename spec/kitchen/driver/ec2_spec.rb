@@ -456,7 +456,7 @@ describe Kitchen::Driver::Ec2 do
         expect(driver).to receive(:tag_volumes).with(server)
         expect(driver).to receive(:wait_until_volumes_ready).with(server, state)
         expect(driver).to receive(:wait_until_ready).with(server, state)
-        allow(actual_client).to receive(:describe_images).with({:image_ids => [server.image_id]}).and_return(ec2_stub)
+        allow(actual_client).to receive(:describe_images).with({ :image_ids => [server.image_id] }).and_return(ec2_stub)
         expect(transport).to receive_message_chain("connection.wait_until_ready")
         expect(driver).to receive(:create_ec2_json).with(state)
         driver.create(state)
