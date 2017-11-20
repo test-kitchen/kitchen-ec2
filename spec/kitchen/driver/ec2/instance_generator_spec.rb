@@ -61,7 +61,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when config[:user_data] is binary" do
       let(:config) { { :user_data => "foo\0bar" } }
 
-      it 'handles nulls in user_data' do
+      it "handles nulls in user_data" do
         expect(Base64.decode64(generator.prepared_user_data)).to eq "foo\0bar"
       end
     end
