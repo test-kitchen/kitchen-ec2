@@ -147,35 +147,18 @@ follow the other `image_search` rules for preference.
 
 ### AWS Authentication
 
-In order to connect to AWS, you must specify the AWS access key id and secret key
-for your account. There are 3 ways you do this, and we will try them in the
-following order:
+In order to connect to AWS, you must specify AWS credentials. We rely on the SDK
+to find credentials in the standard way, documented here: 
+https://github.com/aws/aws-sdk-ruby/#configuration
 
-1. You can specify the access key and access secret (and optionally the session
-   token) through config.  See the `aws_access_key_id` and `aws_secret_access_key`
-   config sections below to see how to specify these in your .kitchen.yml or
-   through environment variables.  If you would like to specify your session token
-   use the environment variable `AWS_SESSION_TOKEN`.
-2. The shared credentials ini file at `~/.aws/credentials`. This is the file
-   populated by `aws configure` command line and used by AWS tools in general, so if
-   you are set up for any other AWS tools, you probably already have this. You can
-   specify multiple profiles in this file and select one with the `AWS_PROFILE`
-   environment variable or the `shared_credentials_profile` driver config.  Read
-   [this][credentials_docs] for more information.
-3. From an instance profile when running on EC2.  This accesses the local
-   metadata service to discover the local instance's IAM instance profile.
-
-This precedence order is taken from http://docs.aws.amazon.com/sdkforruby/api/index.html#Configuration
-
-The first method attempted that works will be used.  IE, if you want to auth
-using the instance profile, you must not set any of the access key configs
-or environment variables, and you must not specify a `~/.aws/credentials`
-file.
+The SDK Chain will search environment variables, then config files, then IAM role
+data from the instance profile, in that order. In the case config files being 
+present, the 'default' profile will be used unless `shared_credentials_profile` 
+is defined to point to another profile. 
 
 Because the Test Kitchen test should be checked into source control and ran
 through CI we no longer recommend storing the AWS credentials in the
-`.kitchen.yml` file.  Instead, specify them as environment variables or in the
-`~/.aws/credentials` file.
+`.kitchen.yml` file.
 
 ### Instance Login Configuration
 
