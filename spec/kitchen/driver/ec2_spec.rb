@@ -436,13 +436,17 @@ describe Kitchen::Driver::Ec2 do
   end
 
   describe "#create" do
-    let(:server) { double("aws server object", :id => id) }
+    let(:server) { double("aws server object", :id => id, :image_id => "ami-3f807145") }
     let(:id) { "i-12345" }
 
     it "returns if the instance is already created" do
       state[:server_id] = id
       expect(driver.create(state)).to eq(nil)
     end
+
+    image_data = Aws::EC2::Types::Image.new(:root_device_type => "ebs")
+    ec2_stub = Aws::EC2::Types::DescribeImagesResult.new
+    ec2_stub.images = [image_data]
 
     shared_examples "common create" do
       it "successfully creates and tags the instance" do
@@ -452,6 +456,7 @@ describe Kitchen::Driver::Ec2 do
         expect(driver).to receive(:tag_volumes).with(server)
         expect(driver).to receive(:wait_until_volumes_ready).with(server, state)
         expect(driver).to receive(:wait_until_ready).with(server, state)
+        allow(actual_client).to receive(:describe_images).with({ :image_ids => [server.image_id] }).and_return(ec2_stub)
         expect(transport).to receive_message_chain("connection.wait_until_ready")
         expect(driver).to receive(:create_ec2_json).with(state)
         driver.create(state)
@@ -459,7 +464,7 @@ describe Kitchen::Driver::Ec2 do
       end
     end
 
-    context "non-windows on-depand instance" do
+    context "non-windows on-demand instance" do
       before do
         expect(driver).to receive(:submit_server).and_return(server)
       end
@@ -474,6 +479,21 @@ describe Kitchen::Driver::Ec2 do
       end
 
       include_examples "common create"
+    end
+
+    context "instance is not ebs-backed" do
+      before do
+        ec2_stub.images[0].root_device_type = "instance-store"
+      end
+
+      it "does not tag volumes or wait for volumes to be ready" do
+        expect(driver).to_not receive(:tag_volumes).with(server)
+        expect(driver).to_not receive(:wait_until_volumes_ready).with(server, state)
+      end
+
+      after do
+        ec2_stub.images[0].root_device_type = "ebs"
+      end
     end
 
     context "instance is a windows machine" do
