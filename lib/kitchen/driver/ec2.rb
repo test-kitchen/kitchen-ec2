@@ -565,7 +565,7 @@ module Kitchen
         # Returning the fully constructed PowerShell script to user_data
         Kitchen::Util.outdent!(<<-EOH)
         <powershell>
-        $logfile=#{logfile_name}
+        $logfile="#{logfile_name}"
         # EC2Launch doesn't init extra disks by default
         #{disk_init}
         # Allow script execution
