@@ -229,7 +229,7 @@ module Kitchen
           fetch_windows_admin_password(server, state)
         end
 
-        info("EC2 instance <#{state[:server_id]}> ready.")
+        info("EC2 instance <#{state[:server_id]}> ready (hostname: #{state[:hostname]}).")
         instance.transport.connection(state).wait_until_ready
         create_ec2_json(state)
         debug("ec2:create '#{state[:hostname]}'")
