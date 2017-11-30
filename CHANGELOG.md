@@ -1,5 +1,23 @@
 # Change Log
 
+## [v1.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.4.0) (2017-11-29)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.3.2...v1.4.0)
+
+**Improvements**
+
+- Explicitly initialise secondary disks on windows 2016 [\#352](https://github.com/test-kitchen/kitchen-ec2/pull/352) ([rlaveycal](https://github.com/rlaveycal))
+- Fix windows user\_data log file [\#350](https://github.com/test-kitchen/kitchen-ec2/pull/350) ([rlaveycal](https://github.com/rlaveycal))
+- Set LocalAccountTokenFilterPolicy to allow powershell remoting from local accounts [\#348](https://github.com/test-kitchen/kitchen-ec2/pull/348) ([Sam-Martin](https://github.com/Sam-Martin))
+- Add EC2 hostname when printing ready message [\#346](https://github.com/test-kitchen/kitchen-ec2/pull/346) ([pierrecdn](https://github.com/pierrecdn))
+- Fix for issue with instance-store backed instance \(issue \#318\) [\#343](https://github.com/test-kitchen/kitchen-ec2/pull/343) ([naunga](https://github.com/naunga))
+- Handle nulls/binary text in user data so it supports gzip [\#338](https://github.com/test-kitchen/kitchen-ec2/pull/338) ([brodygov](https://github.com/brodygov))
+- This updates the documentation [\#337](https://github.com/test-kitchen/kitchen-ec2/pull/337) ([stiller-leser](https://github.com/stiller-leser))
+- Add support for Debian Stretch [\#327](https://github.com/test-kitchen/kitchen-ec2/pull/327) ([RoboticCheese](https://github.com/RoboticCheese))
+- Add support for Amazon Linux [\#321](https://github.com/test-kitchen/kitchen-ec2/pull/321) ([steven-burns](https://github.com/steven-burns))
+- modernize winrm setup and fix for 2008r2 [\#304](https://github.com/test-kitchen/kitchen-ec2/pull/304) ([mwrock](https://github.com/mwrock))
+- Updated readme based on issue 300 [\#302](https://github.com/test-kitchen/kitchen-ec2/pull/302) ([pgporada](https://github.com/pgporada))
+- Use Chefstyle and require Ruby 2.2.2 [\#301](https://github.com/test-kitchen/kitchen-ec2/pull/301) ([tas50](https://github.com/tas50))
+
 ## [v1.3.2](https://github.com/test-kitchen/kitchen-ec2/tree/v1.3.2) (2017-02-24)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.3.1...v1.3.2)
 
