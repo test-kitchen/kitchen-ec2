@@ -42,15 +42,22 @@ module Kitchen
           retry_limit = nil,
           ssl_verify_peer = true
         )
-          creds = self.class.get_credentials(
-            profile_name, access_key_id, secret_access_key, session_token, region
-          )
+
           ::Aws.config.update(
             :region => region,
-            :credentials => creds,
             :http_proxy => http_proxy,
             :ssl_verify_peer => ssl_verify_peer
           )
+
+          if profile_name
+            ::Aws.config.update(profile: profile_name)
+          else
+            creds = self.class.get_credentials(
+              profile_name, access_key_id, secret_access_key, session_token, region
+            )
+            ::Aws.config.update(credentials: creds)
+          end
+
           ::Aws.config.update(:retry_limit => retry_limit) unless retry_limit.nil?
         end
 
