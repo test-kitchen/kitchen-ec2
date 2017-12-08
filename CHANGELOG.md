@@ -1,5 +1,13 @@
 # Change Log
 
+## [v2.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.0.0) (2017-12-08)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.4.0...v2.0.0)
+
+**Improvements**
+
+- Clean up original Authentication; Rely on SDK for Chain. [\#353](https://github.com/test-kitchen/kitchen-ec2/pull/320) ([rhyas](https://github.com/rhyas))
+- Use quadratic backoff when encountering RequestLimit errors [\#320](https://github.com/test-kitchen/kitchen-ec2/pull/320) ([kamaradclimber](https://github.com/kamaradclimber))
+
 ## [v1.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.4.0) (2017-11-29)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.3.2...v1.4.0)
 
