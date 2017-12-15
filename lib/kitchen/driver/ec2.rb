@@ -329,9 +329,6 @@ module Kitchen
         @ec2 ||= Aws::Client.new(
           config[:region],
           config[:shared_credentials_profile],
-          config[:aws_access_key_id],
-          config[:aws_secret_access_key],
-          config[:aws_session_token],
           config[:http_proxy],
           config[:retry_limit],
           config[:ssl_verify_peer]
