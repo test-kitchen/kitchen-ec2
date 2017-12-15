@@ -39,9 +39,6 @@ describe Kitchen::Driver::Aws::Client do
         Kitchen::Driver::Aws::Client.new(
           "us-west-1",
           "test-profile",
-          "access_key_id",
-          "secret_access_key",
-          "session_token",
           "http_proxy",
           999,
           false
