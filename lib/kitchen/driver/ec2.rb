@@ -85,6 +85,7 @@ module Kitchen
       default_config :tenancy,             "default"
       default_config :instance_initiated_shutdown_behavior, nil
       default_config :ssl_verify_peer, true
+      default_config :skip_cost_warning, false
 
       def initialize(*args, &block)
         super
@@ -172,7 +173,7 @@ module Kitchen
         return if state[:server_id]
         update_username(state)
 
-        info(Kitchen::Util.outdent!(<<-END))
+        info(Kitchen::Util.outdent!(<<-END)) unless config[:skip_cost_warning]
           If you are not using an account that qualifies under the AWS
           free-tier, you may be charged to run these suites. The charge
           should be minimal, but neither Test Kitchen nor its maintainers
