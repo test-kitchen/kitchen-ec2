@@ -681,21 +681,21 @@ module Kitchen
         return if state[:auto_security_group_id]
         # Work out which VPC, if any, we are creating in.
         vpc_id = if config[:subnet_id]
-          # Get the VPC ID for the subnet.
-          subnets = ec2.client.describe_subnets(filters: [{name: 'subnet-id', values: [config[:subnet_id]]}]).subnets
-          raise "Subnet #{config[:subnet_id]} not found during security group creation" if subnets.empty?
-          subnets.first.vpc_id
-        else
-          # Try to check for a default VPC.
-          vpcs = ec2.client.describe_vpcs(filters: [{name: 'isDefault', values: ['true']}]).vpcs
-          if vpcs.empty?
-            # No default VPC so assume EC2-Classic ¯\_(ツ)_/¯
-            nil
-          else
-            # I don't actually know if you can have more than one default VPC?
-            vpcs.first.vpc_id
-          end
-        end
+                   # Get the VPC ID for the subnet.
+                   subnets = ec2.client.describe_subnets(filters: [{ name: "subnet-id", values: [config[:subnet_id]] }]).subnets
+                   raise "Subnet #{config[:subnet_id]} not found during security group creation" if subnets.empty?
+                   subnets.first.vpc_id
+                 else
+                   # Try to check for a default VPC.
+                   vpcs = ec2.client.describe_vpcs(filters: [{ name: "isDefault", values: ["true"] }]).vpcs
+                   if vpcs.empty?
+                     # No default VPC so assume EC2-Classic ¯\_(ツ)_/¯
+                     nil
+                   else
+                     # I don't actually know if you can have more than one default VPC?
+                     vpcs.first.vpc_id
+                   end
+                 end
         # Create the SG.
         params = {
           group_name: "kitchen-#{Array.new(8) { rand(36).to_s(36) }.join}",
@@ -710,14 +710,14 @@ module Kitchen
         ec2.client.authorize_security_group_ingress(
           group_id: state[:auto_security_group_id],
           # Allow SSH and WinRM (both plain and TLS).
-          ip_permissions: [22, 5985, 5986].map { |port|
+          ip_permissions: [22, 5985, 5986].map do |port|
             {
-              ip_protocol: 'tcp',
+              ip_protocol: "tcp",
               from_port: port,
               to_port: port,
-              ip_ranges: [{cidr_ip: '0.0.0.0/0'}],
+              ip_ranges: [{ cidr_ip: "0.0.0.0/0" }],
             }
-          },
+          end
         )
       end
 
@@ -731,18 +731,18 @@ module Kitchen
         # Encode a bunch of metadata into the name because that's all we can
         # set for a key pair.
         name_parts = [
-          instance.name.gsub(/\W/, ''),
-          (Etc.getlogin || 'nologin').gsub(/\W/, ''),
-          Socket.gethostname.gsub(/\W/, '')[0..20],
+          instance.name.gsub(/\W/, ""),
+          (Etc.getlogin || "nologin").gsub(/\W/, ""),
+          Socket.gethostname.gsub(/\W/, "")[0..20],
           Time.now.utc.iso8601,
-          Array.new(8) { rand(36).to_s(36) }.join(''),
+          Array.new(8) { rand(36).to_s(36) }.join(""),
         ]
         resp = ec2.client.create_key_pair(key_name: "kitchen-#{name_parts.join('-')}")
         state[:auto_key_id] = resp.key_name
         info("Created automatic key pair #{state[:auto_key_id]}")
         # Write the key out, but safely hence the weird sysopen.
         key_path = "#{config[:kitchen_root]}/.kitchen/#{instance.name}.pem"
-        key_fd = File.sysopen(key_path, File::WRONLY|File::CREAT|File::EXCL, 00600)
+        key_fd = File.sysopen(key_path, File::WRONLY | File::CREAT | File::EXCL, 00600)
         File.open(key_fd) do |f|
           f.write(resp.key_material)
         end
