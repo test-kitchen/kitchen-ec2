@@ -687,7 +687,7 @@ module Kitchen
           subnets.first.vpc_id
         else
           # Try to check for a default VPC.
-          vpcs = ec2.client.describe_vpcs(filters: [{name: 'subnet-id', values: [config[:subnet_id]]}]).vpcs
+          vpcs = ec2.client.describe_vpcs(filters: [{name: 'isDefault', values: ['true']}]).vpcs
           if vpcs.empty?
             # No default VPC so assume EC2-Classic ¯\_(ツ)_/¯
             nil
