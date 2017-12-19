@@ -34,6 +34,8 @@ require_relative "aws/standard_platform/windows"
 require "aws-sdk-core/waiters/errors"
 require "retryable"
 require "time"
+require "etc"
+require "socket"
 
 Aws.eager_autoload!
 
