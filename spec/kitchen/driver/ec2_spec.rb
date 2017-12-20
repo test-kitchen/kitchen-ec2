@@ -30,6 +30,8 @@ describe Kitchen::Driver::Ec2 do
       :aws_ssh_key_id => "key",
       :image_id => "ami-1234567",
       :block_duration_minutes => 60,
+      :subnet_id => "subnet-1234",
+      :security_group_ids => ["sg-56789"],
     }
   end
   let(:platform)      { Kitchen::Platform.new(:name => "fooos-99") }
@@ -520,6 +522,78 @@ describe Kitchen::Driver::Ec2 do
       end
     end
 
+    context "with no security group specified" do
+      before do
+        config.delete(:security_group_ids)
+        expect(driver).to receive(:submit_server).and_return(server)
+        allow(instance).to receive(:name).and_return("instance_name")
+      end
+
+      context "with a subnet configured" do
+        before do
+          expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "subnet-id", values: ["subnet-1234"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
+          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
+            { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+            { ip_protocol: "tcp", from_port: 5985, to_port: 5985, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+            { ip_protocol: "tcp", from_port: 5986, to_port: 5986, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+          ])
+        end
+
+        include_examples "common create"
+      end
+
+      context "with a default VPC" do
+        before do
+          config.delete(:subnet_id)
+          expect(actual_client).to receive(:describe_vpcs).with(filters: [{ name: "isDefault", values: ["true"] }]).and_return(double(vpcs: [double(vpc_id: "vpc-1")]))
+          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
+            { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+            { ip_protocol: "tcp", from_port: 5985, to_port: 5985, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+            { ip_protocol: "tcp", from_port: 5986, to_port: 5986, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+          ])
+        end
+
+        include_examples "common create"
+      end
+
+      context "without a default VPC" do
+        before do
+          config.delete(:subnet_id)
+          expect(actual_client).to receive(:describe_vpcs).with(filters: [{ name: "isDefault", values: ["true"] }]).and_return(double(vpcs: []))
+          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/).and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
+            { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+            { ip_protocol: "tcp", from_port: 5985, to_port: 5985, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+            { ip_protocol: "tcp", from_port: 5986, to_port: 5986, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+          ])
+        end
+
+        include_examples "common create"
+      end
+    end
+
+    context "with no key pair configured" do
+      before do
+        config[:kitchen_root] = "/kitchen"
+        config.delete(:aws_ssh_key_id)
+        expect(driver).to receive(:submit_server).and_return(server)
+        allow(instance).to receive(:name).and_return("instance_name")
+
+        expect(actual_client).to receive(:create_key_pair).with(key_name: /kitchen-/).and_return(double(key_name: "kitchen-asdf", key_material: "RSA PRIVATE KEY"))
+        fake_fd = double()
+        fake_file = double()
+        allow(File).to receive(:sysopen).and_call_original
+        expect(File).to receive(:sysopen).with("/kitchen/.kitchen/instance_name.pem", kind_of(Numeric), kind_of(Numeric)).and_return(fake_fd)
+        allow(File).to receive(:open).and_call_original
+        expect(File).to receive(:open).with(fake_fd).and_yield(fake_file)
+        expect(fake_file).to receive(:write).with("RSA PRIVATE KEY")
+      end
+
+      include_examples "common create"
+    end
+
   end
 
   describe "#destroy" do
@@ -559,6 +633,29 @@ describe Kitchen::Driver::Ec2 do
         expect(actual_client).to receive(:cancel_spot_instance_requests).with(
           :spot_instance_request_ids => ["spot"]
         )
+        driver.destroy(state)
+        expect(state).to eq({})
+      end
+    end
+
+    context "when the state has an automatic security group" do
+      let(:state) { { auto_security_group_id: "sg-asdf" } }
+
+      it "destroys the security group" do
+        expect(actual_client).to receive(:delete_security_group).with(group_id: "sg-asdf")
+        driver.destroy(state)
+        expect(state).to eq({})
+      end
+    end
+
+    context "when the state has an automatic key pair" do
+      let(:state) { { auto_key_id: "kitchen-asdf" } }
+
+      it "destroys the key pair" do
+        config[:kitchen_root] = "/kitchen"
+        allow(instance).to receive(:name).and_return("instance_name")
+        expect(actual_client).to receive(:delete_key_pair).with(key_name: "kitchen-asdf")
+        expect(File).to receive(:unlink).with("/kitchen/.kitchen/instance_name.pem")
         driver.destroy(state)
         expect(state).to eq({})
       end

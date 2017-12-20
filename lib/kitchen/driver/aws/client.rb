@@ -35,9 +35,6 @@ module Kitchen
         def initialize( # rubocop:disable Metrics/ParameterLists
           region,
           profile_name = "default",
-          access_key_id = nil,
-          secret_access_key = nil,
-          session_token = nil,
           http_proxy = nil,
           retry_limit = nil,
           ssl_verify_peer = true

@@ -33,6 +33,9 @@ require_relative "aws/standard_platform/ubuntu"
 require_relative "aws/standard_platform/windows"
 require "aws-sdk-core/waiters/errors"
 require "retryable"
+require "time"
+require "etc"
+require "socket"
 
 Aws.eager_autoload!
 
@@ -85,6 +88,7 @@ module Kitchen
       default_config :tenancy,             "default"
       default_config :instance_initiated_shutdown_behavior, nil
       default_config :ssl_verify_peer, true
+      default_config :skip_cost_warning, false
 
       def initialize(*args, &block)
         super
@@ -172,12 +176,24 @@ module Kitchen
         return if state[:server_id]
         update_username(state)
 
-        info(Kitchen::Util.outdent!(<<-END))
+        info(Kitchen::Util.outdent!(<<-END)) unless config[:skip_cost_warning]
           If you are not using an account that qualifies under the AWS
           free-tier, you may be charged to run these suites. The charge
           should be minimal, but neither Test Kitchen nor its maintainers
           are responsible for your incurred costs.
         END
+
+        # If no security group IDs are specified, create one automatically.
+        unless config[:security_group_ids]
+          create_security_group(state)
+          config[:security_group_ids] = [state[:auto_security_group_id]]
+        end
+
+        # If no SSH key pair name is specified, create one automatically.
+        unless config[:aws_ssh_key_id]
+          create_key(state)
+          config[:aws_ssh_key_id] = state[:auto_key_id]
+        end
 
         if config[:spot_price]
           # Spot instance when a price is set
@@ -234,26 +250,47 @@ module Kitchen
         instance.transport.connection(state).wait_until_ready
         create_ec2_json(state)
         debug("ec2:create '#{state[:hostname]}'")
+      rescue Exception
+        # Clean up any auto-created security groups or keys on the way out.
+        delete_security_group(state)
+        delete_key(state)
+        raise
       end
 
       def destroy(state)
-        return if state[:server_id].nil?
+        if state[:server_id]
+          server = ec2.get_instance(state[:server_id])
+          unless server.nil?
+            instance.transport.connection(state).close
+            server.terminate
+          end
+          if state[:spot_request_id]
+            debug("Deleting spot request <#{state[:server_id]}>")
+            ec2.client.cancel_spot_instance_requests(
+              :spot_instance_request_ids => [state[:spot_request_id]]
+            )
+            state.delete(:spot_request_id)
+          end
+          # If we are going to clean up an automatic security group, we need
+          # to wait for the instance to shut down. This slightly breaks the
+          # subsystem encapsulation, sorry not sorry.
+          if state[:auto_security_group_id] && server
+            server.wait_until_terminated do |waiter|
+              waiter.max_attempts = config[:retryable_tries]
+              waiter.delay = config[:retryable_sleep]
+              waiter.before_attempt do |attempts|
+                info "Waited #{attempts * waiter.delay}/#{waiter.delay * waiter.max_attempts}s for instance <#{server.id}> to terminate."
+              end
+            end
+          end
+          info("EC2 instance <#{state[:server_id]}> destroyed.")
+          state.delete(:server_id)
+          state.delete(:hostname)
+        end
 
-        server = ec2.get_instance(state[:server_id])
-        unless server.nil?
-          instance.transport.connection(state).close
-          server.terminate
-        end
-        if state[:spot_request_id]
-          debug("Deleting spot request <#{state[:server_id]}>")
-          ec2.client.cancel_spot_instance_requests(
-            :spot_instance_request_ids => [state[:spot_request_id]]
-          )
-          state.delete(:spot_request_id)
-        end
-        info("EC2 instance <#{state[:server_id]}> destroyed.")
-        state.delete(:server_id)
-        state.delete(:hostname)
+        # Clean up any auto-created security groups or keys.
+        delete_security_group(state)
+        delete_key(state)
       end
 
       def image
@@ -329,9 +366,6 @@ module Kitchen
         @ec2 ||= Aws::Client.new(
           config[:region],
           config[:shared_credentials_profile],
-          config[:aws_access_key_id],
-          config[:aws_secret_access_key],
-          config[:aws_session_token],
           config[:http_proxy],
           config[:retry_limit],
           config[:ssl_verify_peer]
@@ -488,7 +522,7 @@ module Kitchen
           !enc.nil? && !enc.empty?
         end
         pass = with_request_limit_backoff(state) do
-          server.decrypt_windows_password(File.expand_path(instance.transport[:ssh_key]))
+          server.decrypt_windows_password(File.expand_path(state[:ssh_key] || instance.transport[:ssh_key]))
         end
         state[:password] = pass
         info("Retrieved Windows password for instance <#{state[:server_id]}>.")
@@ -638,6 +672,110 @@ module Kitchen
         " Virtualization: #{image.virtualization_type}," \
         " Storage: #{image.root_device_type}#{volume_type}," \
         " Created: #{image.creation_date}"
+      end
+
+      # Create a temporary security group for this instance.
+      #
+      # @api private
+      # @param state [Hash] Instance state hash.
+      # @return [void]
+      def create_security_group(state)
+        return if state[:auto_security_group_id]
+        # Work out which VPC, if any, we are creating in.
+        vpc_id = if config[:subnet_id]
+                   # Get the VPC ID for the subnet.
+                   subnets = ec2.client.describe_subnets(filters: [{ name: "subnet-id", values: [config[:subnet_id]] }]).subnets
+                   raise "Subnet #{config[:subnet_id]} not found during security group creation" if subnets.empty?
+                   subnets.first.vpc_id
+                 else
+                   # Try to check for a default VPC.
+                   vpcs = ec2.client.describe_vpcs(filters: [{ name: "isDefault", values: ["true"] }]).vpcs
+                   if vpcs.empty?
+                     # No default VPC so assume EC2-Classic ¯\_(ツ)_/¯
+                     nil
+                   else
+                     # I don't actually know if you can have more than one default VPC?
+                     vpcs.first.vpc_id
+                   end
+                 end
+        # Create the SG.
+        params = {
+          group_name: "kitchen-#{Array.new(8) { rand(36).to_s(36) }.join}",
+          description: "Test Kitchen for #{instance.name} by #{Etc.getlogin || 'nologin'} on #{Socket.gethostname}",
+        }
+        params[:vpc_id] = vpc_id if vpc_id
+        resp = ec2.client.create_security_group(params)
+        state[:auto_security_group_id] = resp.group_id
+        info("Created automatic security group #{state[:auto_security_group_id]}")
+        debug("  in VPC #{vpc_id || 'none'}")
+        # Set up SG rules.
+        ec2.client.authorize_security_group_ingress(
+          group_id: state[:auto_security_group_id],
+          # Allow SSH and WinRM (both plain and TLS).
+          ip_permissions: [22, 5985, 5986].map do |port|
+            {
+              ip_protocol: "tcp",
+              from_port: port,
+              to_port: port,
+              ip_ranges: [{ cidr_ip: "0.0.0.0/0" }],
+            }
+          end
+        )
+      end
+
+      # Create a temporary SSH key pair for this instance.
+      #
+      # @api private
+      # @param state [Hash] Instance state hash.
+      # @return [void]
+      def create_key(state)
+        return if state[:auto_key_id]
+        # Encode a bunch of metadata into the name because that's all we can
+        # set for a key pair.
+        name_parts = [
+          instance.name.gsub(/\W/, ""),
+          (Etc.getlogin || "nologin").gsub(/\W/, ""),
+          Socket.gethostname.gsub(/\W/, "")[0..20],
+          Time.now.utc.iso8601,
+          Array.new(8) { rand(36).to_s(36) }.join(""),
+        ]
+        resp = ec2.client.create_key_pair(key_name: "kitchen-#{name_parts.join('-')}")
+        state[:auto_key_id] = resp.key_name
+        info("Created automatic key pair #{state[:auto_key_id]}")
+        # Write the key out, but safely hence the weird sysopen.
+        key_path = "#{config[:kitchen_root]}/.kitchen/#{instance.name}.pem"
+        key_fd = File.sysopen(key_path, File::WRONLY | File::CREAT | File::EXCL, 00600)
+        File.open(key_fd) do |f|
+          f.write(resp.key_material)
+        end
+        # Inject the key into the state to be used by the SSH transport, or for
+        # the Windows password decrypt above in {#fetch_windows_admin_password}.
+        state[:ssh_key] = key_path
+      end
+
+      # Clean up a temporary security group for this instance.
+      #
+      # @api private
+      # @param state [Hash] Instance state hash.
+      # @return [void]
+      def delete_security_group(state)
+        return unless state[:auto_security_group_id]
+        info("Removing automatic security group #{state[:auto_security_group_id]}")
+        ec2.client.delete_security_group(group_id: state[:auto_security_group_id])
+        state.delete(:auto_security_group_id)
+      end
+
+      # Clean up a temporary SSH key pair for this instance.
+      #
+      # @api private
+      # @param state [Hash] Instance state hash.
+      # @return [void]
+      def delete_key(state)
+        return unless state[:auto_key_id]
+        info("Removing automatic key pair #{state[:auto_key_id]}")
+        ec2.client.delete_key_pair(key_name: state[:auto_key_id])
+        state.delete(:auto_key_id)
+        File.unlink("#{config[:kitchen_root]}/.kitchen/#{instance.name}.pem")
       end
 
     end
