@@ -261,40 +261,6 @@ describe Kitchen::Driver::Ec2 do
     end
   end
 
-  describe "#tag_server" do
-    it "tags the server" do
-      config[:tags] = { :key1 => :value1, :key2 => :value2 }
-      expect(server).to receive(:create_tags).with(
-        :tags => [
-          { :key => :key1, :value => :value1 },
-          { :key => :key2, :value => :value2 },
-        ]
-      )
-      driver.tag_server(server)
-    end
-    it "does not raise" do
-      config[:tags] = nil
-      expect { driver.tag_server(server) }.not_to raise_error
-    end
-  end
-
-  describe "#tag_volumes" do
-    let(:volume) { double("aws volume resource") }
-    before do
-      allow(server).to receive(:volumes).and_return([volume])
-    end
-    it "tags the instance volumes" do
-      config[:tags] = { :key1 => :value1, :key2 => :value2 }
-      expect(volume).to receive(:create_tags).with(
-        :tags => [
-          { :key => :key1, :value => :value1 },
-          { :key => :key2, :value => :value2 },
-        ]
-      )
-      driver.tag_volumes(server)
-    end
-  end
-
   describe "#wait_until_ready" do
     let(:hostname) { "0.0.0.0" }
     let(:msg) { "to become ready" }
@@ -454,8 +420,6 @@ describe Kitchen::Driver::Ec2 do
       it "successfully creates and tags the instance" do
         expect(server).to receive(:wait_until_exists)
         expect(driver).to receive(:update_username)
-        expect(driver).to receive(:tag_server).with(server)
-        expect(driver).to receive(:tag_volumes).with(server)
         expect(driver).to receive(:wait_until_volumes_ready).with(server, state)
         expect(driver).to receive(:wait_until_ready).with(server, state)
         allow(actual_client).to receive(:describe_images).with({ :image_ids => [server.image_id] }).and_return(ec2_stub)
