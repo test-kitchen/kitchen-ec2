@@ -148,6 +148,17 @@ module Kitchen
               config[:instance_initiated_shutdown_behavior].empty?
             i[:instance_initiated_shutdown_behavior] = config[:instance_initiated_shutdown_behavior]
           end
+          if config[:tag_specifications]
+            tags = config[:tag_specifications][:tags].map do |k, v|
+              { :key => k, :value => v }
+            end
+            i[:tag_specifications] = [
+              {
+                resource_type: config[:tag_specifications][:resource_type],
+                tags: tags,
+              },
+            ]
+          end
           i
         end
 
