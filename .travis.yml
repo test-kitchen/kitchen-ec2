@@ -7,13 +7,15 @@ branches:
 rvm:
   - 2.3.6
   - 2.4.3
-  - ruby-head
 
+# https://github.com/travis-ci/travis-ci/issues/8978
 matrix:
   include:
     - rvm: 2.5.0
       before_install:
-      # https://github.com/travis-ci/travis-ci/issues/8978
+      - gem update --system
+    - rvm: ruby-head
+      before_install:
       - gem update --system
 
 allow_failures:
