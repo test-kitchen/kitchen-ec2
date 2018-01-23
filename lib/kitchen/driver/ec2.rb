@@ -248,7 +248,7 @@ module Kitchen
 
         info("EC2 instance <#{state[:server_id]}> ready (hostname: #{state[:hostname]}).")
         instance.transport.connection(state).wait_until_ready
-        create_ec2_json(state)
+        create_ec2_json(state) if instance.provisioner.name =~ /chef/
         debug("ec2:create '#{state[:hostname]}'")
       rescue Exception
         # Clean up any auto-created security groups or keys on the way out.
