@@ -36,6 +36,7 @@ describe Kitchen::Driver::Ec2 do
   end
   let(:platform)      { Kitchen::Platform.new(:name => "fooos-99") }
   let(:transport)     { Kitchen::Transport::Dummy.new }
+  let(:provisioner)   { Kitchen::Provisioner::Dummy.new }
   let(:generator)     { instance_double(Kitchen::Driver::Aws::InstanceGenerator) }
   # There is too much name overlap I let creep in - my `client` is actually
   # a wrapper around the actual ec2 client
@@ -51,6 +52,7 @@ describe Kitchen::Driver::Ec2 do
       Kitchen::Instance,
       :logger => logger,
       :transport => transport,
+      :provisioner => provisioner,
       :platform => platform,
       :to_str => "str"
     )
@@ -460,10 +462,20 @@ describe Kitchen::Driver::Ec2 do
         expect(driver).to receive(:wait_until_ready).with(server, state)
         allow(actual_client).to receive(:describe_images).with({ :image_ids => [server.image_id] }).and_return(ec2_stub)
         expect(transport).to receive_message_chain("connection.wait_until_ready")
-        expect(driver).to receive(:create_ec2_json).with(state)
         driver.create(state)
         expect(state[:server_id]).to eq(id)
       end
+    end
+
+    context "chef provisioner" do
+      let(:provisioner) { double("chef provisioner", :name => "chef_solo") }
+
+      before do
+        expect(driver).to receive(:create_ec2_json).with(state)
+        expect(driver).to receive(:submit_server).and_return(server)
+      end
+
+      include_examples "common create"
     end
 
     context "non-windows on-demand instance" do
