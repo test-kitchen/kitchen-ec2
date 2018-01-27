@@ -152,7 +152,7 @@ specify.
 
 #### SSH
 
-The `aws_ssh_key_id` value is the name of the AWS key pair you want to use. The default will be read from the `AWS_SSH_KEY_ID` environment variable if set.  If a key ID is not specified, a temporary key will be created for you.
+The `aws_ssh_key_id` value is the name of the AWS key pair you want to use. The default will be read from the `AWS_SSH_KEY_ID` environment variable if set.  If a key ID is not specified, a temporary key will be created for you (**>= 2.1.0**).
 
 To see a list of existing key pair IDs in a region, run `aws ec2 describe-key-pairs --region us-east-1`.
 
@@ -194,7 +194,7 @@ or `paravirtual`. (`paravirtual` images are incompatible with `t2.micro`.)
 
 An Array of EC2 [security groups][group_docs] which will be applied to the
 instance. If no security group is specified, a temporary group will be created
-automatically which allows SSH and WinRM.
+automatically which allows SSH and WinRM (**>= 2.1.0**).
 
 #### `security_group_filter`
 
