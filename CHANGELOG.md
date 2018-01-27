@@ -1,5 +1,13 @@
 # Change Log
 
+## [v2.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.1.0) (2018-01-27)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.0.0...v2.1.0)
+
+**Merged pull requests:**
+
+- Only create Ohai hint when provisioner is `/chef/` [\#366](https://github.com/test-kitchen/kitchen-ec2/pull/366) ([cheeseplus](https://github.com/cheeseplus))
+- Automatically create a security group and key pair if needed. [\#362](https://github.com/test-kitchen/kitchen-ec2/pull/362) ([coderanger](https://github.com/coderanger))
+
 ## [v2.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.0.0) (2017-12-08)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.4.0...v2.0.0)
 
