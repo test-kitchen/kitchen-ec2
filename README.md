@@ -14,7 +14,7 @@ instances. Use Amazon's cloud for your infrastructure testing!
 1. Install [ChefDK](https://downloads.chef.io/chefdk). If testing things other
    than Chef cookbooks, please consult your driver's documentation for information
    on what to install.
-2. Install the [AWS command line tools](http://docs.aws.amazon.com/cli/latest/userguide/cli-chap-getting-set-up.html).
+2. Install the [AWS command line tools](https://docs.aws.amazon.com/cli/latest/userguide/installing.html).
 3. Run `aws configure`. This will set up your AWS credentials for both the AWS
    CLI tools and kitchen-ec2.
 4. Add or exit the `driver` section of your `.kitchen.yml`:
@@ -425,18 +425,8 @@ transport:
   username: ubuntu
 
 platforms:
-  - name: ubuntu-12.04
-  - name: centos-6.4
-  - name: ubuntu-15.04
-    driver:
-      image_id: ami-83211eb3
-      block_device_mappings:
-        - device_name: /dev/sda1
-          ebs:
-            volume_type: standard
-            virtual_name: test
-            volume_size: 15
-            delete_on_termination: true
+  - name: ubuntu-16.04
+  - name: centos-6.9
   - name: centos-7
     driver:
       image_id: ami-c7d092f7
@@ -450,7 +440,7 @@ platforms:
     transport:
       username: centos
   - name: windows-2012r2
-  - name: windows-2008r2
+  - name: windows-2016
 
 suites:
 # ...
@@ -481,17 +471,17 @@ Apache 2.0 (see [LICENSE][license])
 [license]:          https://github.com/test-kitchen/kitchen-ec2/blob/master/LICENSE
 [repo]:             https://github.com/test-kitchen/kitchen-ec2
 [driver_usage]:     https://github.com/test-kitchen/kitchen-ec2
-[chef_omnibus_dl]:  https://downloads.chef.io/chef-client/
+[chef_omnibus_dl]:  https://downloads.chef.io/chef
 [amis_json]:        https://github.com/test-kitchen/kitchen-ec2/blob/master/data/amis.json
 [ami_docs]:         http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html
 [aws_site]:         http://aws.amazon.com/
 [iam_site]:         http://aws.amazon.com/iam
-[credentials_docs]: http://blogs.aws.amazon.com/security/post/Tx3D6U6WSFGOK2H/A-New-and-Standardized-Way-to-Manage-Credentials-in-the-AWS-SDKs
-[aws_sdk_gem]:      http://docs.aws.amazon.com/sdkforruby/api/index.html
-[group_docs]:       http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html
-[instance_docs]:    http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
-[key_id_docs]:      http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/verifying-your-key-pair.html
-[kitchenci]:        http://kitchen.ci/
-[region_docs]:      http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
-[subnet_docs]:      http://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
-[vpc_docs]:         http://docs.aws.amazon.com/AmazonVPC/latest/GettingStartedGuide/ExerciseOverview.html
+[credentials_docs]: https://aws.amazon.com/blogs/security/a-new-and-standardized-way-to-manage-credentials-in-the-aws-sdks/
+[aws_sdk_gem]:      https://docs.aws.amazon.com/sdkforruby/api/index.html
+[group_docs]:       https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html
+[instance_docs]:    https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
+[key_id_docs]:      https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html
+[kitchenci]:        https://kitchen.ci/
+[region_docs]:      https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+[subnet_docs]:      https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
+[vpc_docs]:         https://docs.aws.amazon.com/AmazonVPC/latest/GettingStartedGuide/ExerciseOverview.html
