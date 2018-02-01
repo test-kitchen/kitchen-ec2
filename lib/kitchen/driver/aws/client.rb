@@ -32,7 +32,7 @@ module Kitchen
       # @author Tyler Ball <tball@chef.io>
       class Client
 
-        def initialize( # rubocop:disable Metrics/ParameterLists
+        def initialize(
           region,
           profile_name = "default",
           http_proxy = nil,
@@ -47,8 +47,6 @@ module Kitchen
           )
           ::Aws.config.update(:retry_limit => retry_limit) unless retry_limit.nil?
         end
-
-        # rubocop:enable Metrics/CyclomaticComplexity, Metrics/PerceivedComplexity
 
         def create_instance(options)
           resource.create_instances(options)[0]

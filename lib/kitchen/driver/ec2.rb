@@ -46,7 +46,7 @@ module Kitchen
     # Amazon EC2 driver for Test Kitchen.
     #
     # @author Fletcher Nichol <fnichol@nichol.ca>
-    class Ec2 < Kitchen::Driver::Base # rubocop:disable Metrics/ClassLength
+    class Ec2 < Kitchen::Driver::Base
 
       kitchen_driver_api_version 2
 
@@ -177,7 +177,7 @@ module Kitchen
         end
       end
 
-      def create(state) # rubocop:disable Metrics/AbcSize, Metrics/MethodLength
+      def create(state)
         return if state[:server_id]
         update_username(state)
 
@@ -393,7 +393,7 @@ module Kitchen
         ec2.create_instance(instance_data)
       end
 
-      def submit_spot(state) # rubocop:disable Metrics/AbcSize
+      def submit_spot(state)
         debug("Creating EC2 Spot Instance..")
 
         spot_request_id = create_spot_request
@@ -517,7 +517,6 @@ module Kitchen
         end
       end
 
-      # rubocop:disable Lint/UnusedBlockArgument
       def fetch_windows_admin_password(server, state)
         wait_with_destroy(server, state, "to fetch windows admin password") do |aws_instance|
           enc = server.client.get_password_data(
@@ -532,7 +531,6 @@ module Kitchen
         state[:password] = pass
         info("Retrieved Windows password for instance <#{state[:server_id]}>.")
       end
-      # rubocop:enable Lint/UnusedBlockArgument
 
       def with_request_limit_backoff(state)
         retries = 0
@@ -589,7 +587,6 @@ module Kitchen
         instance.provisioner[:sudo] ? instance.provisioner[:sudo_command].to_s : ""
       end
 
-      # rubocop:disable Metrics/MethodLength, Metrics/LineLength
       def create_ec2_json(state)
         if windows_os?
           cmd = "New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File"
@@ -654,7 +651,6 @@ module Kitchen
         </powershell>
         EOH
       end
-      # rubocop:enable Metrics/MethodLength, Metrics/LineLength
 
       def show_chosen_image
         # Print some debug stuff
