@@ -9,7 +9,7 @@ module Kitchen
           StandardPlatform.platforms["freebsd"] = self
 
           def username
-            (version && version.to_f < 9.1) ? "root" : "ec2-user"
+            "ec2-user"
           end
 
           def sudo_command
