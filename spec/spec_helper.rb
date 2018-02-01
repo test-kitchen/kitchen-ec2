@@ -99,7 +99,6 @@ RSpec.configure do |config|
   Kernel.srand config.seed
 
   config.expose_dsl_globally = true
-
 end
 
 require "aws-sdk"

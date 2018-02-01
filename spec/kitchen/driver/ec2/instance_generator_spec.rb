@@ -273,64 +273,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
     end
 
-    context "when availability_zone is provided as 'eu-west-1c'" do
-      let(:config) do
-        {
-          :region => "eu-east-1",
-          :availability_zone => "eu-west-1c",
-        }
-      end
-      it "returns that in the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => nil,
-          :private_ip_address => nil,
-          :placement => { :availability_zone => "eu-west-1c" }
-        )
-      end
-    end
-
-    context "when availability_zone is provided as 'c'" do
-      let(:config) do
-        {
-          :region => "eu-east-1",
-          :availability_zone => "c",
-        }
-      end
-      it "adds the region to it in the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => nil,
-          :private_ip_address => nil,
-          :placement => { :availability_zone => "eu-east-1c" }
-        )
-      end
-    end
-
-    context "when availability_zone is not provided" do
-      let(:config) do
-        {
-          :region => "eu-east-1",
-        }
-      end
-      it "is not added to the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => nil,
-          :private_ip_address => nil
-        )
-      end
-    end
-
     context "when availability_zone and tenancy are provided" do
       let(:config) do
         {
@@ -606,6 +548,78 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :placement => { :availability_zone => "eu-west-1a" },
           :user_data => Base64.encode64("foo")
         )
+      end
+    end
+  end
+
+  describe "#availability_zone" do
+    context "when availability_zone is provided as 'eu-west-1c'" do
+      let(:config) do
+        {
+          :region => "eu-west-1",
+          :availability_zone => "eu-west-1c",
+        }
+      end
+      it "returns that in the instance data" do
+        expect(generator.availability_zone).to eq("eu-west-1c")
+      end
+    end
+
+    context "when availability_zone is provided as 'c'" do
+      let(:config) do
+        {
+          :region => "eu-east-1",
+          :availability_zone => "c",
+        }
+      end
+      it "adds the region to it in the instance data" do
+        expect(generator.availability_zone).to eq("eu-east-1c")
+      end
+    end
+
+    context "when availability_zone is not provided" do
+      let(:config) do
+        {
+          :region => "eu-east-1",
+        }
+      end
+      it "is not added to the instance data" do
+        expect(generator.availability_zone).to eq(nil)
+      end
+    end
+  end
+
+  describe "#placement" do
+    context "when availability_zone and tenancy are set" do
+      let(:config) do
+        {
+          :tenancy => "host",
+          :availability_zone => "eu-west-1c",
+        }
+      end
+      it "returns a hash with az and tenancy" do
+        expect(generator.placement).to eq({
+          :availability_zone => "eu-west-1c",
+          :tenancy => "host",
+          })
+      end
+    end
+
+    context "when neither availability_zone and tenancy are set" do
+      let(:config) do
+        {}
+      end
+      it "returns an empty hash" do
+        expect(generator.placement).to eq({})
+      end
+    end
+
+    context "when just availability zone is set" do
+      let(:config) do
+        { :availability_zone => "eu-west-1c" }
+      end
+      it "returns a hash with just the AZ" do
+        expect(generator.placement).to eq(:availability_zone => "eu-west-1c")
       end
     end
   end
