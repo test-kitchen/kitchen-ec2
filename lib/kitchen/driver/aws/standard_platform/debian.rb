@@ -8,11 +8,15 @@ module Kitchen
         class Debian < StandardPlatform
           StandardPlatform.platforms["debian"] = self
 
+          # 10/11 are listed last since we default to the first item in the hash
+          # and 10/11 are not released yet. When they're released move them up
           DEBIAN_CODENAMES = {
             "9" => "stretch",
             "8" => "jessie",
             "7" => "wheezy",
             "6" => "squeeze",
+            "11" => "bullseye",
+            "10" => "buster",
           }
 
           def username
