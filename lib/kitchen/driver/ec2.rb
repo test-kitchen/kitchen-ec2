@@ -103,8 +103,9 @@ module Kitchen
       end
 
       def self.validation_error(driver, old_key, new_key)
-        raise "ERROR: The driver[#{driver.class.name}] config key `#{old_key}` " \
+        warn "ERROR: The driver[#{driver.class.name}] config key `#{old_key}` " \
           "has been removed, please use `#{new_key}`"
+        exit!
       end
 
       # TODO: remove these in 1.1
@@ -146,29 +147,33 @@ module Kitchen
       # Providing these inside the .kitchen.yml is no longer recommended
       validations[:aws_access_key_id] = lambda do |attr, val, _driver|
         unless val.nil?
-          raise "#{attr} is no longer valid, please use " \
-            "ENV['AWS_ACCESS_KEY_ID'] or ~/.aws/credentials.  See " \
+          warn "#{attr} is no longer a valid config option, please use " \
+            "ENV['AWS_ACCESS_KEY_ID'] or ~/.aws/credentials. See " \
             "the README for more details"
+          exit!
         end
       end
       validations[:aws_secret_access_key] = lambda do |attr, val, _driver|
         unless val.nil?
-          raise "#{attr} is no longer valid, please use " \
-            "ENV['AWS_SECRET_ACCESS_KEY'] or ~/.aws/credentials.  See " \
+          warn "#{attr} is no longer a valid config option, please use " \
+            "ENV['AWS_SECRET_ACCESS_KEY'] or ~/.aws/credentials. See " \
             "the README for more details"
+          exit!
         end
       end
       validations[:aws_session_token] = lambda do |attr, val, _driver|
         unless val.nil?
-          raise "#{attr} is no longer valid, please use " \
-            "ENV['AWS_SESSION_TOKEN'] or ~/.aws/credentials.  See " \
+          warn "#{attr} is no longer a valid config option, please use " \
+            "ENV['AWS_SESSION_TOKEN'] or ~/.aws/credentials. See " \
             "the README for more details"
+          exit!
         end
       end
       validations[:instance_initiated_shutdown_behavior] = lambda do |attr, val, _driver|
         unless [nil, "stop", "terminate"].include?(val)
-          raise "'#{val}' is an invalid value for option '#{attr}'. " \
+          warn "'#{val}' is an invalid value for option '#{attr}'. " \
             "Valid values are 'stop' or 'terminate'"
+          exit!
         end
       end
 
@@ -211,7 +216,7 @@ module Kitchen
 
         # See https://github.com/aws/aws-sdk-ruby/issues/859
         # Tagging can fail with a NotFound error even though we waited until the server exists
-        # Waiting can also fail, so we have to also retry on that.  If it means we re-tag the
+        # Waiting can also fail, so we have to also retry on that. If it means we re-tag the
         # instance, so be it.
         # Tagging an instance is possible before volumes are attached. Tagging the volumes after
         # instance creation is consistent.
@@ -350,7 +355,7 @@ module Kitchen
       def update_username(state)
         # BUG: With the following equality condition on username, if the user specifies 'root'
         # as the transport's username then we will overwrite that value with one from the standard
-        # platform definitions.  This seems difficult to handle here as the default username is
+        # platform definitions. This seems difficult to handle here as the default username is
         # provided by the underlying transport classes, and is often non-nil (eg; 'root'), leaving
         # us no way to distinguish a user-set value from the transport's default.
         # See https://github.com/test-kitchen/kitchen-ec2/pull/273
@@ -487,7 +492,7 @@ module Kitchen
         end
       end
 
-      # Poll a block, waiting for it to return true.  If it does not succeed
+      # Poll a block, waiting for it to return true. If it does not succeed
       # within the configured time we destroy the instance to save people money
       def wait_with_destroy(server, state, status_msg, &block)
         wait_log = proc do |attempts|
@@ -544,7 +549,7 @@ module Kitchen
       end
 
       #
-      # Ordered mapping from config name to Fog name.  Ordered by preference
+      # Ordered mapping from config name to Fog name. Ordered by preference
       # when looking up hostname.
       #
       INTERFACE_TYPES =
@@ -556,8 +561,8 @@ module Kitchen
         }
 
       #
-      # Lookup hostname of provided server.  If interface_type is provided use
-      # that interface to lookup hostname.  Otherwise, try ordered list of
+      # Lookup hostname of provided server. If interface_type is provided use
+      # that interface to lookup hostname. Otherwise, try ordered list of
       # options.
       #
       def hostname(server, interface_type = nil)
