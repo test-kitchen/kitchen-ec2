@@ -178,6 +178,25 @@ module Kitchen
         end
       end
 
+      # empty keys cause failures when tagging and they make no sense
+      validations[:tags] = lambda do |attr, val, _driver|
+        # if someone puts the tags each on their own line it's an array not a hash
+        # @todo we should probably just do the right thing and support this format
+        if val.class == Array
+          warn "AWS instance tags must be specified as a single hash, not a tag " \
+            "on each line. Example: {:foo => 'bar', :bar => 'foo'}"
+          exit!
+        end
+
+        # see if the passes hash has any nil values
+        nils = val.select { |k, v| v.nil? }
+        unless nils.empty?
+          warn "AWS instance tags cannot be nil. The following tag(s) " \
+            "had no value specified: #{nils.keys.join(', ')}"
+          exit!
+        end
+      end
+
       def create(state)
         return if state[:server_id]
         update_username(state)
