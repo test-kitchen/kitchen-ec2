@@ -1,6 +1,23 @@
 # Change Log
 
+## [v2.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.2.0) (2018-01-27)
+
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.1.0...v2.2.0)
+
+- When config validation fails we now show you just the error message instead of the full stack trace with a buried error message
+- Removed the username logic for FreeBSD < 9.1 as those releases are EOL
+- Add support for Debian 10/11 so we'll support them as soon as they're released
+- Added support for the 'host' tenancy value
+- Added proper config validation for tenancy instead of silently skipping bad data
+- Properly handle Integers in tags instead of failing the run
+- Properly handle nil values in tags instead of failing the run
+- Add validation to make sure the tags are passed as a single hash instead of an array of each tag
+- Update our Yard dev dependency to make sure we have 0.9.11+ to avoid a CVE in earlier releases
+- Update links in docs and distros in the examples
+- Removed Rubocop comments that weren't necessary from the code
+
 ## [v2.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.1.0) (2018-01-27)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.0.0...v2.1.0)
 
 **Merged pull requests:**
