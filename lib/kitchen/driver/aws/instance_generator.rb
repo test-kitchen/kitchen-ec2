@@ -95,7 +95,7 @@ module Kitchen
             i[:placement] = { :availability_zone => availability_zone.downcase }
           end
           tenancy = config[:tenancy]
-          if tenancy && %w{default dedicated}.include?(tenancy)
+          if tenancy
             if i.key?(:placement)
               i[:placement][:tenancy] = tenancy
             else
@@ -138,7 +138,7 @@ module Kitchen
             i[:placement] = { :availability_zone => availability_zone.downcase }
           end
           tenancy = config[:tenancy]
-          if tenancy && %w{default dedicated}.include?(tenancy)
+          if tenancy
             if i.key?(:placement)
               i[:placement][:tenancy] = tenancy
             else

@@ -144,6 +144,15 @@ module Kitchen
         end
       end
 
+      # https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/dedicated-instance.html
+      validations[:tenancy] = lambda do |attr, val, _driver|
+        unless %w{default host dedicated}.include?(val)
+          warn "'#{val}' is an invalid value for option '#{attr}'. " \
+            "Valid values are 'default', 'host', or 'dedicated'."
+          exit!
+        end
+      end
+
       # The access key/secret are now using the priority list AWS uses
       # Providing these inside the .kitchen.yml is no longer recommended
       validations[:aws_access_key_id] = lambda do |attr, val, _driver|

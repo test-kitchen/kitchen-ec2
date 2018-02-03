@@ -337,25 +337,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
     end
 
-    context "when tenancy is not supported" do
-      let(:config) do
-        {
-          :region => "eu-east-1",
-          :tenancy => "ephemeral",
-        }
-      end
-      it "is not added to the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => nil,
-          :private_ip_address => nil
-        )
-      end
-    end
-
     context "when availability_zone and tenancy are provided" do
       let(:config) do
         {
@@ -394,25 +375,6 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :subnet_id => nil,
           :private_ip_address => nil,
           :placement => { :tenancy => "default" }
-        )
-      end
-    end
-
-    context "when tenancy is not supported" do
-      let(:config) do
-        {
-          :region => "eu-east-1",
-          :tenancy => "ephemeral",
-        }
-      end
-      it "is not added to the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => nil,
-          :private_ip_address => nil
         )
       end
     end
