@@ -178,6 +178,17 @@ module Kitchen
         end
       end
 
+      # empty keys cause failures when tagging and they make no sense
+      validations[:tags] = lambda do |attr, val, _driver|
+        # if someone puts the tags each on their own line it's an array not a hash
+        # @todo we should probably just do the right thing and support this format
+        if val.class == Array
+          warn "AWS instance tags must be specified as a single hash, not a tag " \
+            "on each line. Example: {:foo => 'bar', :bar => 'foo'}"
+          exit!
+        end
+      end
+
       def create(state)
         return if state[:server_id]
         update_username(state)
@@ -434,7 +445,10 @@ module Kitchen
       def tag_server(server)
         if config[:tags] && !config[:tags].empty?
           tags = config[:tags].map do |k, v|
-            { :key => k, :value => v }
+            # we convert the value to a string because
+            # nils should be passed as an empty String
+            # and Integers need to be represented as Strings
+            { :key => k, :value => v.to_s }
           end
           server.create_tags(:tags => tags)
         end
@@ -443,7 +457,7 @@ module Kitchen
       def tag_volumes(server)
         if config[:tags] && !config[:tags].empty?
           tags = config[:tags].map do |k, v|
-            { :key => k, :value => v }
+            { :key => k, :value => v.to_s }
           end
           server.volumes.each do |volume|
             volume.create_tags(:tags => tags)

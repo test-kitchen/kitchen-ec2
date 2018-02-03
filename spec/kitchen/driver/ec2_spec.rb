@@ -265,19 +265,50 @@ describe Kitchen::Driver::Ec2 do
   end
 
   describe "#tag_server" do
-    it "tags the server" do
-      config[:tags] = { :key1 => :value1, :key2 => :value2 }
-      expect(server).to receive(:create_tags).with(
-        :tags => [
-          { :key => :key1, :value => :value1 },
-          { :key => :key2, :value => :value2 },
-        ]
-      )
-      driver.tag_server(server)
+    context "with no tags specified" do
+      it "does not raise" do
+        config[:tags] = nil
+        expect { driver.tag_server(server) }.not_to raise_error
+      end
     end
-    it "does not raise" do
-      config[:tags] = nil
-      expect { driver.tag_server(server) }.not_to raise_error
+
+    context "with standard string tags" do
+      it "tags the server" do
+        config[:tags] = { :key1 => "value1", :key2 => "value2" }
+        expect(server).to receive(:create_tags).with(
+          :tags => [
+            { :key => :key1, :value => "value1" },
+            { :key => :key2, :value => "value2" },
+          ]
+        )
+        driver.tag_server(server)
+      end
+    end
+
+    context "with a tag that includes a Integer value" do
+      it "tags the server" do
+        config[:tags] = { :key1 => "value1", :key2 => 1 }
+        expect(server).to receive(:create_tags).with(
+          :tags => [
+            { :key => :key1, :value => "value1" },
+            { :key => :key2, :value => "1" },
+          ]
+        )
+        driver.tag_server(server)
+      end
+    end
+
+    context "with a tag that includes a Nil value" do
+      it "tags the server" do
+        config[:tags] = { :key1 => "value1", :key2 => nil }
+        expect(server).to receive(:create_tags).with(
+          :tags => [
+            { :key => :key1, :value => "value1" },
+            { :key => :key2, :value => "" },
+          ]
+        )
+        driver.tag_server(server)
+      end
     end
   end
 
@@ -286,15 +317,43 @@ describe Kitchen::Driver::Ec2 do
     before do
       allow(server).to receive(:volumes).and_return([volume])
     end
-    it "tags the instance volumes" do
-      config[:tags] = { :key1 => :value1, :key2 => :value2 }
-      expect(volume).to receive(:create_tags).with(
-        :tags => [
-          { :key => :key1, :value => :value1 },
-          { :key => :key2, :value => :value2 },
-        ]
-      )
-      driver.tag_volumes(server)
+    context "with standard string tags" do
+      it "tags the instance volumes" do
+        config[:tags] = { :key1 => "value1", :key2 => "value2" }
+        expect(volume).to receive(:create_tags).with(
+          :tags => [
+            { :key => :key1, :value => "value1" },
+            { :key => :key2, :value => "value2" },
+          ]
+        )
+        driver.tag_volumes(server)
+      end
+    end
+
+    context "with a tag that includes a Integer value" do
+      it "tags the instance volumes" do
+        config[:tags] = { :key1 => "value1", :key2 => 2 }
+        expect(volume).to receive(:create_tags).with(
+          :tags => [
+            { :key => :key1, :value => "value1" },
+            { :key => :key2, :value => "2" },
+          ]
+        )
+        driver.tag_volumes(server)
+      end
+    end
+
+    context "with a tag that includes a Nil value" do
+      it "tags the instance volumes" do
+        config[:tags] = { :key1 => "value1", :key2 => nil }
+        expect(volume).to receive(:create_tags).with(
+          :tags => [
+            { :key => :key1, :value => "value1" },
+            { :key => :key2, :value => "" },
+          ]
+        )
+        driver.tag_volumes(server)
+      end
     end
   end
 
