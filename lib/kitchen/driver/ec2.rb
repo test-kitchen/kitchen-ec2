@@ -453,7 +453,7 @@ module Kitchen
       def tag_server(server)
         if config[:tags] && !config[:tags].empty?
           tags = config[:tags].map do |k, v|
-            { :key => k, :value => v }
+            { :key => k, :value => v.to_s } # val must be a string
           end
           server.create_tags(:tags => tags)
         end
