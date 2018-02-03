@@ -187,14 +187,6 @@ module Kitchen
             "on each line. Example: {:foo => 'bar', :bar => 'foo'}"
           exit!
         end
-
-        # see if the passes hash has any nil values
-        nils = val.select { |k, v| v.nil? }
-        unless nils.empty?
-          warn "AWS instance tags cannot be nil. The following tag(s) " \
-            "had no value specified: #{nils.keys.join(', ')}"
-          exit!
-        end
       end
 
       def create(state)
@@ -453,7 +445,10 @@ module Kitchen
       def tag_server(server)
         if config[:tags] && !config[:tags].empty?
           tags = config[:tags].map do |k, v|
-            { :key => k, :value => v.to_s } # val must be a string
+            # we convert the value to a string because
+            # nils should be passed as an empty String
+            # and Integers need to be represented as Strings
+            { :key => k, :value => v.to_s }
           end
           server.create_tags(:tags => tags)
         end
@@ -462,7 +457,7 @@ module Kitchen
       def tag_volumes(server)
         if config[:tags] && !config[:tags].empty?
           tags = config[:tags].map do |k, v|
-            { :key => k, :value => v }
+            { :key => k, :value => v.to_s }
           end
           server.volumes.each do |volume|
             volume.create_tags(:tags => tags)
