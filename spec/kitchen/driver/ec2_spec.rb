@@ -646,6 +646,18 @@ describe Kitchen::Driver::Ec2 do
       end
     end
 
+    context "with no security group but filter specified" do
+      before do
+        config.delete(:security_group_ids)
+        config[:security_group_filter] = { tag: "SomeTag", value: "SomeValue" }
+        expect(driver).not_to receive(:create_security_group)
+        expect(driver).to receive(:submit_server).and_return(server)
+        allow(instance).to receive(:name).and_return("instance_name")
+      end
+
+      include_examples "common create"
+    end
+
     context "with no key pair configured" do
       before do
         config[:kitchen_root] = "/kitchen"
