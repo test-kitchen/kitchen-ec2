@@ -212,6 +212,42 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
     end
 
+    context "when provided a non existing security_group tag filter" do
+      ec2_stub_whithout_security_group = Aws::EC2::Client.new(:stub_responses => true)
+
+      let(:config) do
+        {
+          :instance_type                => "micro",
+          :ebs_optimized                => true,
+          :image_id                     => "ami-123",
+          :aws_ssh_key_id               => "key",
+          :subnet_id                    => "s-123",
+          :security_group_ids           => nil,
+          :region                       => "us-west-2",
+          :security_group_filter =>
+            {
+              :tag   => "foo",
+              :value => "bar",
+            },
+        }
+      end
+
+      it "generates id from the provided tag" do
+        allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_stub_whithout_security_group)
+        expect(ec2_stub_whithout_security_group).to receive(:describe_security_groups).with(
+          :filters => [
+            {
+              :name => "tag:foo",
+              :values => ["bar"],
+            },
+          ]
+        ).and_return(ec2_stub_whithout_security_group.describe_security_groups)
+
+        expect { generator.ec2_instance_data }.to raise_error("The group tagged '#{config[:security_group_filter][:tag]} " +
+                                                              "#{config[:security_group_filter][:value]}' does not exist!")
+      end
+    end
+
     context "when passed an empty block_device_mappings" do
       let(:config) do
         {
