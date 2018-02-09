@@ -624,7 +624,7 @@ module Kitchen
 
       def default_windows_user_data
         base_script = Kitchen::Util.outdent!(<<-EOH)
-	$OSVersion = (get-itemproperty -Path "HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion" -Name ProductName).ProductName
+	$OSVersion = (get-itemproperty -Path "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" -Name ProductName).ProductName
 	If($OSVersion.contains('2016'))
 	{
       	$logfile='C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
@@ -677,7 +677,7 @@ module Kitchen
         Kitchen::Util.outdent!(<<-EOH)
         <powershell>
         #{base_script}
-	#{custom_admin_script}
+        #{custom_admin_script}
         </powershell>
         EOH
       end
