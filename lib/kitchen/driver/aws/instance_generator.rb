@@ -62,19 +62,21 @@ module Kitchen
           end
 
           if config[:security_group_ids].nil? && config[:security_group_filter]
-            config[:security_group_ids] = [::Aws::EC2::Client.
-              new(:region => config[:region]).describe_security_groups(
+            security_group = ::Aws::EC2::Client.
+                new(:region => config[:region]).describe_security_groups(
                 :filters => [
-                  {
-                    :name   => "tag:#{config[:security_group_filter][:tag]}",
-                    :values => [config[:security_group_filter][:value]],
-                  },
+                    {
+                        :name => "tag:#{config[:security_group_filter][:tag]}",
+                        :values => [config[:security_group_filter][:value]],
+                    },
                 ]
-              )[0][0].group_id]
+            )[0][0]
 
-            if config[:security_group_ids].nil?
-              raise "The group tagged '#{config[:security_group_filter][:tag]}\
-              #{config[:security_group_filter][:value]}' does not exist!"
+            if security_group
+              config[:security_group_ids] = [security_group.group_id]
+            else
+              raise "The group tagged '#{config[:security_group_filter][:tag]} " +
+                "#{config[:security_group_filter][:value]}' does not exist!"
             end
           end
 
