@@ -61,6 +61,7 @@ module Kitchen
       end
       default_config :ebs_optimized,      false
       default_config :security_group_ids, nil
+      default_config :security_group_filter, nil
       default_config :tags, "created-by" => "test-kitchen"
       default_config :user_data do |driver|
         if driver.windows_os?
@@ -210,7 +211,7 @@ module Kitchen
         END
 
         # If no security group IDs are specified, create one automatically.
-        unless config[:security_group_ids]
+        unless config[:security_group_ids] || config[:security_group_filter]
           create_security_group(state)
           config[:security_group_ids] = [state[:auto_security_group_id]]
         end
