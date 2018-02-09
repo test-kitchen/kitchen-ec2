@@ -765,6 +765,11 @@ module Kitchen
           Time.now.utc.iso8601,
           Array.new(8) { rand(36).to_s(36) }.join(""),
         ]
+        # In a perfect world this would generate the key locally and use ImportKey
+        # instead for better security, but given the use case that is very likely
+        # to rapidly exhaust local entropy by creating a lot of keys. So this is
+        # probably fine. If you want very high security, probably don't use this
+        # feature anyway.
         resp = ec2.client.create_key_pair(key_name: "kitchen-#{name_parts.join('-')}")
         state[:auto_key_id] = resp.key_name
         info("Created automatic key pair #{state[:auto_key_id]}")
