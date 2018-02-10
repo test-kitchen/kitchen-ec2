@@ -623,6 +623,36 @@ module Kitchen
       end
 
       def default_windows_user_data
+        base_script = Kitchen::Util.outdent!(<<-EOH)
+	$OSVersion = (get-itemproperty -Path "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" -Name ProductName).ProductName
+	If($OSVersion.contains('2016'))
+	{
+      	$logfile='C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
+	# EC2Launch doesn't init extra disks by default
+	C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Scripts\\InitializeDisks.ps1
+	}
+	Else
+	{
+	$logfile='C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
+	}
+        # Allow script execution
+        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
+        #PS Remoting and & winrm.cmd basic config
+        $enableArgs=@{Force=$true}
+        $command=Get-Command Enable-PSRemoting
+        if($command.Parameters.Keys -contains "skipnetworkprofilecheck"){
+            $enableArgs.skipnetworkprofilecheck=$true
+        }
+        Enable-PSRemoting @enableArgs
+        & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
+        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
+        & winrm.cmd set winrm/config/winrs '@{MaxShellsPerUser="50"}' >> $logfile
+        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
+        #Firewall Config
+        & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
+        Set-ItemProperty -Name LocalAccountTokenFilterPolicy -Path HKLM:\\software\\Microsoft\\Windows\\CurrentVersion\\Policies\\system -Value 1
+	EOH
+
         # Preparing custom static admin user if we defined something other than Administrator
         custom_admin_script = ""
         if !(instance.transport[:username] =~ /administrator/i) && instance.transport[:password]
@@ -643,35 +673,10 @@ module Kitchen
           EOH
         end
 
-        if actual_platform.version =~ /2016/
-          logfile_name = 'C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
-          disk_init = 'C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Scripts\\InitializeDisks.ps1'
-        else
-          logfile_name = 'C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
-          disk_init = ""
-        end
         # Returning the fully constructed PowerShell script to user_data
         Kitchen::Util.outdent!(<<-EOH)
         <powershell>
-        $logfile="#{logfile_name}"
-        # EC2Launch doesn't init extra disks by default
-        #{disk_init}
-        # Allow script execution
-        Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
-        #PS Remoting and & winrm.cmd basic config
-        $enableArgs=@{Force=$true}
-        $command=Get-Command Enable-PSRemoting
-        if($command.Parameters.Keys -contains "skipnetworkprofilecheck"){
-            $enableArgs.skipnetworkprofilecheck=$true
-        }
-        Enable-PSRemoting @enableArgs
-        & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
-        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
-        & winrm.cmd set winrm/config/winrs '@{MaxShellsPerUser="50"}' >> $logfile
-        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
-        #Firewall Config
-        & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
-        Set-ItemProperty -Name LocalAccountTokenFilterPolicy -Path HKLM:\\software\\Microsoft\\Windows\\CurrentVersion\\Policies\\system -Value 1
+        #{base_script}
         #{custom_admin_script}
         </powershell>
         EOH
