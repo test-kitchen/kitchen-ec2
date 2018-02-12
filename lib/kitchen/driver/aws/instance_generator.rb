@@ -84,12 +84,10 @@ module Kitchen
         # the matching security group IDs using that filter in the account
         # @return [Array] the security group IDs
         def security_group_ids
-          @security_ids ||= begin
-            if config[:security_group_ids]
-              Array(config[:security_group_ids])
-            elsif config[:security_group_filter]
-              security_group_ids_from_filter
-            end
+          if config[:security_group_ids]
+            Array(config[:security_group_ids])
+          elsif config[:security_group_filter]
+            security_group_ids_from_filter
           end
         end
 
@@ -97,13 +95,11 @@ module Kitchen
         # a matching subnet ID using that filter in the account
         # @return [String, nil] the subnet ID or nil
         def subnet_id
-          @subnet_ids ||= begin
           # lookup the subnet if we have a filter set and no subnet_id set
-            if config[:subnet_id]
-              config[:subnet_id]
-            elsif config[:subnet_filter]
-              subnet_id_from_filter
-            end
+          if config[:subnet_id]
+            config[:subnet_id]
+          elsif config[:subnet_filter]
+            subnet_id_from_filter
           end
         end
 
@@ -111,16 +107,14 @@ module Kitchen
         # @return [String, nil] user data or nil
         def prepared_user_data
           # If user_data is a file reference, lets read it as such
-          @user_data ||= begin
-            return nil if config[:user_data].nil?
+          return nil if config[:user_data].nil?
 
-            raw_user_data = config.fetch(:user_data)
-            if !raw_user_data.include?("\0") && ::File.file?(raw_user_data)
-              raw_user_data = ::File.read(raw_user_data)
-            end
-
-            ::Base64.encode64(raw_user_data)
+          raw_user_data = config.fetch(:user_data)
+          if !raw_user_data.include?("\0") && ::File.file?(raw_user_data)
+            raw_user_data = ::File.read(raw_user_data)
           end
+
+          ::Base64.encode64(raw_user_data)
         end
 
         # process user passed availability zone. Make sure it's
