@@ -170,8 +170,11 @@ module Kitchen
             :key_name               => config[:aws_ssh_key_id],
             :subnet_id              => subnet_id,
             :private_ip_address     => config[:private_ip_address],
-            :placement              => placement,
           }
+
+          unless placement.empty?
+            i[:placement] = placement
+          end
 
           unless config[:block_device_mappings].nil? || config[:block_device_mappings].empty?
             i[:block_device_mappings] = config[:block_device_mappings]
