@@ -21,11 +21,8 @@ require "base64"
 require "aws-sdk"
 
 module Kitchen
-
   module Driver
-
     class Aws
-
       # A class for encapsulating the instance payload logic
       #
       # @author Tyler Ball <tball@chef.io>
@@ -197,11 +194,7 @@ module Kitchen
           end
           i.delete_if { |k, v| v.nil? || ( v.class == Hash && v.empty? ) }
         end
-
       end
-
     end
-
   end
-
 end
