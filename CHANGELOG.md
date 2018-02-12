@@ -1,5 +1,14 @@
 # Change Log
 
+## [v2.2.1](https://github.com/test-kitchen/kitchen-ec2/tree/v2.2.1) (2018-02-12)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.2.0...v2.2.1)
+
+**Fixed bugs:**
+
+- Fix `undefined` error when Windows AMIs don't include "windows" in name [\#322](https://github.com/test-kitchen/kitchen-ec2/issues/322) [\#324](https://github.com/test-kitchen/kitchen-ec2/pull/324) ([BenLiyanage](https://github.com/BenLiyanage))
+- Fix error behavior when security\_group\_filter is set but no security group found for those tags [\#386](https://github.com/test-kitchen/kitchen-ec2/pull/386) ([dpattmann](https://github.com/dpattmann))
+- Don't create security group if security\_group\_filter is set [\#385](https://github.com/test-kitchen/kitchen-ec2/pull/385) ([dpattmann](https://github.com/dpattmann))
+
 ## [v2.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.2.0) (2018-01-27)
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.1.0...v2.2.0)
