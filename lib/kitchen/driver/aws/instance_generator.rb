@@ -133,7 +133,7 @@ module Kitchen
           return unless config[:availability_zone]
           az = config[:availability_zone]
           if az =~ /^[a-z]$/i
-            az = "#{config[:region]}#{availability_zone}"
+            az = "#{config[:region]}#{az}"
           end
           az.downcase
         end
