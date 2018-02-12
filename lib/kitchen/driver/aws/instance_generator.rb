@@ -194,13 +194,13 @@ module Kitchen
           # the top level
           if i[:network_interfaces]
             if config[:subnet_id]
-              interfaces[0][:subnet_id] = i.delete(:subnet_id)
+              i[:network_interfaces][0][:subnet_id] = i.delete(:subnet_id)
             end
             if config[:private_ip_address]
-              interfaces[0][:private_ip_address] = i.delete(:private_ip_address)
+              i[:network_interfaces][0][:private_ip_address] = i.delete(:private_ip_address)
             end
             if config[:security_group_ids]
-              interfaces[0][:groups] = i.delete(:security_group_ids)
+              i[:network_interfaces][0][:groups] = i.delete(:security_group_ids)
             end
           end
           i
