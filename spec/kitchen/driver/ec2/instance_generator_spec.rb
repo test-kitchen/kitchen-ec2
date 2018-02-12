@@ -289,8 +289,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :key_name => nil,
           :subnet_id => nil,
           :private_ip_address => nil,
-          :placement => { :availability_zone => "eu-east-1c",
-                          :tenancy => "dedicated" }
+          :placement => { :tenancy => "dedicated",
+                          :availability_zone => "eu-east-1c" }
         )
       end
     end
@@ -331,8 +331,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           :key_name => nil,
           :subnet_id => nil,
           :private_ip_address => nil,
-          :placement => { :availability_zone => "eu-east-1c",
-                          :tenancy => "dedicated" }
+          :placement => { :tenancy => "dedicated",
+                          :availability_zone => "eu-east-1c" }
         )
       end
     end
