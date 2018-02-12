@@ -170,25 +170,17 @@ module Kitchen
             :key_name               => config[:aws_ssh_key_id],
             :subnet_id              => subnet_id,
             :private_ip_address     => config[:private_ip_address],
+            :placement              => placement,
+            :block_device_mappings  => config[:block_device_mappings],
+            :user_data              => prepared_user_data,
+            :security_group_ids     => security_group_ids,
+            :network_interfaces     => network_interfaces,
+            :instance_initiated_shutdown_behavior => config[:instance_initiated_shutdown_behavior],
           }
 
-          unless placement.empty?
-            i[:placement] = placement
-          end
-
-          unless config[:block_device_mappings].nil? || config[:block_device_mappings].empty?
-            i[:block_device_mappings] = config[:block_device_mappings]
-          end
-          i[:security_group_ids] = security_group_ids if security_group_ids
-          i[:user_data] = prepared_user_data if prepared_user_data
           if config[:iam_profile_name]
             i[:iam_instance_profile] = { :name => config[:iam_profile_name] }
           end
-          unless config[:instance_initiated_shutdown_behavior].nil? ||
-              config[:instance_initiated_shutdown_behavior].empty?
-            i[:instance_initiated_shutdown_behavior] = config[:instance_initiated_shutdown_behavior]
-          end
-          i[:network_interfaces] = network_interfaces
           # If specifying `:network_interfaces` in the request, you must specify
           # network specific configs in the network_interfaces block and not at
           # the top level
@@ -203,7 +195,7 @@ module Kitchen
               i[:network_interfaces][0][:groups] = i.delete(:security_group_ids)
             end
           end
-          i
+          i.delete_if { |k, v| v.nil? || ( v.class == Hash && v.empty? ) }
         end
 
       end
