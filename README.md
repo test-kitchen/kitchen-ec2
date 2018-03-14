@@ -152,7 +152,7 @@ specify.
 
 #### SSH
 
-The `aws_ssh_key_id` value is the name of the AWS key pair you want to use. The default will be read from the `AWS_SSH_KEY_ID` environment variable if set.  If a key ID is not specified, a temporary key will be created for you (**>= 2.1.0**).
+The `aws_ssh_key_id` value is the name of the AWS key pair you want to use. The default will be read from the `AWS_SSH_KEY_ID` environment variable if set.  If a key ID is not specified, a temporary key will be created for you (**>= 2.1.0**). Key ID can also be set to the string value `_disabled`. This will not directly associate the EC2 instance with an AWS-managed key pair (pre-existing or auto-generated). This may be useful in environments that have disabled AWS-managed keys. Getting SSH keys onto the instance then becomes an exercise for the reader, though it can be done, for example, with scripting in `user_data` or if the credentials are already baked into the AMI.
 
 To see a list of existing key pair IDs in a region, run `aws ec2 describe-key-pairs --region us-east-1`.
 

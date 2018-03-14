@@ -217,9 +217,16 @@ module Kitchen
         end
 
         # If no SSH key pair name is specified, create one automatically.
-        unless config[:aws_ssh_key_id]
+        # If `_disabled`, nullify the key ID to avoid associating the instance with
+        # an AWS-managed key pair.
+        case config[:aws_ssh_key_id]
+        when nil
           create_key(state)
           config[:aws_ssh_key_id] = state[:auto_key_id]
+        when "_disable"
+          info("Disabling AWS-managed SSH key pairs for this EC2 instance.")
+          info("The key pairs for the kitchen transport config and the AMI must match.")
+          config[:aws_ssh_key_id] = nil
         end
 
         if config[:spot_price]
