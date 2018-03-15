@@ -152,20 +152,30 @@ specify.
 
 #### SSH
 
-The `aws_ssh_key_id` value is the name of the AWS key pair you want to use. The default will be read from the `AWS_SSH_KEY_ID` environment variable if set.  If a key ID is not specified, a temporary key will be created for you (**>= 2.1.0**).
+The `aws_ssh_key_id` value is the name of the AWS key pair you want to use.
 
-To see a list of existing key pair IDs in a region, run `aws ec2 describe-key-pairs --region us-east-1`.
+The value can be one of:
 
-When using an existing key, ensure that the private key is configured in your
-Test Kitchen `transport`, either directly or made available via `ssh-agent`:
+* `nil` (default)
+
+By default the key ID is read from the `AWS_SSH_KEY_ID` environment variable. If the environment variable is not set, the value will be nil. In this case, a temporary key will be created for you (**>= 2.1.0**).
+
+* `name_of_some_existing_aws_key_pair`
+
+By setting the environment variable `AWS_SSH_KEY_ID` or by setting the `aws_ssh_key_id` driver option in kitchen.yml. This will be the key that becomes associated with the test EC2 instances. The key must already exist in AWS. To see a list of existing key pair IDs in a region, use the `aws` CLI tool. For example, in the US-East-1 region: `aws ec2 describe-key-pairs --region us-east-1`.
+
+* `_disable`
+
+This will not directly associate the EC2 instance with an AWS-managed key pair (pre-existing or auto-generated). This may be useful in environments that have disabled AWS-managed keys. Getting SSH keys onto the instance then becomes an exercise for the reader, though it can be done, for example, with scripting in `user_data` or if the credentials are already baked into the AMI.
+
+When using an existing key, either an AWS-managed key pair or keys that exist on the instance through some other means, ensure that the private key is configured in your Test Kitchen `transport` section, either directly or made available via `ssh-agent`:
 
 ```yaml
 transport:
   ssh_key: ~/.ssh/mykey.pem
 ```
 
-For standard platforms we automatically provide the SSH username, but when
-specifying your own AMI you may need to configure that as well.
+For standard platforms we automatically provide the SSH username, but when specifying your own AMI you may need to configure that as well.
 
 #### WinRM
 
