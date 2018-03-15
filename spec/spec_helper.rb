@@ -17,6 +17,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "support/fake_image"
+
 if ENV["CODECLIMATE_REPO_TOKEN"]
   require "codeclimate-test-reporter"
   CodeClimate::TestReporter.start
