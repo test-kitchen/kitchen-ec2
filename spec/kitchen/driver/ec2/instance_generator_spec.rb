@@ -47,11 +47,11 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
 
       it "reads the file contents" do
-        expect(Base64.decode64(generator.prepared_user_data)).to eq("foo\nbar")
+        expect(Base64.decode64(generator.send(:prepared_user_data))).to eq("foo\nbar")
       end
 
       it "memoizes the file contents" do
-        decoded = Base64.decode64(generator.prepared_user_data)
+        decoded = Base64.decode64(generator.send(:prepared_user_data))
         expect(decoded).to eq("foo\nbar")
         tmp_file.write("other\nvalue")
         tmp_file.rewind
@@ -63,10 +63,60 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       let(:config) { { :user_data => "foo\0bar" } }
 
       it "handles nulls in user_data" do
-        expect(Base64.decode64(generator.prepared_user_data)).to eq "foo\0bar"
+        expect(Base64.decode64(generator.send(:prepared_user_data))).to eq "foo\0bar"
       end
     end
   end
+
+  describe "#network_interfaces" do
+    it "returns nothing when there is no :associate_public_ip config option" do
+      config = Hash.new
+      expect(generator.send(:network_interfaces)).to be_nil
+    end
+
+    it "returns nothing when :associate_public_ip is false" do
+      config[:associate_public_ip] = false
+      expect(generator.send(:network_interfaces)).to be_nil
+    end
+
+    it "returns an array with a single interface defined if :associate_public_ip is set" do
+      config[:associate_public_ip] = true
+      expect(generator.send(:network_interfaces)).to eq(
+        [{
+          device_index: 0,
+          associate_public_ip_address: true,
+          delete_on_termination: true,
+        }]
+      )
+    end
+  end
+
+  describe "#remove_empty_fields" do
+    fields_that_should_not_be_present_if_nil_or_empty = %i[
+      block_device_mappings instance_initiated_shutdown_behavior network_interfaces placement security_group_ids user_data
+    ]
+
+    fields_that_should_not_be_present_if_nil_or_empty.each do |field|
+      it "removes :#{field} if it is nil" do
+        nil_field = {field => nil}
+        expect(
+          generator.send(:remove_empty_fields, nil_field )
+        ).not_to include(nil_field)
+      end
+      it "removes :#{field} if it is an empty array" do
+        empty_field = {field => []}
+        expect(
+          generator.send(:remove_empty_fields, empty_field)
+        ).not_to include(empty_field)
+      end
+      it "removes :#{field} if it is an empty hash" do
+        empty_field = {field => Hash.new}
+        expect(
+          generator.send(:remove_empty_fields, empty_field)
+        ).not_to include(empty_field)
+      end
+    end
+ end
 
   describe "#ec2_instance_data" do
     ec2_stub = Aws::EC2::Client.new(:stub_responses => true)
@@ -200,14 +250,14 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
       it "generates id from the provided tag" do
         allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
-        expect(ec2_stub).to receive(:describe_security_groups).with(
-          :filters => [
-            {
-              :name => "tag:foo",
-              :values => ["bar"],
-            },
-          ]
-        ).and_return(ec2_stub.describe_security_groups)
+        # expect(ec2_stub).to receive(:describe_security_groups).with(
+        #   :filters => [
+        #     {
+        #       :name => "tag:foo",
+        #       :values => ["bar"],
+        #     },
+        #   ]
+        # ).and_return(ec2_stub.describe_security_groups)
         expect(generator.ec2_instance_data[:security_group_ids]).to eq(["sg-123"])
       end
     end
@@ -377,43 +427,27 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     end
 
     context "when associate_public_ip is provided" do
-      let(:config) do
-        {
-          :associate_public_ip => true,
-        }
+      before do
+        config[:associate_public_ip] = true
       end
 
       it "adds a network_interfaces block" do
-        expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => nil,
-          :private_ip_address => nil,
-          :network_interfaces => [{
-            :device_index => 0,
-            :associate_public_ip_address => true,
-            :delete_on_termination => true,
+        expect(generator.ec2_instance_data).to include(
+          network_interfaces: [{
+            device_index: 0,
+            associate_public_ip_address: true,
+            delete_on_termination: true,
           }]
         )
       end
 
       context "and subnet is provided" do
-        let(:config) do
-          {
-            :associate_public_ip => true,
-            :subnet_id => "s-456",
-          }
+        before do
+            config[:subnet_id] = "s-456"
         end
 
         it "adds a network_interfaces block" do
-          expect(generator.ec2_instance_data).to eq(
-            :instance_type => nil,
-            :ebs_optimized => nil,
-            :image_id => nil,
-            :key_name => nil,
-            :private_ip_address => nil,
+          expect(generator.ec2_instance_data).to include(
             :network_interfaces => [{
               :device_index => 0,
               :associate_public_ip_address => true,
@@ -425,21 +459,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
 
       context "and security_group_ids is provided" do
-        let(:config) do
-          {
-            :associate_public_ip => true,
-            :security_group_ids => ["sg-789"],
-          }
-        end
-
         it "adds a network_interfaces block" do
-          expect(generator.ec2_instance_data).to eq(
-            :instance_type => nil,
-            :ebs_optimized => nil,
-            :image_id => nil,
-            :key_name => nil,
-            :subnet_id => nil,
-            :private_ip_address => nil,
+          config[:security_group_ids] = ["sg-789"]
+          expect(generator.ec2_instance_data).to include(
             :network_interfaces => [{
               :device_index => 0,
               :associate_public_ip_address => true,
@@ -561,7 +583,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         }
       end
       it "returns that in the instance data" do
-        expect(generator.availability_zone).to eq("eu-west-1c")
+        expect(generator.send(:availability_zone)).to eq("eu-west-1c")
       end
     end
 
@@ -573,7 +595,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         }
       end
       it "adds the region to it in the instance data" do
-        expect(generator.availability_zone).to eq("eu-east-1c")
+        expect(generator.send(:availability_zone)).to eq("eu-east-1c")
       end
     end
 
@@ -584,7 +606,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         }
       end
       it "is not added to the instance data" do
-        expect(generator.availability_zone).to eq(nil)
+        expect(generator.send(:availability_zone)).to eq(nil)
       end
     end
   end
@@ -598,7 +620,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         }
       end
       it "returns a hash with az and tenancy" do
-        expect(generator.placement).to eq({
+        expect(generator.send(:placement)).to eq({
           :availability_zone => "eu-west-1c",
           :tenancy => "host",
           })
@@ -610,7 +632,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         {}
       end
       it "returns an empty hash" do
-        expect(generator.placement).to eq({})
+        expect(generator.send(:placement)).to eq({})
       end
     end
 
@@ -619,7 +641,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         { :availability_zone => "eu-west-1c" }
       end
       it "returns a hash with just the AZ" do
-        expect(generator.placement).to eq(:availability_zone => "eu-west-1c")
+        expect(generator.send(:placement)).to eq(:availability_zone => "eu-west-1c")
       end
     end
   end

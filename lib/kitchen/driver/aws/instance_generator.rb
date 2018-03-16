@@ -36,7 +36,35 @@ module Kitchen
           @logger = logger
         end
 
-        # search for the subnet_id using the provided subnet_filter
+
+        # Transform the provided config into the hash to send to AWS.  Some fields
+        # can be passed in null, others need to be ommitted if they are null
+        def ec2_instance_data
+          i = {
+            :instance_type          => config[:instance_type],
+            :ebs_optimized          => config[:ebs_optimized],
+            :image_id               => config[:image_id],
+            :key_name               => config[:aws_ssh_key_id],
+            :subnet_id              => subnet_id,
+            :private_ip_address     => config[:private_ip_address],
+            :placement              => placement,
+            :block_device_mappings  => config[:block_device_mappings],
+            :user_data              => prepared_user_data,
+            :security_group_ids     => security_group_ids,
+            :network_interfaces     => network_interfaces,
+            :instance_initiated_shutdown_behavior => config[:instance_initiated_shutdown_behavior],
+          }
+
+          if config[:iam_profile_name]
+            i[:iam_instance_profile] = { :name => config[:iam_profile_name] }
+          end
+
+         remove_empty_fields i
+        end
+
+        private
+
+                # search for the subnet_id using the provided subnet_filter
         # @return [String] the subnet ID
         def subnet_id_from_filter
           subnet = ::Aws::EC2::Client.
@@ -144,50 +172,35 @@ module Kitchen
         # network interface configuration information
         def network_interfaces
           if !config.fetch(:associate_public_ip, nil).nil?
-            [{
-              :device_index => 0,
-              :associate_public_ip_address => config[:associate_public_ip],
-              :delete_on_termination => true,
-            }]
+            interface = {
+              device_index: 0,
+              associate_public_ip_address: config[:associate_public_ip],
+              delete_on_termination: true,
+            }
+
+            # If specifying `:network_interfaces` in the request, you must specify
+            # network specific configs in the network_interfaces block and not at
+            # the top level
+
+            [:subnet_id, :private_ip_address].each do |option|
+              interface[option] = config[option] if config[option]
+            end
+
+            interface[:groups] = security_group_ids if security_group_ids
+
+            [interface]
           end
         end
 
-        # Transform the provided config into the hash to send to AWS.  Some fields
-        # can be passed in null, others need to be ommitted if they are null
-        def ec2_instance_data
-          i = {
-            :instance_type          => config[:instance_type],
-            :ebs_optimized          => config[:ebs_optimized],
-            :image_id               => config[:image_id],
-            :key_name               => config[:aws_ssh_key_id],
-            :subnet_id              => subnet_id,
-            :private_ip_address     => config[:private_ip_address],
-            :placement              => placement,
-            :block_device_mappings  => config[:block_device_mappings],
-            :user_data              => prepared_user_data,
-            :security_group_ids     => security_group_ids,
-            :network_interfaces     => network_interfaces,
-            :instance_initiated_shutdown_behavior => config[:instance_initiated_shutdown_behavior],
-          }
+        def remove_empty_fields(settings)
+          fields_that_should_not_be_present_if_nil_or_empty = %i[
+            block_device_mappings instance_initiated_shutdown_behavior network_interfaces placement security_group_ids user_data
+          ]
 
-          if config[:iam_profile_name]
-            i[:iam_instance_profile] = { :name => config[:iam_profile_name] }
+          fields_that_should_not_be_present_if_nil_or_empty.each do |field|
+            settings.delete(field) if settings[field].nil? || settings[field].empty?
           end
-          # If specifying `:network_interfaces` in the request, you must specify
-          # network specific configs in the network_interfaces block and not at
-          # the top level
-          if i[:network_interfaces]
-            if config[:subnet_id]
-              i[:network_interfaces][0][:subnet_id] = i.delete(:subnet_id)
-            end
-            if config[:private_ip_address]
-              i[:network_interfaces][0][:private_ip_address] = i.delete(:private_ip_address)
-            end
-            if config[:security_group_ids]
-              i[:network_interfaces][0][:groups] = i.delete(:security_group_ids)
-            end
-          end
-          i.delete_if { |k, v| v.nil? || ( v.class == Hash && v.empty? ) }
+          settings
         end
       end
     end
