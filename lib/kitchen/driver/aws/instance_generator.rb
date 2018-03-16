@@ -73,9 +73,10 @@ module Kitchen
 
           # fail if we didn't return anything
           if security_group.nil?
-            warn "The group tagged '#{config[:security_group_filter][:tag]}\
+            error_message = "The group tagged '#{config[:security_group_filter][:tag]}\
             #{config[:security_group_filter][:value]}' does not exist!"
-            exit!
+            warn error_message
+            raise error_message
           end
           [security_group.group_id]
         end
