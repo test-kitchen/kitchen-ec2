@@ -23,9 +23,12 @@ describe "Default images for various platforms" do
   let(:driver) do
     Kitchen::Driver::Ec2.new(:region => "us-west-2", :aws_ssh_key_id => "foo", **config)
   end
+  let(:logged_output) { StringIO.new }
+  let(:logger)        { Logger.new(logged_output) }
   let(:config) { {} }
   def new_instance(platform_name: "blarghle")
     Kitchen::Instance.new(
+      :logger => logger,
       :driver => driver,
       :suite => Kitchen::Suite.new(:name => "suite-name"),
       :platform => Kitchen::Platform.new(:name => platform_name),
