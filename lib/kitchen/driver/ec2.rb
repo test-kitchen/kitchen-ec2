@@ -785,10 +785,9 @@ module Kitchen
         resp = ec2.client.create_key_pair(key_name: "kitchen-#{name_parts.join('-')}")
         state[:auto_key_id] = resp.key_name
         info("Created automatic key pair #{state[:auto_key_id]}")
-        # Write the key out, but safely hence the weird sysopen.
+        # Write the key out with safe permissions
         key_path = "#{config[:kitchen_root]}/.kitchen/#{instance.name}.pem"
-        key_fd = File.sysopen(key_path, File::WRONLY | File::CREAT | File::EXCL, 00600)
-        File.open(key_fd) do |f|
+        File.open(key_path, File::WRONLY | File::CREAT | File::EXCL, 00600) do |f|
           f.write(resp.key_material)
         end
         # Inject the key into the state to be used by the SSH transport, or for
