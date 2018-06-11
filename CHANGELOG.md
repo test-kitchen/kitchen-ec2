@@ -1,5 +1,24 @@
 # Change Log
 
+## [v2.2.2](https://github.com/test-kitchen/kitchen-ec2/tree/v2.2.2) (2018-06-11)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.2.1...v2.2.2)
+
+**Fixed bugs:**
+
+- Kitchen failure when adding spot\_price [\#328](https://github.com/test-kitchen/kitchen-ec2/issues/328)
+
+**Closed issues:**
+
+- image\_id: required [\#397](https://github.com/test-kitchen/kitchen-ec2/issues/397)
+- kitchen-ec2 ssh port [\#396](https://github.com/test-kitchen/kitchen-ec2/issues/396)
+- Provide option to terminate after "X" minutes [\#395](https://github.com/test-kitchen/kitchen-ec2/issues/395)
+- Explicitly support usage w/o manual or autoconfiguration of aws\_ssh\_key\_id [\#391](https://github.com/test-kitchen/kitchen-ec2/issues/391)
+
+**Merged pull requests:**
+
+- Fix dynamic key creation [\#400](https://github.com/test-kitchen/kitchen-ec2/pull/400) ([bdwyertech](https://github.com/bdwyertech))
+- allow AWS-managed ssh key pairs to be disabled [\#392](https://github.com/test-kitchen/kitchen-ec2/pull/392) ([cheeseplus](https://github.com/cheeseplus))
+
 ## [v2.2.1](https://github.com/test-kitchen/kitchen-ec2/tree/v2.2.1) (2018-02-12)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.2.0...v2.2.1)
 
