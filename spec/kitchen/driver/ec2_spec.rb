@@ -507,12 +507,9 @@ describe Kitchen::Driver::Ec2 do
         allow(instance).to receive(:name).and_return("instance_name")
 
         expect(actual_client).to receive(:create_key_pair).with(key_name: /kitchen-/).and_return(double(key_name: "expected-key-name", key_material: "RSA PRIVATE KEY"))
-        fake_fd = double()
         fake_file = double()
-        allow(File).to receive(:sysopen).and_call_original
-        expect(File).to receive(:sysopen).with("/kitchen/.kitchen/instance_name.pem", kind_of(Numeric), kind_of(Numeric)).and_return(fake_fd)
         allow(File).to receive(:open).and_call_original
-        expect(File).to receive(:open).with(fake_fd).and_yield(fake_file)
+        expect(File).to receive(:open).with("/kitchen/.kitchen/instance_name.pem", kind_of(Numeric), kind_of(Numeric)).and_yield(fake_file)
         expect(fake_file).to receive(:write).with("RSA PRIVATE KEY")
       end
 

@@ -5,13 +5,13 @@ branches:
   only:
   - master
 rvm:
-  - 2.3.6
-  - 2.4.3
+  - 2.3.7
+  - 2.4.4
 
 # https://github.com/travis-ci/travis-ci/issues/8978
 matrix:
   include:
-    - rvm: 2.5.0
+    - rvm: 2.5.1
       before_install:
       - gem update --system
     - rvm: ruby-head
