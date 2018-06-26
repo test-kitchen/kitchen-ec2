@@ -641,7 +641,11 @@ module Kitchen
 	Else
 	{
 	$logfile='C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
-	}
+  }
+
+        # Logfile fail-safe in case the directory does not exist
+        New-Item $logfile -Force
+
         # Allow script execution
         Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
         #PS Remoting and & winrm.cmd basic config
