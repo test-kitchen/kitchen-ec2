@@ -18,7 +18,7 @@
 # limitations under the License.
 
 require "base64"
-require "aws-sdk"
+require "aws-sdk-ec2"
 
 module Kitchen
   module Driver
@@ -36,8 +36,8 @@ module Kitchen
           @logger = logger
         end
 
-        # Transform the provided config into the hash to send to AWS.  Some fields
-        # can be passed in null, others need to be ommitted if they are null
+        # Transform the provided kitchen config into the hash we'll use to create the aws instance
+        # Some fields can be passed in null, others need to be ommitted if they are null
         # @return [Hash]
         def ec2_instance_data
           i = {

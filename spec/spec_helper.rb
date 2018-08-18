@@ -101,6 +101,6 @@ RSpec.configure do |config|
   config.expose_dsl_globally = true
 end
 
-require "aws-sdk"
+require "aws-sdk-ec2"
 # https://ruby.awsblog.com/post/Tx15V81MLPR8D73/Client-Response-Stubs
 Aws.config[:stub_responses] = true
