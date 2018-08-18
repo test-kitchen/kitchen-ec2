@@ -38,6 +38,7 @@ module Kitchen
 
         # Transform the provided config into the hash to send to AWS.  Some fields
         # can be passed in null, others need to be ommitted if they are null
+        # @return [Hash]
         def ec2_instance_data
           i = {
             instance_type:                        config[:instance_type],
@@ -63,7 +64,7 @@ module Kitchen
 
         private
 
-                # search for the subnet_id using the provided subnet_filter
+        # search for the subnet_id using the provided subnet_filter
         # @return [String] the subnet ID
         def subnet_id_from_filter
           subnet = ::Aws::EC2::Client

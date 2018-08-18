@@ -49,14 +49,24 @@ module Kitchen
           ::Aws.config.update(retry_limit: retry_limit) unless retry_limit.nil?
         end
 
+        # create a new AWS EC2 instance
+        # @param options [Hash] has of instance options
+        # @see https://docs.aws.amazon.com/sdkforruby/api/Aws/EC2/Resource.html#create_instances-instance_method
+        # @return [Aws::EC2::Instance]
         def create_instance(options)
           resource.create_instances(options)[0]
         end
 
+        # get an instance object given an id
+        # @param id [String] aws instance id
+        # @return [Aws::EC2::Instance]
         def get_instance(id)
           resource.instance(id)
         end
 
+        # get an instance object given a spot request ID
+        # @param request_id [String] aws spot instance id
+        # @return [Aws::EC2::Instance]
         def get_instance_from_spot_request(request_id)
           resource.instances(
             filters: [{

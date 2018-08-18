@@ -23,6 +23,8 @@ module Kitchen
         class Fedora < StandardPlatform
           StandardPlatform.platforms["fedora"] = self
 
+          # default username for this platform's ami
+          # @return [String]
           def username
             "fedora"
           end

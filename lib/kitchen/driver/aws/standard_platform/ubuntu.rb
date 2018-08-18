@@ -23,6 +23,8 @@ module Kitchen
         class Ubuntu < StandardPlatform
           StandardPlatform.platforms["ubuntu"] = self
 
+          # default username for this platform's ami
+          # @return [String]
           def username
             "ubuntu"
           end

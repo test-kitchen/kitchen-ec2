@@ -23,6 +23,8 @@ module Kitchen
         class Freebsd < StandardPlatform
           StandardPlatform.platforms["freebsd"] = self
 
+          # default username for this platform's ami
+          # @return [String]
           def username
             "ec2-user"
           end

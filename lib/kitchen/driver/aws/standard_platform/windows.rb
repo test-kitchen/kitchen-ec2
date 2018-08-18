@@ -23,11 +23,13 @@ module Kitchen
         class Windows < StandardPlatform
           StandardPlatform.platforms["windows"] = self
 
+          # default username for this platform's ami
+          # @return [String]
           def username
             "administrator"
           end
 
-          # Figure out the right set of names to search for:
+          # Determine the correct set of names to search for:
           #
           # "windows" -> [nil, nil, nil]
           #   Windows_Server-*-R*_RTM-, Windows_Server-*-R*_SP*-,

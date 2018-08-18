@@ -29,6 +29,8 @@ module Kitchen
             super(driver, "rhel", version, architecture)
           end
 
+          # default username for this platform's ami
+          # @return [String]
           def username
             (version && version.to_f < 6.4) ? "root" : "ec2-user"
           end
