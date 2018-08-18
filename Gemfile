@@ -8,6 +8,7 @@ gem "winrm-fs"
 group :test do
   gem "rake"
   gem "pry"
+  gem "test-kitchen", ">= 1.23" # defined here and in the gemspec to match sure we have lifecycle hooks for testing
 end
 
 group :changelog do
