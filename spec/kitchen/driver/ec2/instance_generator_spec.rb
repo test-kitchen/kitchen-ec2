@@ -27,14 +27,14 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
   let(:config) { Hash.new }
   let(:resource) { instance_double(Aws::EC2::Resource) }
-  let(:ec2) { instance_double(Kitchen::Driver::Aws::Client, :resource => resource) }
+  let(:ec2) { instance_double(Kitchen::Driver::Aws::Client, resource: resource) }
   let(:logger) { instance_double(Logger) }
   let(:generator) { Kitchen::Driver::Aws::InstanceGenerator.new(config, ec2, logger) }
 
   describe "#prepared_user_data" do
     context "when config[:user_data] is a file" do
       let(:tmp_file) { Tempfile.new("prepared_user_data_test") }
-      let(:config) { { :user_data => tmp_file.path } }
+      let(:config) { { user_data: tmp_file.path } }
 
       before do
         tmp_file.write("foo\nbar")
@@ -60,7 +60,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     end
 
     context "when config[:user_data] is binary" do
-      let(:config) { { :user_data => "foo\0bar" } }
+      let(:config) { { user_data: "foo\0bar" } }
 
       it "handles nulls in user_data" do
         expect(Base64.decode64(generator.send(:prepared_user_data))).to eq "foo\0bar"
@@ -70,7 +70,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
   describe "#network_interfaces" do
     it "returns nothing when there is no :associate_public_ip config option" do
-      config = Hash.new
+      config = Hash.new # rubocop: disable Lint/UselessAssignment
       expect(generator.send(:network_interfaces)).to be_nil
     end
 
@@ -92,85 +92,85 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
   end
 
   describe "#remove_empty_fields" do
-    fields_that_should_not_be_present_if_nil_or_empty = %i[
+    fields_that_should_not_be_present_if_nil_or_empty = %i{
       block_device_mappings instance_initiated_shutdown_behavior network_interfaces placement security_group_ids user_data
-    ]
+    }
 
     fields_that_should_not_be_present_if_nil_or_empty.each do |field|
       it "removes :#{field} if it is nil" do
-        nil_field = {field => nil}
+        nil_field = { field => nil }
         expect(
           generator.send(:remove_empty_fields, nil_field )
         ).not_to include(nil_field)
       end
       it "removes :#{field} if it is an empty array" do
-        empty_field = {field => []}
+        empty_field = { field => [] }
         expect(
           generator.send(:remove_empty_fields, empty_field)
         ).not_to include(empty_field)
       end
       it "removes :#{field} if it is an empty hash" do
-        empty_field = {field => Hash.new}
+        empty_field = { field => Hash.new }
         expect(
           generator.send(:remove_empty_fields, empty_field)
         ).not_to include(empty_field)
       end
     end
- end
+  end
 
   describe "#ec2_instance_data" do
-    ec2_stub = Aws::EC2::Client.new(:stub_responses => true)
+    ec2_stub = Aws::EC2::Client.new(stub_responses: true)
 
     ec2_stub.stub_responses(
       :describe_subnets,
-      :subnets => [
+      subnets: [
         {
-          :subnet_id  => "s-123",
-          :tags       => [{ :key => "foo", :value => "bar" }],
+          subnet_id: "s-123",
+          tags: [{ key: "foo", value: "bar" }],
         },
       ]
     )
 
     ec2_stub.stub_responses(
       :describe_security_groups,
-      :security_groups => [
+      security_groups: [
         {
-          :group_id => "sg-123",
-          :tags => [{ :key => "foo", :value => "bar" }],
+          group_id: "sg-123",
+          tags: [{ key: "foo", value: "bar" }],
         },
       ]
     )
 
     it "returns empty on nil" do
       expect(generator.ec2_instance_data).to eq(
-        :instance_type => nil,
-        :ebs_optimized => nil,
-        :image_id => nil,
-        :key_name => nil,
-        :subnet_id => nil,
-        :private_ip_address => nil
+        instance_type: nil,
+        ebs_optimized: nil,
+        image_id: nil,
+        key_name: nil,
+        subnet_id: nil,
+        private_ip_address: nil
       )
     end
 
     context "when populated with minimum requirements" do
       let(:config) do
         {
-          :instance_type                => "micro",
-          :ebs_optimized                => true,
-          :image_id                     => "ami-123",
-          :subnet_id                    => "s-456",
-          :private_ip_address           => "0.0.0.0",
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          subnet_id: "s-456",
+          private_ip_address: "0.0.0.0",
         }
       end
 
       it "returns the minimum data" do
         expect(generator.ec2_instance_data).to eq(
-           :instance_type => "micro",
-           :ebs_optimized => true,
-           :image_id => "ami-123",
-           :key_name => nil,
-           :subnet_id => "s-456",
-           :private_ip_address => "0.0.0.0"
+           instance_type: "micro",
+           ebs_optimized: true,
+           image_id: "ami-123",
+           key_name: nil,
+           subnet_id: "s-456",
+           private_ip_address: "0.0.0.0"
         )
       end
     end
@@ -178,23 +178,23 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when populated with ssh key" do
       let(:config) do
         {
-          :instance_type                => "micro",
-          :ebs_optimized                => true,
-          :image_id                     => "ami-123",
-          :aws_ssh_key_id               => "key",
-          :subnet_id                    => "s-456",
-          :private_ip_address           => "0.0.0.0",
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          aws_ssh_key_id: "key",
+          subnet_id: "s-456",
+          private_ip_address: "0.0.0.0",
         }
       end
 
       it "returns the minimum data" do
         expect(generator.ec2_instance_data).to eq(
-          :instance_type => "micro",
-          :ebs_optimized => true,
-          :image_id => "ami-123",
-          :key_name => "key",
-          :subnet_id => "s-456",
-          :private_ip_address => "0.0.0.0"
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          key_name: "key",
+          subnet_id: "s-456",
+          private_ip_address: "0.0.0.0"
         )
       end
     end
@@ -202,16 +202,15 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when provided subnet tag instead of id" do
       let(:config) do
         {
-          :instance_type                => "micro",
-          :ebs_optimized                => true,
-          :image_id                     => "ami-123",
-          :aws_ssh_key_id               => "key",
-          :subnet_id                    => nil,
-          :region                       => "us-west-2",
-          :subnet_filter =>
-            {
-              :tag   => "foo",
-              :value => "bar",
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          aws_ssh_key_id: "key",
+          subnet_id: nil,
+          region: "us-west-2",
+          subnet_filter:             {
+              tag: "foo",
+              value: "bar",
             },
         }
       end
@@ -219,10 +218,10 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       it "generates id from the provided tag" do
         allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
         expect(ec2_stub).to receive(:describe_subnets).with(
-          :filters => [
+          filters: [
             {
-              :name => "tag:foo",
-              :values => ["bar"],
+              name: "tag:foo",
+              values: ["bar"],
             },
           ]
         ).and_return(ec2_stub.describe_subnets)
@@ -233,17 +232,16 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when provided security_group tag instead of id" do
       let(:config) do
         {
-          :instance_type                => "micro",
-          :ebs_optimized                => true,
-          :image_id                     => "ami-123",
-          :aws_ssh_key_id               => "key",
-          :subnet_id                    => "s-123",
-          :security_group_ids           => nil,
-          :region                       => "us-west-2",
-          :security_group_filter =>
-            {
-              :tag   => "foo",
-              :value => "bar",
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          aws_ssh_key_id: "key",
+          subnet_id: "s-123",
+          security_group_ids: nil,
+          region: "us-west-2",
+          security_group_filter:             {
+              tag: "foo",
+              value: "bar",
             },
         }
       end
@@ -263,21 +261,20 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     end
 
     context "when provided a non existing security_group tag filter" do
-      ec2_stub_whithout_security_group = Aws::EC2::Client.new(:stub_responses => true)
+      ec2_stub_whithout_security_group = Aws::EC2::Client.new(stub_responses: true)
 
       let(:config) do
         {
-          :instance_type                => "micro",
-          :ebs_optimized                => true,
-          :image_id                     => "ami-123",
-          :aws_ssh_key_id               => "key",
-          :subnet_id                    => "s-123",
-          :security_group_ids           => nil,
-          :region                       => "us-west-2",
-          :security_group_filter =>
-            {
-              :tag   => "foo",
-              :value => "bar",
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          aws_ssh_key_id: "key",
+          subnet_id: "s-123",
+          security_group_ids: nil,
+          region: "us-west-2",
+          security_group_filter:             {
+              tag: "foo",
+              value: "bar",
             },
         }
       end
@@ -285,10 +282,10 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       it "generates id from the provided tag" do
         allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_stub_whithout_security_group)
         expect(ec2_stub_whithout_security_group).to receive(:describe_security_groups).with(
-          :filters => [
+          filters: [
             {
-              :name => "tag:foo",
-              :values => ["bar"],
+              name: "tag:foo",
+              values: ["bar"],
             },
           ]
         ).and_return(ec2_stub_whithout_security_group.describe_security_groups)
@@ -301,24 +298,24 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when passed an empty block_device_mappings" do
       let(:config) do
         {
-          :instance_type                => "micro",
-          :ebs_optimized                => true,
-          :image_id                     => "ami-123",
-          :aws_ssh_key_id               => "key",
-          :subnet_id                    => "s-456",
-          :private_ip_address           => "0.0.0.0",
-          :block_device_mappings        => [],
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          aws_ssh_key_id: "key",
+          subnet_id: "s-456",
+          private_ip_address: "0.0.0.0",
+          block_device_mappings: [],
         }
       end
 
       it "does not return block_device_mappings" do
         expect(generator.ec2_instance_data).to eq(
-          :instance_type => "micro",
-          :ebs_optimized => true,
-          :image_id => "ami-123",
-          :key_name => "key",
-          :subnet_id => "s-456",
-          :private_ip_address => "0.0.0.0"
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          key_name: "key",
+          subnet_id: "s-456",
+          private_ip_address: "0.0.0.0"
         )
       end
     end
@@ -326,21 +323,21 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when availability_zone and tenancy are provided" do
       let(:config) do
         {
-          :region => "eu-east-1",
-          :availability_zone => "c",
-          :tenancy => "dedicated",
+          region: "eu-east-1",
+          availability_zone: "c",
+          tenancy: "dedicated",
         }
       end
       it "adds the region to it in the instance data" do
         expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => nil,
-          :private_ip_address => nil,
-          :placement => { :tenancy => "dedicated",
-                          :availability_zone => "eu-east-1c" }
+          instance_type: nil,
+          ebs_optimized: nil,
+          image_id: nil,
+          key_name: nil,
+          subnet_id: nil,
+          private_ip_address: nil,
+          placement: { tenancy: "dedicated",
+                       availability_zone: "eu-east-1c" }
         )
       end
     end
@@ -348,19 +345,19 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when tenancy is provided but availability_zone isn't" do
       let(:config) do
         {
-          :region => "eu-east-1",
-          :tenancy => "default",
+          region: "eu-east-1",
+          tenancy: "default",
         }
       end
       it "is not added to the instance data" do
         expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => nil,
-          :private_ip_address => nil,
-          :placement => { :tenancy => "default" }
+          instance_type: nil,
+          ebs_optimized: nil,
+          image_id: nil,
+          key_name: nil,
+          subnet_id: nil,
+          private_ip_address: nil,
+          placement: { tenancy: "default" }
         )
       end
     end
@@ -368,21 +365,21 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when availability_zone and tenancy are provided" do
       let(:config) do
         {
-          :region => "eu-east-1",
-          :availability_zone => "c",
-          :tenancy => "dedicated",
+          region: "eu-east-1",
+          availability_zone: "c",
+          tenancy: "dedicated",
         }
       end
       it "adds the region to it in the instance data" do
         expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => nil,
-          :private_ip_address => nil,
-          :placement => { :tenancy => "dedicated",
-                          :availability_zone => "eu-east-1c" }
+          instance_type: nil,
+          ebs_optimized: nil,
+          image_id: nil,
+          key_name: nil,
+          subnet_id: nil,
+          private_ip_address: nil,
+          placement: { tenancy: "dedicated",
+                       availability_zone: "eu-east-1c" }
         )
       end
     end
@@ -390,19 +387,19 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when tenancy is provided but availability_zone isn't" do
       let(:config) do
         {
-          :region => "eu-east-1",
-          :tenancy => "default",
+          region: "eu-east-1",
+          tenancy: "default",
         }
       end
       it "is not added to the instance data" do
         expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => nil,
-          :private_ip_address => nil,
-          :placement => { :tenancy => "default" }
+          instance_type: nil,
+          ebs_optimized: nil,
+          image_id: nil,
+          key_name: nil,
+          subnet_id: nil,
+          private_ip_address: nil,
+          placement: { tenancy: "default" }
         )
       end
     end
@@ -410,18 +407,18 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when subnet_id is provided" do
       let(:config) do
         {
-          :subnet_id => "s-456",
+          subnet_id: "s-456",
         }
       end
 
       it "adds a network_interfaces block" do
         expect(generator.ec2_instance_data).to eq(
-          :instance_type => nil,
-          :ebs_optimized => nil,
-          :image_id => nil,
-          :key_name => nil,
-          :subnet_id => "s-456",
-          :private_ip_address => nil
+          instance_type: nil,
+          ebs_optimized: nil,
+          image_id: nil,
+          key_name: nil,
+          subnet_id: "s-456",
+          private_ip_address: nil
         )
       end
     end
@@ -443,16 +440,16 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
       context "and subnet is provided" do
         before do
-            config[:subnet_id] = "s-456"
+          config[:subnet_id] = "s-456"
         end
 
         it "adds a network_interfaces block" do
           expect(generator.ec2_instance_data).to include(
-            :network_interfaces => [{
-              :device_index => 0,
-              :associate_public_ip_address => true,
-              :delete_on_termination => true,
-              :subnet_id => "s-456",
+            network_interfaces: [{
+              device_index: 0,
+              associate_public_ip_address: true,
+              delete_on_termination: true,
+              subnet_id: "s-456",
             }]
           )
         end
@@ -462,11 +459,11 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         it "adds a network_interfaces block" do
           config[:security_group_ids] = ["sg-789"]
           expect(generator.ec2_instance_data).to include(
-            :network_interfaces => [{
-              :device_index => 0,
-              :associate_public_ip_address => true,
-              :delete_on_termination => true,
-              :groups => ["sg-789"],
+            network_interfaces: [{
+              device_index: 0,
+              associate_public_ip_address: true,
+              delete_on_termination: true,
+              groups: ["sg-789"],
             }]
           )
         end
@@ -475,11 +472,11 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           config[:security_group_ids] = "only-one"
 
           expect(generator.ec2_instance_data).to include(
-            :network_interfaces => [{
-              :device_index => 0,
-              :associate_public_ip_address => true,
-              :delete_on_termination => true,
-              :groups => ["only-one"],
+            network_interfaces: [{
+              device_index: 0,
+              associate_public_ip_address: true,
+              delete_on_termination: true,
+              groups: ["only-one"],
             }]
           )
         end
@@ -488,23 +485,23 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       context "and private_ip_address is provided" do
         let(:config) do
           {
-            :associate_public_ip => true,
-            :private_ip_address => "0.0.0.0",
+            associate_public_ip: true,
+            private_ip_address: "0.0.0.0",
           }
         end
 
         it "adds a network_interfaces block" do
           expect(generator.ec2_instance_data).to eq(
-            :instance_type => nil,
-            :ebs_optimized => nil,
-            :image_id => nil,
-            :key_name => nil,
-            :subnet_id => nil,
-            :network_interfaces => [{
-              :device_index => 0,
-              :associate_public_ip_address => true,
-              :delete_on_termination => true,
-              :private_ip_address => "0.0.0.0",
+            instance_type: nil,
+            ebs_optimized: nil,
+            image_id: nil,
+            key_name: nil,
+            subnet_id: nil,
+            network_interfaces: [{
+              device_index: 0,
+              associate_public_ip_address: true,
+              delete_on_termination: true,
+              private_ip_address: "0.0.0.0",
             }]
           )
         end
@@ -514,61 +511,61 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when provided the maximum config" do
       let(:config) do
         {
-          :availability_zone            => "eu-west-1a",
-          :instance_type                => "micro",
-          :ebs_optimized                => true,
-          :image_id                     => "ami-123",
-          :aws_ssh_key_id               => "key",
-          :subnet_id                    => "s-456",
-          :private_ip_address           => "0.0.0.0",
-          :block_device_mappings => [
+          availability_zone: "eu-west-1a",
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          aws_ssh_key_id: "key",
+          subnet_id: "s-456",
+          private_ip_address: "0.0.0.0",
+          block_device_mappings: [
             {
-              :device_name => "/dev/sda2",
-              :virtual_name => "test",
-              :ebs => {
-                :volume_size => 15,
-                :delete_on_termination => false,
-                :volume_type => "gp2",
-                :snapshot_id => "id",
+              device_name: "/dev/sda2",
+              virtual_name: "test",
+              ebs: {
+                volume_size: 15,
+                delete_on_termination: false,
+                volume_type: "gp2",
+                snapshot_id: "id",
               },
             },
           ],
-          :security_group_ids => ["sg-789"],
-          :user_data => "foo",
-          :iam_profile_name => "iam-123",
-          :associate_public_ip => true,
+          security_group_ids: ["sg-789"],
+          user_data: "foo",
+          iam_profile_name: "iam-123",
+          associate_public_ip: true,
         }
       end
 
       it "returns the maximum data" do
         expect(generator.ec2_instance_data).to eq(
-          :instance_type => "micro",
-          :ebs_optimized => true,
-          :image_id => "ami-123",
-          :key_name => "key",
-          :block_device_mappings => [
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          key_name: "key",
+          block_device_mappings: [
             {
-              :device_name => "/dev/sda2",
-              :virtual_name => "test",
-              :ebs => {
-                :volume_size => 15,
-                :delete_on_termination => false,
-                :volume_type => "gp2",
-                :snapshot_id => "id",
+              device_name: "/dev/sda2",
+              virtual_name: "test",
+              ebs: {
+                volume_size: 15,
+                delete_on_termination: false,
+                volume_type: "gp2",
+                snapshot_id: "id",
               },
             },
           ],
-          :iam_instance_profile => { :name => "iam-123" },
-          :network_interfaces => [{
-            :device_index => 0,
-            :associate_public_ip_address => true,
-            :subnet_id => "s-456",
-            :delete_on_termination => true,
-            :groups => ["sg-789"],
-            :private_ip_address =>  "0.0.0.0",
+          iam_instance_profile: { name: "iam-123" },
+          network_interfaces: [{
+            device_index: 0,
+            associate_public_ip_address: true,
+            subnet_id: "s-456",
+            delete_on_termination: true,
+            groups: ["sg-789"],
+            private_ip_address: "0.0.0.0",
           }],
-          :placement => { :availability_zone => "eu-west-1a" },
-          :user_data => Base64.encode64("foo")
+          placement: { availability_zone: "eu-west-1a" },
+          user_data: Base64.encode64("foo")
         )
       end
     end
@@ -578,8 +575,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when availability_zone is provided as 'eu-west-1c'" do
       let(:config) do
         {
-          :region => "eu-west-1",
-          :availability_zone => "eu-west-1c",
+          region: "eu-west-1",
+          availability_zone: "eu-west-1c",
         }
       end
       it "returns that in the instance data" do
@@ -590,8 +587,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when availability_zone is provided as 'c'" do
       let(:config) do
         {
-          :region => "eu-east-1",
-          :availability_zone => "c",
+          region: "eu-east-1",
+          availability_zone: "c",
         }
       end
       it "adds the region to it in the instance data" do
@@ -602,7 +599,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when availability_zone is not provided" do
       let(:config) do
         {
-          :region => "eu-east-1",
+          region: "eu-east-1",
         }
       end
       it "is not added to the instance data" do
@@ -615,14 +612,14 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when availability_zone and tenancy are set" do
       let(:config) do
         {
-          :tenancy => "host",
-          :availability_zone => "eu-west-1c",
+          tenancy: "host",
+          availability_zone: "eu-west-1c",
         }
       end
       it "returns a hash with az and tenancy" do
         expect(generator.send(:placement)).to eq({
-          :availability_zone => "eu-west-1c",
-          :tenancy => "host",
+          availability_zone: "eu-west-1c",
+          tenancy: "host",
           })
       end
     end
@@ -638,10 +635,10 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
     context "when just availability zone is set" do
       let(:config) do
-        { :availability_zone => "eu-west-1c" }
+        { availability_zone: "eu-west-1c" }
       end
       it "returns a hash with just the AZ" do
-        expect(generator.send(:placement)).to eq(:availability_zone => "eu-west-1c")
+        expect(generator.send(:placement)).to eq(availability_zone: "eu-west-1c")
       end
     end
   end

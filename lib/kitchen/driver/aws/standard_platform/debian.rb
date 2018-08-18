@@ -32,7 +32,7 @@ module Kitchen
             "6" => "squeeze",
             "11" => "bullseye",
             "10" => "buster",
-          }
+          }.freeze
 
           def username
             "admin"

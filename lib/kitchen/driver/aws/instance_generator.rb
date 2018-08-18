@@ -36,30 +36,29 @@ module Kitchen
           @logger = logger
         end
 
-
         # Transform the provided config into the hash to send to AWS.  Some fields
         # can be passed in null, others need to be ommitted if they are null
         def ec2_instance_data
           i = {
-            :instance_type          => config[:instance_type],
-            :ebs_optimized          => config[:ebs_optimized],
-            :image_id               => config[:image_id],
-            :key_name               => config[:aws_ssh_key_id],
-            :subnet_id              => subnet_id,
-            :private_ip_address     => config[:private_ip_address],
-            :placement              => placement,
-            :block_device_mappings  => config[:block_device_mappings],
-            :user_data              => prepared_user_data,
-            :security_group_ids     => security_group_ids,
-            :network_interfaces     => network_interfaces,
-            :instance_initiated_shutdown_behavior => config[:instance_initiated_shutdown_behavior],
+            instance_type:                        config[:instance_type],
+            ebs_optimized:                        config[:ebs_optimized],
+            image_id:                             config[:image_id],
+            key_name:                             config[:aws_ssh_key_id],
+            subnet_id:                            subnet_id,
+            private_ip_address:                   config[:private_ip_address],
+            placement:                            placement,
+            block_device_mappings:                config[:block_device_mappings],
+            user_data:                            prepared_user_data,
+            security_group_ids:                   security_group_ids,
+            network_interfaces:                   network_interfaces,
+            instance_initiated_shutdown_behavior: config[:instance_initiated_shutdown_behavior],
           }
 
           if config[:iam_profile_name]
-            i[:iam_instance_profile] = { :name => config[:iam_profile_name] }
+            i[:iam_instance_profile] = { name: config[:iam_profile_name] }
           end
 
-         remove_empty_fields i
+          remove_empty_fields i
         end
 
         private
@@ -67,12 +66,12 @@ module Kitchen
                 # search for the subnet_id using the provided subnet_filter
         # @return [String] the subnet ID
         def subnet_id_from_filter
-          subnet = ::Aws::EC2::Client.
-            new(:region => config[:region]).describe_subnets(
-              :filters => [
+          subnet = ::Aws::EC2::Client
+            .new(region: config[:region]).describe_subnets(
+              filters: [
                 {
-                  :name   => "tag:#{config[:subnet_filter][:tag]}",
-                  :values => [config[:subnet_filter][:value]],
+                  name: "tag:#{config[:subnet_filter][:tag]}",
+                  values: [config[:subnet_filter][:value]],
                 },
               ]
             )[0][0].subnet_id
@@ -89,12 +88,12 @@ module Kitchen
         # search for the security_group_ids using the provided security_group_filter
         # @return [Array] security group IDs
         def security_group_ids_from_filter
-          security_group = ::Aws::EC2::Client.
-              new(:region => config[:region]).describe_security_groups(
-              :filters => [
+          security_group = ::Aws::EC2::Client
+              .new(region: config[:region]).describe_security_groups(
+              filters: [
                   {
-                      :name => "tag:#{config[:security_group_filter][:tag]}",
-                      :values => [config[:security_group_filter][:value]],
+                      name: "tag:#{config[:security_group_filter][:tag]}",
+                      values: [config[:security_group_filter][:value]],
                   },
               ]
             )[0][0]
@@ -193,9 +192,9 @@ module Kitchen
         end
 
         def remove_empty_fields(settings)
-          fields_that_should_not_be_present_if_nil_or_empty = %i[
+          fields_that_should_not_be_present_if_nil_or_empty = %i{
             block_device_mappings instance_initiated_shutdown_behavior network_interfaces placement security_group_ids user_data
-          ]
+          }
 
           fields_that_should_not_be_present_if_nil_or_empty.each do |field|
             settings.delete(field) if settings[field].nil? || settings[field].empty?

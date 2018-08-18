@@ -93,11 +93,11 @@ module Kitchen
           driver.debug("Searching for images matching #{image_search} ...")
           # Convert to ec2 search format (pairs of name+values)
           filters = image_search.map do |key, value|
-            { :name => key.to_s, :values => Array(value).map(&:to_s) }
+            { name: key.to_s, values: Array(value).map(&:to_s) }
           end
 
           # We prefer most recent first
-          images = driver.ec2.resource.images(:filters => filters)
+          images = driver.ec2.resource.images(filters: filters)
           images = sort_images(images)
           show_returned_images(images)
 
@@ -154,7 +154,7 @@ module Kitchen
         #
         # The list of supported architectures
         #
-        ARCHITECTURE = %w{x86_64 i386 i86pc sun4v powerpc}
+        ARCHITECTURE = %w{x86_64 i386 i86pc sun4v powerpc}.freeze
 
         protected
 
@@ -189,8 +189,6 @@ module Kitchen
           matching + non_matching
         end
 
-        private
-
         def self.parse_platform_string(platform_string)
           platform, version = platform_string.split("-", 2)
 
@@ -204,6 +202,10 @@ module Kitchen
 
           [platform, version, architecture]
         end
+
+        private_class_method :parse_platform_string
+
+        private
 
         def sort_images(images)
           # P6: We prefer more recent images over older ones

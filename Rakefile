@@ -20,13 +20,13 @@ RuboCop::RakeTask.new(:style) do |task|
 end
 
 desc "Run all quality tasks"
-task :quality => [:style, :stats]
+task quality: [:style, :stats]
 
 require "yard"
 YARD::Rake::YardocTask.new
 
 begin
-  task :default => [:test, :quality]
+  task default: [:test, :quality]
 
   require "github_changelog_generator/task"
   GitHubChangelogGenerator::RakeTask.new :changelog do |config|
