@@ -30,6 +30,7 @@ describe "Default images for various platforms" do
     Kitchen::Instance.new(
       logger: logger,
       driver: driver,
+      lifecycle_hooks: Kitchen::LifecycleHooks.new({}),
       suite: Kitchen::Suite.new(name: "suite-name"),
       platform: Kitchen::Platform.new(name: platform_name),
       provisioner: Kitchen::Provisioner::Dummy.new,
