@@ -252,6 +252,8 @@ The Hash of EC tag name/value pairs which will be applied to the instance.
 
 The default is `{ "created-by" => "test-kitchen" }`.
 
+Tags are applied post creation, if tags should be added during instance creation then set `create_instance_with_tags` to `true`
+
 #### `user_data`
 
 The user_data script or the path to a script to feed the instance.

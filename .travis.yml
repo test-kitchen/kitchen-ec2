@@ -3,7 +3,7 @@ cache: bundler
 sudo: false
 branches:
   only:
-  - master
+  - atomic-tags
 rvm:
   - 2.3.7
   - 2.4.4

@@ -521,6 +521,19 @@ describe Kitchen::Driver::Ec2 do
     end
   end
 
+  describe "#create_instance_with_tags" do
+    before do
+      config[:create_instance_with_tags] = true
+      expect(driver).to receive(:instance).at_least(:once).and_return(instance)
+    end
+
+    it "submits the server request" do
+      expect(generator).to receive(:ec2_instance_data).and_return({})
+      expect(client).to receive(:create_instance).with(:min_count => 1, :max_count => 1, :tag_specifications => anything)
+      driver.submit_server
+    end
+  end
+
   describe "#create" do
     let(:server) { double("aws server object", :id => id, :image_id => "ami-3f807145") }
     let(:id) { "i-12345" }
