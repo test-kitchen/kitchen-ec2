@@ -418,6 +418,17 @@ module Kitchen
         end
         instance_data[:min_count] = 1
         instance_data[:max_count] = 1
+        if config[:tags] && !config[:tags].empty?
+          tags = config[:tags].map do |k, v|
+            # we convert the value to a string because
+            # nils should be passed as an empty String
+            # and Integers need to be represented as Strings
+            { :key => k, :value => v.to_s }
+          end
+          instance_tag_spec = { :resource_type => "instance", :tags => tags }
+          volume_tag_spec = { :resource_type => "volume", :tags => tags }
+          instance_data[:tag_specifications] = [instance_tag_spec, volume_tag_spec]
+        end
         ec2.create_instance(instance_data)
       end
 

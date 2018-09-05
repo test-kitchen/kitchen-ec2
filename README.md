@@ -276,6 +276,8 @@ The Hash of EC tag name/value pairs which will be applied to the instance.
 
 The default is `{ "created-by" => "test-kitchen" }`.
 
+Tags are applied post creation for spot instances and during creation for standard instances.
+
 #### `user_data`
 
 The user_data script or the path to a script to feed the instance.
