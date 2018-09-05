@@ -637,6 +637,25 @@ describe Kitchen::Driver::Ec2 do
         include_examples "common create"
       end
 
+      context "with a subnet filter configured" do
+        before do
+          config.delete(:subnet_id)
+          config[:subnet_filter] = {
+            :tag => "foo",
+            :value => "bar"
+          }
+          expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "tag:foo", values: ["bar"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
+          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
+            { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+            { ip_protocol: "tcp", from_port: 5985, to_port: 5985, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+            { ip_protocol: "tcp", from_port: 5986, to_port: 5986, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
+          ])
+        end
+
+        include_examples "common create"
+      end
+
       context "with a default VPC" do
         before do
           config.delete(:subnet_id)

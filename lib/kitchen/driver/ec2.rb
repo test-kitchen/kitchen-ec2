@@ -729,6 +729,10 @@ module Kitchen
                    subnets = ec2.client.describe_subnets(filters: [{ name: "subnet-id", values: [config[:subnet_id]] }]).subnets
                    raise "Subnet #{config[:subnet_id]} not found during security group creation" if subnets.empty?
                    subnets.first.vpc_id
+                 elsif config[:subnet_filter]
+                   subnets = ec2.client.describe_subnets(filters: [{ name: "tag:#{config[:subnet_filter][:tag]}", values: [config[:subnet_filter][:value]] }]).subnets
+                   raise "Subnets with tag '#{config[:subnet_filter][:tag]}=#{config[:subnet_filter][:value]}' not found during security group creation" if subnets.empty?
+                   subnets.first.vpc_id
                  else
                    # Try to check for a default VPC.
                    vpcs = ec2.client.describe_vpcs(filters: [{ name: "isDefault", values: ["true"] }]).vpcs
