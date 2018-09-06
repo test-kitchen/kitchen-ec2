@@ -216,7 +216,7 @@ describe Kitchen::Driver::Ec2 do
 
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
-      expect(client).to receive(:create_instance).with(:min_count => 1, :max_count => 1)
+      expect(client).to receive(:create_instance).with(:min_count => 1, :max_count => 1, :tag_specifications => anything)
       driver.submit_server
     end
   end
@@ -232,7 +232,7 @@ describe Kitchen::Driver::Ec2 do
         :instance_initiated_shutdown_behavior => "terminate"
       )
       expect(client).to receive(:create_instance).with(
-        :min_count => 1, :max_count => 1, :instance_initiated_shutdown_behavior => "terminate"
+        :min_count => 1, :max_count => 1, :instance_initiated_shutdown_behavior => "terminate", :tag_specifications => anything
       )
       driver.submit_server
     end

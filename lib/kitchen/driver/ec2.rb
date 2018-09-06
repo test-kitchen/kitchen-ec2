@@ -419,7 +419,7 @@ module Kitchen
         end
         instance_data[:min_count] = 1
         instance_data[:max_count] = 1
-        if config[:create_instance_with_tags] && config[:tags] && !config[:tags].empty?
+        if config[:tags] && !config[:tags].empty?
           tags = config[:tags].map do |k, v|
             # we convert the value to a string because
             # nils should be passed as an empty String
