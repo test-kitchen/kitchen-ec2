@@ -754,7 +754,7 @@ module Kitchen
         ec2.client.authorize_security_group_ingress(
           group_id: state[:auto_security_group_id],
           # Allow SSH and WinRM (both plain and TLS).
-          ip_permissions: [22, 5985, 5986].map do |port|
+          ip_permissions: [22, 3389, 5985, 5986].map do |port|
             {
               ip_protocol: "tcp",
               from_port: port,
