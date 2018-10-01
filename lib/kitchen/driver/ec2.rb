@@ -33,13 +33,12 @@ require_relative "aws/standard_platform/fedora"
 require_relative "aws/standard_platform/freebsd"
 require_relative "aws/standard_platform/ubuntu"
 require_relative "aws/standard_platform/windows"
+require "aws-sdk-ec2"
 require "aws-sdk-core/waiters/errors"
 require "retryable"
 require "time"
 require "etc"
 require "socket"
-
-Aws.eager_autoload!
 
 module Kitchen
 
@@ -96,9 +95,6 @@ module Kitchen
 
       def initialize(*args, &block)
         super
-        # AWS Ruby SDK loading isn't thread safe, so as soon as we know we're
-        # going to use EC2, autoload it. Seems to have been fixed in Ruby 2.3+
-        ::Aws.eager_autoload! unless RUBY_VERSION.to_f >= 2.3
       end
 
       def self.validation_warn(driver, old_key, new_key)

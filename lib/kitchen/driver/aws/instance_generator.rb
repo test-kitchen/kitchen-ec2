@@ -18,7 +18,7 @@
 # limitations under the License.
 
 require "base64"
-require "aws-sdk"
+require "aws-sdk-ec2"
 
 module Kitchen
 

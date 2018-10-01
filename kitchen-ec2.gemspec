@@ -16,12 +16,12 @@ Gem::Specification.new do |gem|
   gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR).grep(/LICENSE|^lib/)
   gem.require_paths = ["lib"]
 
-  gem.required_ruby_version = ">= 2.2.2"
+  gem.required_ruby_version = ">= 2.3"
 
   gem.add_dependency "test-kitchen", ">= 1.4.1", "< 3"
   gem.add_dependency "excon"
   gem.add_dependency "multi_json"
-  gem.add_dependency "aws-sdk", "~> 2"
+  gem.add_dependency "aws-sdk-ec2", "~> 1.0"
   gem.add_dependency "retryable", "~> 2.0"
 
   gem.add_development_dependency "rspec",     "~> 3.2"
