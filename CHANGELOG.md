@@ -1,5 +1,12 @@
 # Change Log
 
+## [v2.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.0) (2018-10-05)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.2.2...v2.3.0)
+
+- Add port 3389 (RDP) to the automatically generated security group
+- Fix logfile creation on Windows to not fail if the directory doesn't exist
+- The gem no longer ships with test deps so we can slim the install size
+
 ## [v2.2.2](https://github.com/test-kitchen/kitchen-ec2/tree/v2.2.2) (2018-06-11)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.2.1...v2.2.2)
 
