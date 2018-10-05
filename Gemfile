@@ -10,7 +10,3 @@ group :test do
   gem "rake"
   gem "pry"
 end
-
-group :changelog do
-  gem "github_changelog_generator"
-end
