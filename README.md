@@ -23,12 +23,13 @@ instances. Use Amazon's cloud for your infrastructure testing!
    driver:
      name: ec2
    ```
+
 5. Run `kitchen test`.
 
 ## Requirements
 
 There are **no** external system requirements for this driver. However you
-will need access to an [AWS][aws_site] account.  [IAM][iam_site] users should have, at a minimum, permission to manage the lifecycle of an EC2 instance along with modifying components specified in kitchen driver configs.  Consider using a permissive managed IAM policy like ``arn:aws:iam::aws:policy/AmazonEC2FullAccess`` or tailor one specific to your security requirements.
+will need access to an [AWS][aws_site] account. [IAM][iam_site] users should have, at a minimum, permission to manage the lifecycle of an EC2 instance along with modifying components specified in kitchen driver configs. Consider using a permissive managed IAM policy like `arn:aws:iam::aws:policy/AmazonEC2FullAccess` or tailor one specific to your security requirements.
 
 ## Configuration
 
@@ -94,12 +95,12 @@ platforms:
       image_id: ami-96a818fe
 ```
 
-image_id's have a format like ami-748e2903. The image_id values appear next to the image names when you select 'Launch Instance' from the AWS EC2 console. You can also see the list from the AWS CLI ````aws ec2 describe-images````.
+image_id's have a format like ami-748e2903. The image_id values appear next to the image names when you select 'Launch Instance' from the AWS EC2 console. You can also see the list from the AWS CLI `aws ec2 describe-images`.
 
 #### `image_search`
 
 `image_search` lets you specify a series of key/value pairs to search for the
-image. If a value is set to an array, then *any* of those values will match.
+image. If a value is set to an array, then _any_ of those values will match.
 You can learn more about the available filters in the AWS CLI doc under `--filters` [here](http://docs.aws.amazon.com/cli/latest/reference/ec2/describe-images.html).
 
 ```yaml
@@ -107,7 +108,7 @@ platforms:
   - name: ubuntu-14.04
     driver:
       image_search:
-        owner-id: "099720109477"
+        owner-id: '099720109477'
         name: ubuntu/images/*/ubuntu-*-14.04*
 ```
 
@@ -119,7 +120,7 @@ get the best results. In order of priority from greatest to least, we prefer:
 - 64-bit over 32-bit
 - The most recently created image (to pick up patch releases)
 
-Note that the image_search method *requires* that the AMI image names be in a specific format.
+Note that the image*search method \_requires* that the AMI image names be in a specific format.
 Some examples are:
 
 - Windows-2012
@@ -146,7 +147,7 @@ through CI we no longer support storing the AWS credentials in the
 
 ### Instance Login Configuration
 
-The instances you create use credentials you specify which are *separate* from
+The instances you create use credentials you specify which are _separate_ from
 the AWS credentials. Generally, SSH and WinRM use an AWS key pair which you
 specify.
 
@@ -156,15 +157,15 @@ The `aws_ssh_key_id` value is the name of the AWS key pair you want to use.
 
 The value can be one of:
 
-* `nil` (default)
+- `nil` (default)
 
 By default the key ID is read from the `AWS_SSH_KEY_ID` environment variable. If the environment variable is not set, the value will be nil. In this case, a temporary key will be created for you (**>= 2.1.0**).
 
-* `name_of_some_existing_aws_key_pair`
+- `name_of_some_existing_aws_key_pair`
 
 By setting the environment variable `AWS_SSH_KEY_ID` or by setting the `aws_ssh_key_id` driver option in kitchen.yml. This will be the key that becomes associated with the test EC2 instances. The key must already exist in AWS. To see a list of existing key pair IDs in a region, use the `aws` CLI tool. For example, in the US-East-1 region: `aws ec2 describe-key-pairs --region us-east-1`.
 
-* `_disable`
+- `_disable`
 
 This will not directly associate the EC2 instance with an AWS-managed key pair (pre-existing or auto-generated). This may be useful in environments that have disabled AWS-managed keys. Getting SSH keys onto the instance then becomes an exercise for the reader, though it can be done, for example, with scripting in `user_data` or if the credentials are already baked into the AMI.
 
@@ -187,7 +188,7 @@ Unfortunately the RDP file format does not allow including login credentials, so
 
 #### `availability_zone`
 
-The AWS [availability zone][region_docs] to use.  Only request
+The AWS [availability zone][region_docs] to use. Only request
 the letter designation - will attach this to the region used.
 
 If not specified, your instances will be placed in an AZ of AWS's choice in your
@@ -199,6 +200,8 @@ The EC2 [instance type][instance_docs] (also known as size) to use.
 
 The default is `t2.micro` or `t1.micro`, depending on whether the image is `hvm`
 or `paravirtual`. (`paravirtual` images are incompatible with `t2.micro`.)
+
+When working with spots, you can provide an array in which case the driver will try each type until it can get a spot.
 
 #### `security_group_ids`
 
@@ -214,9 +217,10 @@ specified by tag. Only one group can be specified this way.
 The default is unset, or `nil`.
 
 An example of usage:
+
 ```yaml
 security_group_filter:
-  tag:   'Name'
+  tag: 'Name'
   value: 'example-group-name'
 ```
 
@@ -227,9 +231,17 @@ security_group_filter:
 If the environment variable `AWS_REGION` is populated that will be used.
 Otherwise the default is `"us-east-1"`.
 
+#### `spot_wait`
+
+The number of seconds to wait for a spot request to be fulfilled, per combination of `instance_type` and `subnet_id`.
+
+The default is `60`.
+
 #### `subnet_id`
 
 The EC2 [subnet][subnet_docs] to use.
+
+When working with spots, you can provide an array in which case the driver will try each subnet until it can get a spot.
 
 The default is unset, or `nil`.
 
@@ -240,9 +252,10 @@ The EC2 [subnet][subnet_docs] to use, specified by tag.
 The default is unset, or `nil`.
 
 An example of usage:
+
 ```yaml
 subnet_filter:
-  tag:   'Name'
+  tag: 'Name'
   value: 'example-subnet-name'
 ```
 
@@ -271,32 +284,31 @@ The EC2 IAM profile name to use. The default is `nil`.
 
 Note: The user, whose AWS credentials you have defined, not only needs `AmazonEC2FullAccess` permissions, but also the ability to execute `iam:PassRole`.
 Hence, use a policy like below when using this option:
+
 ```json
 {
-    "Version": "2012-10-17",
-    "Statement": [
-        {
-            "Effect": "Allow",
-            "Action": [
-                "ec2:*"
-            ],
-            "Resource": "*"
-        },
-        {
-            "Effect": "Allow",
-            "Action": "iam:PassRole",
-            "Resource": "arn:aws:iam::123456789:role/RoleName"
-        }
-    ]
+  "Version": "2012-10-17",
+  "Statement": [
+    {
+      "Effect": "Allow",
+      "Action": ["ec2:*"],
+      "Resource": "*"
+    },
+    {
+      "Effect": "Allow",
+      "Action": "iam:PassRole",
+      "Resource": "arn:aws:iam::123456789:role/RoleName"
+    }
+  ]
 }
 ```
 
 See [AWS documentation](https://aws.amazon.com/de/blogs/security/granting-permission-to-launch-ec2-instances-with-iam-roles-passrole-permission/) for more details.
 
-
 #### `spot_price`
 
-The price you bid in order to submit a spot request. An additional step will be required during the spot request process submission. If no price is set, it will use an on-demand instance.
+The price you bid in order to submit a spot request. An additional step will be required during the spot request process submission. If no price is set, it will use an on-demand instance.  
+It accepts `on-demand` string in which case the price is the current on-demand price.
 
 The default is `nil`.
 
@@ -315,11 +327,11 @@ The default is `nil`.
 
 #### `http_proxy`
 
-Specify a proxy to send AWS requests through.  Should be of the format `http://<host>:<port>`.
+Specify a proxy to send AWS requests through. Should be of the format `http://<host>:<port>`.
 
-The default is `ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]`.  If you have these environment variables set and do not want to use a proxy when contacting aws set `http_proxy: nil`.
+The default is `ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]`. If you have these environment variables set and do not want to use a proxy when contacting aws set `http_proxy: nil`.
 
-**Note** - The AWS command line utility allow you to specify [two proxies](http://docs.aws.amazon.com/cli/latest/userguide/cli-http-proxy.html), one for HTTP and one for HTTPS.  The AWS Ruby SDK only allows you to specify 1 proxy and because all requests are `https://` this proxy needs to support HTTPS.
+**Note** - The AWS command line utility allow you to specify [two proxies](http://docs.aws.amazon.com/cli/latest/userguide/cli-http-proxy.html), one for HTTP and one for HTTPS. The AWS Ruby SDK only allows you to specify 1 proxy and because all requests are `https://` this proxy needs to support HTTPS.
 
 #### `ssl_verify_peer`
 
@@ -329,7 +341,8 @@ If you need to turn off ssl certificate verification for HTTP calls made to AWS,
 
 #### <a name="config-block_device_mappings"></a> `block_device_mappings`
 
-A list of block device mappings for the machine.  An example of all available keys looks like:
+A list of block device mappings for the machine. An example of all available keys looks like:
+
 ```yaml
 block_device_mappings:
   - device_name: /dev/sda
@@ -392,7 +405,7 @@ If you don't set this it will default to whatever DHCP address EC2 hands out.
 
 #### `interface`
 
-The place from which to derive the hostname for communicating with the instance.  May be `dns`, `public`, `private` or `private_dns`.  If this is unset, the driver will derive the hostname by failing back in the following order:
+The place from which to derive the hostname for communicating with the instance. May be `dns`, `public`, `private` or `private_dns`. If this is unset, the driver will derive the hostname by failing back in the following order:
 
 1. DNS Name
 2. Public IP Address
@@ -414,11 +427,10 @@ The following could be used in a `.kitchen.yml` or in a `.kitchen.local.yml`
 to override default configuration.
 
 ```yaml
----
 driver:
   name: ec2
   aws_ssh_key_id: id_rsa-aws
-  security_group_ids: ["sg-1a2b3c4d"]
+  security_group_ids: ['sg-1a2b3c4d']
   region: us-west-2
   availability_zone: b
   require_chef_omnibus: true
@@ -452,14 +464,14 @@ platforms:
   - name: windows-2012r2
   - name: windows-2016
 
-suites:
+? suites
 # ...
 ```
 
 ## <a name="development"></a> Development
 
-* Source hosted at [GitHub][repo]
-* Report issues/questions/feature requests on [GitHub Issues][issues]
+- Source hosted at [GitHub][repo]
+- Report issues/questions/feature requests on [GitHub Issues][issues]
 
 Pull requests are very welcome! Make sure your patches are well tested.
 Ideally create a topic branch for every separate change you make. For
@@ -475,23 +487,22 @@ example:
 
 Apache 2.0 (see [LICENSE][license])
 
-
-[author]:           https://github.com/fnichol
-[issues]:           https://github.com/test-kitchen/kitchen-ec2/issues
-[license]:          https://github.com/test-kitchen/kitchen-ec2/blob/master/LICENSE
-[repo]:             https://github.com/test-kitchen/kitchen-ec2
-[driver_usage]:     https://github.com/test-kitchen/kitchen-ec2
-[chef_omnibus_dl]:  https://downloads.chef.io/chef
-[amis_json]:        https://github.com/test-kitchen/kitchen-ec2/blob/master/data/amis.json
-[ami_docs]:         http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html
-[aws_site]:         http://aws.amazon.com/
-[iam_site]:         http://aws.amazon.com/iam
+[author]: https://github.com/fnichol
+[issues]: https://github.com/test-kitchen/kitchen-ec2/issues
+[license]: https://github.com/test-kitchen/kitchen-ec2/blob/master/LICENSE
+[repo]: https://github.com/test-kitchen/kitchen-ec2
+[driver_usage]: https://github.com/test-kitchen/kitchen-ec2
+[chef_omnibus_dl]: https://downloads.chef.io/chef
+[amis_json]: https://github.com/test-kitchen/kitchen-ec2/blob/master/data/amis.json
+[ami_docs]: http://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ComponentsAMIs.html
+[aws_site]: http://aws.amazon.com/
+[iam_site]: http://aws.amazon.com/iam
 [credentials_docs]: https://aws.amazon.com/blogs/security/a-new-and-standardized-way-to-manage-credentials-in-the-aws-sdks/
-[aws_sdk_gem]:      https://docs.aws.amazon.com/sdkforruby/api/index.html
-[group_docs]:       https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html
-[instance_docs]:    https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
-[key_id_docs]:      https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html
-[kitchenci]:        https://kitchen.ci/
-[region_docs]:      https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
-[subnet_docs]:      https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
-[vpc_docs]:         https://docs.aws.amazon.com/AmazonVPC/latest/GettingStartedGuide/ExerciseOverview.html
+[aws_sdk_gem]: https://docs.aws.amazon.com/sdkforruby/api/index.html
+[group_docs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-network-security.html
+[instance_docs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/instance-types.html
+[key_id_docs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-key-pairs.html
+[kitchenci]: https://kitchen.ci/
+[region_docs]: https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
+[subnet_docs]: https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
+[vpc_docs]: https://docs.aws.amazon.com/AmazonVPC/latest/GettingStartedGuide/ExerciseOverview.html

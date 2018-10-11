@@ -254,7 +254,7 @@ describe Kitchen::Driver::Ec2 do
       expect(actual_client).to receive(:request_spot_instances).with(
         :spot_price => "",
         :launch_specification => {},
-        :valid_until => Time.now + (config[:retryable_tries] * config[:retryable_sleep]),
+        :valid_until => Time.now + config[:spot_wait],
         :block_duration_minutes => 60
       ).and_return(response)
       expect(actual_client).to receive(:wait_until)
@@ -571,10 +571,41 @@ describe Kitchen::Driver::Ec2 do
     context "config is for a spot instance" do
       before do
         config[:spot_price] = 1
-        expect(driver).to receive(:submit_spot).with(state).and_return(server)
       end
 
-      include_examples "common create"
+      context "price is numeric" do
+        before do
+          expect(driver).to receive(:submit_spots).with(state).and_return(server)
+        end
+
+        include_examples "common create"
+      end
+
+      context "price is on-demand" do
+        before do
+          config[:spot_price] = "on-demand"
+          expect(driver).to receive(:submit_spots).with(state).and_return(server)
+        end
+
+        include_examples "common create"
+      end
+
+      context "instance_type is an array" do
+        before do
+          config[:instance_type] = %w{t1 t2}
+          expect(driver).to receive(:submit_spot).with(state).and_return(server)
+        end
+
+        include_examples "common create"
+
+        context "subnets is also an array" do
+          before do
+            config[:subnet_id] = %w{t1 t2}
+          end
+
+          include_examples "common create"
+        end
+      end
     end
 
     context "instance is not ebs-backed" do
