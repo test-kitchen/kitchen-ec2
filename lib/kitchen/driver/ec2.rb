@@ -73,6 +73,7 @@ module Kitchen
       default_config :spot_price,         nil
       default_config :block_duration_minutes, nil
       default_config :retryable_tries,    60
+      default_config :spot_wait,          60
       default_config :retryable_sleep,    5
       default_config :aws_access_key_id,  nil
       default_config :aws_secret_access_key, nil
@@ -231,7 +232,7 @@ module Kitchen
 
         if config[:spot_price]
           # Spot instance when a price is set
-          server = submit_spot(state)
+          server = submit_spots(state)
         else
           # On-demand instance
           server = submit_server
@@ -407,7 +408,7 @@ module Kitchen
       end
 
       def instance_generator
-        @instance_generator ||= Aws::InstanceGenerator.new(config, ec2, instance.logger)
+        @instance_generator = Aws::InstanceGenerator.new(config, ec2, instance.logger)
       end
 
       # Fog AWS helper for creating the instance
@@ -422,10 +423,56 @@ module Kitchen
         ec2.create_instance(instance_data)
       end
 
+      def config
+        return super unless @config
+        @config
+      end
+
+      def submit_spots(state)
+        instance_configs = []
+        subnet_configs = []
+
+        # we may want to try multiple instance types
+        if config[:instance_type] && config[:instance_type].kind_of?(Array)
+          instance_types = config[:instance_type]
+          instance_types.each do |instance_type|
+            instance_config = config.clone
+            instance_config[:instance_type] = instance_type
+            instance_configs.push instance_config
+          end
+        else
+          instance_configs.push config
+        end
+
+        instance_configs.each do |instance_config|
+          # we may want to try multiple subnets
+          if config[:subnet_id] && instance_config[:subnet_id].kind_of?(Array)
+            subnets = config[:subnet_id]
+            subnets.each do |subnet|
+              subnet_config = instance_config.clone
+              subnet_config[:subnet_id] = subnet
+              subnet_configs.push subnet_config
+            end
+          else
+            subnet_configs.push instance_config
+          end
+        end
+
+        subnet_configs.each do |conf|
+          begin
+            @config = conf
+            return submit_spot(state)
+          rescue
+          end
+        end
+
+        raise "Could not create a spot"
+      end
+
       def submit_spot(state)
         debug("Creating EC2 Spot Instance..")
 
-        spot_request_id = create_spot_request
+        spot_request_id = create_spot_request(config)
         # deleting the instance cancels the request, but deleting the request
         # does not affect the instance
         state[:spot_request_id] = spot_request_id
@@ -433,21 +480,27 @@ module Kitchen
           :spot_instance_request_fulfilled,
           :spot_instance_request_ids => [spot_request_id]
         ) do |w|
-          w.max_attempts = config[:retryable_tries]
+          w.max_attempts = config[:spot_wait] / config[:retryable_sleep]
           w.delay = config[:retryable_sleep]
           w.before_attempt do |attempts|
             c = attempts * config[:retryable_sleep]
-            t = config[:retryable_tries] * config[:retryable_sleep]
+            t = config[:spot_wait]
             info "Waited #{c}/#{t}s for spot request <#{spot_request_id}> to become fulfilled."
           end
         end
         ec2.get_instance_from_spot_request(spot_request_id)
       end
 
-      def create_spot_request
-        request_duration = config[:retryable_tries] * config[:retryable_sleep]
+      def create_spot_request(config)
+        request_duration = config[:spot_wait]
+        config_spot_price = config[:spot_price].to_s
+        if ["ondemand", "on-demand"].include?(config_spot_price)
+          spot_price = ""
+        else
+          spot_price = config_spot_price
+        end
         request_data = {
-          :spot_price => config[:spot_price].to_s,
+          :spot_price => spot_price,
           :launch_specification => instance_generator.ec2_instance_data,
           :valid_until => Time.now + request_duration,
         }
