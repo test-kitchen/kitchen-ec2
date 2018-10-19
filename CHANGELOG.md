@@ -1,5 +1,12 @@
 # Change Log
 
+## [v2.3.1](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.1) (2018-10-19)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.0...v2.3.1)
+
+**Fixed Bugs:**
+
+- windows2012-r2 hanging on userdata.ps1 in kitchen-ec2 2.3.0 [\#424]
+
 ## [v2.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.0) (2018-10-05)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.2.2...v2.3.0)
 
