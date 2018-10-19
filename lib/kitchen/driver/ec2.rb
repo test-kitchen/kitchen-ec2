@@ -644,7 +644,7 @@ module Kitchen
   }
 
         # Logfile fail-safe in case the directory does not exist
-        New-Item $logfile -Force
+        New-Item $logfile -Type file -Force
 
         # Allow script execution
         Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
