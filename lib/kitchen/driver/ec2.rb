@@ -261,8 +261,8 @@ module Kitchen
           image_data = ec2.client.describe_images({ :image_ids => [server.image_id] })[0][0]
 
           state[:server_id] = server.id
-	  state[:private_ip] = server.private_ip_address
-	  state[:public_ip] = server.public_ip_address if server.public_ip_address
+          state[:private_ip] = server.private_ip_address
+          state[:public_ip] = server.public_ip_address if server.public_ip_address
           info("EC2 instance <#{state[:server_id]}> created.")
 
           # instance-store backed images do not have attached volumes, so only
