@@ -94,6 +94,8 @@ module Kitchen
           # 2012sp4 -> [ 2012, 0, 4 ]
           # 2012rtm -> [ 2012, 0, 0 ]
           # 2016 -> [ 2016, 0, nil ]
+          # 1709 -> [ 1709, 0, nil ]
+          # 1803 -> [ 1803, 0, nil ]
           def windows_version_parts
             version = self.version
             if version
@@ -130,6 +132,8 @@ module Kitchen
 
             if major == 2016
               "Windows_Server-2016-English-Full-Base-*"
+            elsif major == 1709 || major == 1803
+              "Windows_Server-#{major}-English-Core-ContainersLatest-*"
             else
               case revision
               when nil

@@ -632,15 +632,14 @@ module Kitchen
       def default_windows_user_data
         base_script = Kitchen::Util.outdent!(<<-EOH)
 	$OSVersion = (get-itemproperty -Path "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" -Name ProductName).ProductName
-	If($OSVersion.contains('2016'))
-	{
-      	$logfile='C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
-	# EC2Launch doesn't init extra disks by default
-	C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Scripts\\InitializeDisks.ps1
-	}
-	Else
-	{
-	$logfile='C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
+  If($OSVersion.contains('2016') -Or $OSVersion -eq 'Windows Server Datacenter') {
+    New-Item -ItemType Directory -Force -Path 'C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log'
+    $logfile='C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
+    # EC2Launch doesn't init extra disks by default
+    C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Scripts\\InitializeDisks.ps1
+  } Else {
+     New-Item -ItemType Directory -Force -Path 'C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs'
+     $logfile='C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
   }
 
         # Logfile fail-safe in case the directory does not exist
