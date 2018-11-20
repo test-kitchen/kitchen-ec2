@@ -72,15 +72,13 @@ describe "Default images for various platforms" do
       { :name => "owner-id", :values => %w{137112412989} },
       { :name => "name", :values => %w{amzn2-ami-*-2.0.*} },
     ],
-    "amazon2-2017-x86_64" => [
+    "amazon2-2017" => [
       { :name => "owner-id", :values => %w{137112412989} },
-      { :name => "name", :values => %w{amzn2-ami-*-2017*} },
-      { :name => "architecture", :values => ["x86_64"] },
+      { :name => "name", :values => ["amzn2-ami-*-2.0.2017*", "amzn2-ami-*-2017*"] },
     ],
-    "amazon2-2018-x86_64" => [
+    "amazon2-2018" => [
       { :name => "owner-id", :values => %w{137112412989} },
-      { :name => "name", :values => %w{amzn2-ami-*-2.0.2018*} },
-      { :name => "architecture", :values => ["x86_64"] },
+      { :name => "name", :values => ["amzn2-ami-*-2.0.2018*", "amzn2-ami-*-2018*"] },
     ],
 
     "centos" => [
