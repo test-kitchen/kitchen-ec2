@@ -19,7 +19,7 @@ module Kitchen
   module Driver
     class Aws
       class StandardPlatform
-        # https://aws.amazon.com/amazon-linux-2/
+        # https://aws.amazon.com/de/amazon-linux-2/release-notes/
         class Amazon2 < StandardPlatform
           StandardPlatform.platforms["amazon2"] = self
 
