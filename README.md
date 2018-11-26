@@ -62,7 +62,7 @@ platforms:
   # The latest patch release of Amazon Linux 2017.03
   - name: amazon-2017.03
   # The latest patch release of Amazon Linux 2 2018
-  - name: amazon-2018
+  - name: amazon2-2018
   # 32-bit version of latest major+minor+patch release of Ubuntu
   - name: ubuntu-i386
   # 32-bit version of Debian 6
