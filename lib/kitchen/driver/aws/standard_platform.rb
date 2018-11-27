@@ -209,7 +209,7 @@ module Kitchen
           # P6: We prefer more recent images over older ones
           images = images.sort_by(&:creation_date).reverse
           # P5: We prefer x86_64 over i386 (if available)
-          images = prefer(images) { |image| image.architecture == :x86_64 }
+          images = prefer(images) { |image| image.architecture == "x86_64" }
           # P4: We prefer gp2 (SSD) (if available)
           images = prefer(images) do |image|
             image.block_device_mappings.any? do |b|
