@@ -1,5 +1,12 @@
 # Change Log
 
+## [v2.3.2](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.2) (2018-11-28)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.1...v2.3.2)
+
+**Fixed Bugs:**
+
+- fix x86_64 architecture default for image search (fixes new arm64 arch appearing instead) [\#432]
+
 ## [v2.3.1](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.1) (2018-10-19)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.0...v2.3.1)
 
