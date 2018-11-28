@@ -1,5 +1,12 @@
 # Change Log
 
+## [v2.3.3](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.3) (2018-11-28)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.3...v2.3.4)
+
+**Merged pull requests:**
+
+- Adding support for arm64 architecture [\#433]
+
 ## [v2.3.2](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.2) (2018-11-28)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.1...v2.3.2)
 
