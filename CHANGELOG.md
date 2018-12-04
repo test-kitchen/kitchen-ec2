@@ -1,7 +1,12 @@
 # Change Log
 
-## [v2.3.3](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.3) (2018-11-28)
+## [v2.3.4](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.4) (2018-12-04)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.3...v2.3.4)
+
+- Don't ship the changelog in the gem
+
+## [v2.3.3](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.3) (2018-11-28)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.2...v2.3.3)
 
 **Merged pull requests:**
 
