@@ -11,9 +11,9 @@ Gem::Specification.new do |gem|
   gem.email         = ["fnichol@nichol.ca"]
   gem.description   = "A Test Kitchen Driver for Amazon EC2"
   gem.summary       = gem.description
-  gem.homepage      = "https://kitchen.ci/"
+  gem.homepage      = "https://github.com/test-kitchen/kitchen-ec2"
 
-  gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR).grep(/LICENSE|^CHANGELOG|^lib/)
+  gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR).grep(/LICENSE|^lib/)
   gem.test_files    = gem.files.grep(%r{^(test|spec|features)/})
   gem.require_paths = ["lib"]
 
