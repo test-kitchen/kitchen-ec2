@@ -1,5 +1,24 @@
 # Change Log
 
+## [v2.3.4](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.4) (2018-12-04)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.3...v2.3.4)
+
+- Don't ship the changelog in the gem
+
+## [v2.3.3](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.3) (2018-11-28)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.2...v2.3.3)
+
+**Merged pull requests:**
+
+- Adding support for arm64 architecture [\#433]
+
+## [v2.3.2](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.2) (2018-11-28)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.1...v2.3.2)
+
+**Fixed Bugs:**
+
+- fix x86_64 architecture default for image search (fixes new arm64 arch appearing instead) [\#432]
+
 ## [v2.3.1](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.1) (2018-10-19)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.0...v2.3.1)
 
