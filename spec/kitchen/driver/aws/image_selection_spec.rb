@@ -69,6 +69,15 @@ describe "Default images for various platforms" do
       { name: "architecture", values: ["x86_64"] },
     ],
 
+    "amazon2" => [
+      { name: "owner-id", values: %w{137112412989} },
+      { name: "name", values: %w{amzn2-ami-hvm-2.0.*} },
+    ],
+    "amazon2-2018" => [
+      { name: "owner-id", values: %w{137112412989} },
+      { name: "name", values: %w{amzn2-ami-hvm-2.0.2018*} },
+    ],
+
     "centos" => [
       { name: "owner-alias", values: %w{aws-marketplace} },
       { name: "name", values: ["CentOS Linux *", "CentOS-*-GA-*"] },
