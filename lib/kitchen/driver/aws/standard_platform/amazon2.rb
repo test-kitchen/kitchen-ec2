@@ -30,7 +30,7 @@ module Kitchen
           def image_search
             search = {
               "owner-id" => "137112412989",
-              "name" => version ? ["amzn2-ami-hvm-2.0.#{version}*", "amzn2-ami-hvm-#{version}*" ] : "amzn2-ami-hvm-2.0.#{version}*",
+              "name" => version ? "amzn2-ami-hvm-2.0.#{version}*" : "amzn2-ami-hvm-2.0.*",
             }
             search["architecture"] = architecture if architecture
             search

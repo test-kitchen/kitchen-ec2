@@ -72,13 +72,9 @@ describe "Default images for various platforms" do
       { :name => "owner-id", :values => %w{137112412989} },
       { :name => "name", :values => %w{amzn2-ami-hvm-2.0.*} },
     ],
-    "amazon2-2017" => [
-      { :name => "owner-id", :values => %w{137112412989} },
-      { :name => "name", :values => ["amzn2-ami-hvm-2.0.2017*", "amzn2-ami-hvm-2017*"] },
-    ],
     "amazon2-2018" => [
       { :name => "owner-id", :values => %w{137112412989} },
-      { :name => "name", :values => ["amzn2-ami-hvm-2.0.2018*", "amzn2-ami-hvm-2018*"] },
+      { :name => "name", :values => %w{amzn2-ami-hvm-2.0.2018*} },
     ],
 
     "centos" => [
