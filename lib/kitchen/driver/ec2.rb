@@ -512,11 +512,12 @@ module Kitchen
           ready = aws_instance.exists? &&
             aws_instance.state.name == "running" &&
             hostname != "0.0.0.0"
+
+          if ready && ( hostname.nil? || hostname == "" )
+            debug("Unable to detect hostname using interface_type #{config[:interface]}. Fallback to ordered mapping")
+            state[:hostname] = hostname(aws_instance, nil)
+          end
           if ready && windows_os?
-            if hostname.nil? || hostname == ""
-              debug("Unable to detect hostname using interface_type #{config[:interface]}. Fallback to ordered mapping")
-              state[:hostname] = hostname(aws_instance, nil)
-            end
             output = server.console_output.output
             unless output.nil?
               output = Base64.decode64(output)
