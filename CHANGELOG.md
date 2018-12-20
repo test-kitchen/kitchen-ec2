@@ -1,5 +1,12 @@
 # Change Log
 
+## [v2.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.4.0) (2018-12-20)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.4..v2.4.0)
+
+- Don't ship spec files in the gem artifact
+- Support Amazon Linux 2.0 image searching. Use the platform 'amazon2'
+- Support Windows Server 1709 and 1803 image searching
+
 ## [v2.3.4](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.4) (2018-12-04)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.3...v2.3.4)
 
