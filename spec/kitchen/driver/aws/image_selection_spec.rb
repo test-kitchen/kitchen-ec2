@@ -118,6 +118,10 @@ describe "Default images for various platforms" do
       { name: "owner-id", values: %w{379101102735} },
       { name: "name", values: %w{debian-stretch-*} },
     ],
+    "debian-9.6" => [
+      { name: "owner-id", values: %w{379101102735} },
+      { name: "name", values: %w{debian-stretch-*} },
+    ],
     "debian-8" => [
       { name: "owner-id", values: %w{379101102735} },
       { name: "name", values: %w{debian-jessie-*} },
