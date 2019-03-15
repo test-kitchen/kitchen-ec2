@@ -222,6 +222,12 @@ security_group_filter:
   value: 'example-group-name'
 ```
 
+### `security_group_cidr_ip`
+
+The EC2 [security group][group_docs] ip, in CIDR block format, to use when creating the security group.
+
+The default is "0.0.0.0/0".
+
 #### `region`
 
 **Required** The AWS [region][region_docs] to use.
