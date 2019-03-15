@@ -28,21 +28,21 @@ describe Kitchen::Driver::Ec2 do
   let(:logger)        { Logger.new(logged_output) }
   let(:config) do
     {
-      :aws_ssh_key_id => "key",
-      :image_id => "ami-1234567",
-      :block_duration_minutes => 60,
-      :subnet_id => "subnet-1234",
-      :security_group_ids => ["sg-56789"],
+      aws_ssh_key_id: "key",
+      image_id: "ami-1234567",
+      block_duration_minutes: 60,
+      subnet_id: "subnet-1234",
+      security_group_ids: ["sg-56789"],
     }
   end
-  let(:platform)      { Kitchen::Platform.new(:name => "fooos-99") }
+  let(:platform)      { Kitchen::Platform.new(name: "fooos-99") }
   let(:transport)     { Kitchen::Transport::Dummy.new }
   let(:provisioner)   { Kitchen::Provisioner::Dummy.new }
   let(:generator)     { instance_double(Kitchen::Driver::Aws::InstanceGenerator) }
   # There is too much name overlap I let creep in - my `client` is actually
   # a wrapper around the actual ec2 client
   let(:actual_client) { double("actual ec2 client") }
-  let(:client)        { double(Kitchen::Driver::Aws::Client, :client => actual_client) }
+  let(:client)        { double(Kitchen::Driver::Aws::Client, client: actual_client) }
   let(:server) { double("aws server object") }
   let(:state) { {} }
 
@@ -51,11 +51,11 @@ describe Kitchen::Driver::Ec2 do
   let(:instance) do
     instance_double(
       Kitchen::Instance,
-      :logger => logger,
-      :transport => transport,
-      :provisioner => provisioner,
-      :platform => platform,
-      :to_str => "str"
+      logger: logger,
+      transport: transport,
+      provisioner: provisioner,
+      platform: platform,
+      to_str: "str"
     )
   end
 
@@ -77,7 +77,7 @@ describe Kitchen::Driver::Ec2 do
 
   describe "default_config" do
     context "Windows" do
-      let(:resource) { instance_double(::Aws::EC2::Resource, :image => image) }
+      let(:resource) { instance_double(::Aws::EC2::Resource, image: image) }
       before do
         allow(driver).to receive(:windows_os?).and_return(true)
         allow(client).to receive(:resource).and_return(resource)
@@ -85,7 +85,7 @@ describe Kitchen::Driver::Ec2 do
       end
       context "Windows 2016" do
         let(:image) do
-          FakeImage.new(:name => "Windows_Server-2016-English-Full-Base-2017.01.11")
+          FakeImage.new(name: "Windows_Server-2016-English-Full-Base-2017.01.11")
         end
         it "sets :user_data to something" do
           expect(driver[:user_data]).to include
@@ -94,7 +94,7 @@ describe Kitchen::Driver::Ec2 do
       end
       context "Windows 2012R2" do
         let(:image) do
-          FakeImage.new(:name => "Windows_Server-2012-R2_RTM-English-64Bit-Base-2017.01.11")
+          FakeImage.new(name: "Windows_Server-2012-R2_RTM-English-64Bit-Base-2017.01.11")
         end
         it "sets :user_data to something" do
           expect(driver[:user_data]).to include
@@ -111,10 +111,10 @@ describe Kitchen::Driver::Ec2 do
     let(:private_ip_address) { nil }
     let(:server) do
       double("server",
-        :public_dns_name => public_dns_name,
-        :private_dns_name => private_dns_name,
-        :public_ip_address => public_ip_address,
-        :private_ip_address => private_ip_address
+        public_dns_name: public_dns_name,
+        private_dns_name: private_dns_name,
+        public_ip_address: public_ip_address,
+        private_ip_address: private_ip_address
       )
     end
 
@@ -216,7 +216,7 @@ describe Kitchen::Driver::Ec2 do
 
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
-      expect(client).to receive(:create_instance).with(:min_count => 1, :max_count => 1)
+      expect(client).to receive(:create_instance).with(min_count: 1, max_count: 1)
       driver.submit_server
     end
   end
@@ -229,10 +229,10 @@ describe Kitchen::Driver::Ec2 do
 
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return(
-        :instance_initiated_shutdown_behavior => "terminate"
+        instance_initiated_shutdown_behavior: "terminate"
       )
       expect(client).to receive(:create_instance).with(
-        :min_count => 1, :max_count => 1, :instance_initiated_shutdown_behavior => "terminate"
+        min_count: 1, max_count: 1, instance_initiated_shutdown_behavior: "terminate"
       )
       driver.submit_server
     end
@@ -241,7 +241,7 @@ describe Kitchen::Driver::Ec2 do
   describe "#submit_spot" do
     let(:state) { {} }
     let(:response) do
-      { :spot_instance_requests => [{ :spot_instance_request_id => "id" }] }
+      { spot_instance_requests: [{ spot_instance_request_id: "id" }] }
     end
 
     before do
@@ -252,15 +252,15 @@ describe Kitchen::Driver::Ec2 do
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
       expect(actual_client).to receive(:request_spot_instances).with(
-        :spot_price => "",
-        :launch_specification => {},
-        :valid_until => Time.now + (config[:retryable_tries] * config[:retryable_sleep]),
-        :block_duration_minutes => 60
+        spot_price: "",
+        launch_specification: {},
+        valid_until: Time.now + (config[:retryable_tries] * config[:retryable_sleep]),
+        block_duration_minutes: 60
       ).and_return(response)
       expect(actual_client).to receive(:wait_until)
       expect(client).to receive(:get_instance_from_spot_request).with("id")
       driver.submit_spot(state)
-      expect(state).to eq(:spot_request_id => "id")
+      expect(state).to eq(spot_request_id: "id")
     end
   end
 
@@ -274,11 +274,11 @@ describe Kitchen::Driver::Ec2 do
 
     context "with standard string tags" do
       it "tags the server" do
-        config[:tags] = { :key1 => "value1", :key2 => "value2" }
+        config[:tags] = { key1: "value1", key2: "value2" }
         expect(server).to receive(:create_tags).with(
-          :tags => [
-            { :key => :key1, :value => "value1" },
-            { :key => :key2, :value => "value2" },
+          tags: [
+            { key: :key1, value: "value1" },
+            { key: :key2, value: "value2" },
           ]
         )
         driver.tag_server(server)
@@ -287,11 +287,11 @@ describe Kitchen::Driver::Ec2 do
 
     context "with a tag that includes a Integer value" do
       it "tags the server" do
-        config[:tags] = { :key1 => "value1", :key2 => 1 }
+        config[:tags] = { key1: "value1", key2: 1 }
         expect(server).to receive(:create_tags).with(
-          :tags => [
-            { :key => :key1, :value => "value1" },
-            { :key => :key2, :value => "1" },
+          tags: [
+            { key: :key1, value: "value1" },
+            { key: :key2, value: "1" },
           ]
         )
         driver.tag_server(server)
@@ -300,11 +300,11 @@ describe Kitchen::Driver::Ec2 do
 
     context "with a tag that includes a Nil value" do
       it "tags the server" do
-        config[:tags] = { :key1 => "value1", :key2 => nil }
+        config[:tags] = { key1: "value1", key2: nil }
         expect(server).to receive(:create_tags).with(
-          :tags => [
-            { :key => :key1, :value => "value1" },
-            { :key => :key2, :value => "" },
+          tags: [
+            { key: :key1, value: "value1" },
+            { key: :key2, value: "" },
           ]
         )
         driver.tag_server(server)
@@ -319,11 +319,11 @@ describe Kitchen::Driver::Ec2 do
     end
     context "with standard string tags" do
       it "tags the instance volumes" do
-        config[:tags] = { :key1 => "value1", :key2 => "value2" }
+        config[:tags] = { key1: "value1", key2: "value2" }
         expect(volume).to receive(:create_tags).with(
-          :tags => [
-            { :key => :key1, :value => "value1" },
-            { :key => :key2, :value => "value2" },
+          tags: [
+            { key: :key1, value: "value1" },
+            { key: :key2, value: "value2" },
           ]
         )
         driver.tag_volumes(server)
@@ -332,11 +332,11 @@ describe Kitchen::Driver::Ec2 do
 
     context "with a tag that includes a Integer value" do
       it "tags the instance volumes" do
-        config[:tags] = { :key1 => "value1", :key2 => 2 }
+        config[:tags] = { key1: "value1", key2: 2 }
         expect(volume).to receive(:create_tags).with(
-          :tags => [
-            { :key => :key1, :value => "value1" },
-            { :key => :key2, :value => "2" },
+          tags: [
+            { key: :key1, value: "value1" },
+            { key: :key2, value: "2" },
           ]
         )
         driver.tag_volumes(server)
@@ -345,11 +345,11 @@ describe Kitchen::Driver::Ec2 do
 
     context "with a tag that includes a Nil value" do
       it "tags the instance volumes" do
-        config[:tags] = { :key1 => "value1", :key2 => nil }
+        config[:tags] = { key1: "value1", key2: nil }
         expect(volume).to receive(:create_tags).with(
-          :tags => [
-            { :key => :key1, :value => "value1" },
-            { :key => :key2, :value => "" },
+          tags: [
+            { key: :key1, value: "value1" },
+            { key: :key2, value: "" },
           ]
         )
         driver.tag_volumes(server)
@@ -442,9 +442,9 @@ describe Kitchen::Driver::Ec2 do
     let(:aws_instance) { double("aws instance") }
     let(:server_id) { "server_id" }
     let(:encrypted_password) { "alksdofw" }
-    let(:data) { double("data", :password_data => encrypted_password) }
+    let(:data) { double("data", password_data: encrypted_password) }
     let(:password) { "password" }
-    let(:transport) { { :ssh_key => "foo" } }
+    let(:transport) { { ssh_key: "foo" } }
 
     before do
       state[:server_id] = server_id
@@ -457,11 +457,11 @@ describe Kitchen::Driver::Ec2 do
 
     it "fetches and decrypts the windows password" do
       expect(server).to receive_message_chain("client.get_password_data").with(
-        :instance_id => server_id
+        instance_id: server_id
       ).and_return(data)
-      expect(server).to receive(:decrypt_windows_password).
-        with(File.expand_path("foo")).
-        and_return(password)
+      expect(server).to receive(:decrypt_windows_password)
+        .with(File.expand_path("foo"))
+        .and_return(password)
       driver.fetch_windows_admin_password(server, state)
     end
 
@@ -522,7 +522,7 @@ describe Kitchen::Driver::Ec2 do
   end
 
   describe "#create" do
-    let(:server) { double("aws server object", :id => id, :image_id => "ami-3f807145") }
+    let(:server) { double("aws server object", id: id, image_id: "ami-3f807145") }
     let(:id) { "i-12345" }
 
     it "returns if the instance is already created" do
@@ -530,7 +530,7 @@ describe Kitchen::Driver::Ec2 do
       expect(driver.create(state)).to eq(nil)
     end
 
-    image_data = Aws::EC2::Types::Image.new(:root_device_type => "ebs")
+    image_data = Aws::EC2::Types::Image.new(root_device_type: "ebs")
     ec2_stub = Aws::EC2::Types::DescribeImagesResult.new
     ec2_stub.images = [image_data]
 
@@ -542,7 +542,7 @@ describe Kitchen::Driver::Ec2 do
         expect(driver).to receive(:tag_volumes).with(server)
         expect(driver).to receive(:wait_until_volumes_ready).with(server, state)
         expect(driver).to receive(:wait_until_ready).with(server, state)
-        allow(actual_client).to receive(:describe_images).with({ :image_ids => [server.image_id] }).and_return(ec2_stub)
+        allow(actual_client).to receive(:describe_images).with({ image_ids: [server.image_id] }).and_return(ec2_stub)
         expect(transport).to receive_message_chain("connection.wait_until_ready")
         driver.create(state)
         expect(state[:server_id]).to eq(id)
@@ -550,7 +550,7 @@ describe Kitchen::Driver::Ec2 do
     end
 
     context "chef provisioner" do
-      let(:provisioner) { double("chef provisioner", :name => "chef_solo") }
+      let(:provisioner) { double("chef provisioner", name: "chef_solo") }
 
       before do
         expect(driver).to receive(:create_ec2_json).with(state)
@@ -755,7 +755,7 @@ describe Kitchen::Driver::Ec2 do
     end
 
     context "when state has a normal server_id" do
-      let(:state) { { :server_id => "id", :hostname => "name" } }
+      let(:state) { { server_id: "id", hostname: "name" } }
 
       context "the server is already destroyed" do
         it "does nothing" do
@@ -775,14 +775,14 @@ describe Kitchen::Driver::Ec2 do
     end
 
     context "when state has a spot request" do
-      let(:state) { { :server_id => "id", :hostname => "name", :spot_request_id => "spot" } }
+      let(:state) { { server_id: "id", hostname: "name", spot_request_id: "spot" } }
 
       it "destroys the server" do
         expect(client).to receive(:get_instance).with("id").and_return(server)
         expect(instance).to receive_message_chain("transport.connection.close")
         expect(server).to receive(:terminate)
         expect(actual_client).to receive(:cancel_spot_instance_requests).with(
-          :spot_instance_request_ids => ["spot"]
+          spot_instance_request_ids: ["spot"]
         )
         driver.destroy(state)
         expect(state).to eq({})

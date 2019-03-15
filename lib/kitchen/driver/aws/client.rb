@@ -17,7 +17,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "aws-sdk"
+require "aws-sdk-ec2"
 require "aws-sdk-core/credentials"
 require "aws-sdk-core/shared_credentials"
 require "aws-sdk-core/instance_profile_credentials"
@@ -41,12 +41,12 @@ module Kitchen
           ssl_verify_peer = true
         )
           ::Aws.config.update(
-            :region => region,
-            :profile => profile_name,
-            :http_proxy => http_proxy,
-            :ssl_verify_peer => ssl_verify_peer
+            region: region,
+            profile: profile_name,
+            http_proxy: http_proxy,
+            ssl_verify_peer: ssl_verify_peer
           )
-          ::Aws.config.update(:retry_limit => retry_limit) unless retry_limit.nil?
+          ::Aws.config.update(retry_limit: retry_limit) unless retry_limit.nil?
         end
 
         def create_instance(options)
@@ -59,9 +59,9 @@ module Kitchen
 
         def get_instance_from_spot_request(request_id)
           resource.instances(
-            :filters => [{
-              :name => "spot-instance-request-id",
-              :values => [request_id],
+            filters: [{
+              name: "spot-instance-request-id",
+              values: [request_id],
             }]
           ).to_a[0]
         end

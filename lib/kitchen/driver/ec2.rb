@@ -33,13 +33,12 @@ require_relative "aws/standard_platform/fedora"
 require_relative "aws/standard_platform/freebsd"
 require_relative "aws/standard_platform/ubuntu"
 require_relative "aws/standard_platform/windows"
+require "aws-sdk-ec2"
 require "aws-sdk-core/waiters/errors"
 require "retryable"
 require "time"
 require "etc"
 require "socket"
-
-Aws.eager_autoload!
 
 module Kitchen
 
@@ -96,9 +95,6 @@ module Kitchen
 
       def initialize(*args, &block)
         super
-        # AWS Ruby SDK loading isn't thread safe, so as soon as we know we're
-        # going to use EC2, autoload it. Seems to have been fixed in Ruby 2.3+
-        ::Aws.eager_autoload! unless RUBY_VERSION.to_f >= 2.3
       end
 
       def self.validation_warn(driver, old_key, new_key)
@@ -252,15 +248,15 @@ module Kitchen
         # Tagging an instance is possible before volumes are attached. Tagging the volumes after
         # instance creation is consistent.
         Retryable.retryable(
-          :tries => 10,
-          :sleep => lambda { |n| [2**n, 30].min },
-          :on => ::Aws::EC2::Errors::InvalidInstanceIDNotFound
+          tries: 10,
+          sleep: lambda { |n| [2**n, 30].min },
+          on: ::Aws::EC2::Errors::InvalidInstanceIDNotFound
         ) do |r, _|
           info("Attempting to tag the instance, #{r} retries")
           tag_server(server)
 
           # Get information about the AMI (image) used to create the image.
-          image_data = ec2.client.describe_images({ :image_ids => [server.image_id] })[0][0]
+          image_data = ec2.client.describe_images({ image_ids: [server.image_id] })[0][0]
 
           state[:server_id] = server.id
           info("EC2 instance <#{state[:server_id]}> created.")
@@ -303,7 +299,7 @@ module Kitchen
           if state[:spot_request_id]
             debug("Deleting spot request <#{state[:server_id]}>")
             ec2.client.cancel_spot_instance_requests(
-              :spot_instance_request_ids => [state[:spot_request_id]]
+              spot_instance_request_ids: [state[:spot_request_id]]
             )
             state.delete(:spot_request_id)
           end
@@ -433,7 +429,7 @@ module Kitchen
         state[:spot_request_id] = spot_request_id
         ec2.client.wait_until(
           :spot_instance_request_fulfilled,
-          :spot_instance_request_ids => [spot_request_id]
+          spot_instance_request_ids: [spot_request_id]
         ) do |w|
           w.max_attempts = config[:retryable_tries]
           w.delay = config[:retryable_sleep]
@@ -449,9 +445,9 @@ module Kitchen
       def create_spot_request
         request_duration = config[:retryable_tries] * config[:retryable_sleep]
         request_data = {
-          :spot_price => config[:spot_price].to_s,
-          :launch_specification => instance_generator.ec2_instance_data,
-          :valid_until => Time.now + request_duration,
+          spot_price: config[:spot_price].to_s,
+          launch_specification: instance_generator.ec2_instance_data,
+          valid_until: Time.now + request_duration,
         }
         if config[:block_duration_minutes]
           request_data[:block_duration_minutes] = config[:block_duration_minutes]
@@ -467,19 +463,19 @@ module Kitchen
             # we convert the value to a string because
             # nils should be passed as an empty String
             # and Integers need to be represented as Strings
-            { :key => k, :value => v.to_s }
+            { key: k, value: v.to_s }
           end
-          server.create_tags(:tags => tags)
+          server.create_tags(tags: tags)
         end
       end
 
       def tag_volumes(server)
         if config[:tags] && !config[:tags].empty?
           tags = config[:tags].map do |k, v|
-            { :key => k, :value => v.to_s }
+            { key: k, value: v.to_s }
           end
           server.volumes.each do |volume|
-            volume.create_tags(:tags => tags)
+            volume.create_tags(tags: tags)
           end
         end
       end
@@ -493,8 +489,8 @@ module Kitchen
           described_volume_count = 0
           ready_volume_count = 0
           if aws_instance.exists?
-            described_volume_count = ec2.client.describe_volumes(:filters => [
-              { :name => "attachment.instance-id", :values => ["#{state[:server_id]}"] }]
+            described_volume_count = ec2.client.describe_volumes(filters: [
+              { name: "attachment.instance-id", values: ["#{state[:server_id]}"] }]
               ).volumes.length
             aws_instance.volumes.each { ready_volume_count += 1 }
           end
@@ -542,9 +538,9 @@ module Kitchen
         begin
           with_request_limit_backoff(state) do
             server.wait_until(
-              :max_attempts => config[:retryable_tries],
-              :delay => config[:retryable_sleep],
-              :before_attempt => wait_log,
+              max_attempts: config[:retryable_tries],
+              delay: config[:retryable_sleep],
+              before_attempt: wait_log,
               &block
             )
           end
@@ -559,7 +555,7 @@ module Kitchen
       def fetch_windows_admin_password(server, state)
         wait_with_destroy(server, state, "to fetch windows admin password") do |aws_instance|
           enc = server.client.get_password_data(
-            :instance_id => state[:server_id]
+            instance_id: state[:server_id]
           ).password_data
           # Password data is blank until password is available
           !enc.nil? && !enc.empty?
@@ -595,7 +591,7 @@ module Kitchen
           "public" => "public_ip_address",
           "private" => "private_ip_address",
           "private_dns" => "private_dns_name",
-        }
+        }.freeze
 
       #
       # Lookup hostname of provided server. If interface_type is provided use
@@ -668,7 +664,7 @@ module Kitchen
         #Firewall Config
         & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
         Set-ItemProperty -Name LocalAccountTokenFilterPolicy -Path HKLM:\\software\\Microsoft\\Windows\\CurrentVersion\\Policies\\system -Value 1
-	EOH
+        EOH
 
         # Preparing custom static admin user if we defined something other than Administrator
         custom_admin_script = ""
@@ -712,8 +708,8 @@ module Kitchen
       end
 
       def image_info(image)
-        root_device = image.block_device_mappings.
-          find { |b| b.device_name == image.root_device_name }
+        root_device = image.block_device_mappings
+          .find { |b| b.device_name == image.root_device_name }
         volume_type = " #{root_device.ebs.volume_type}" if root_device && root_device.ebs
 
         " Architecture: #{image.architecture}," \

@@ -88,7 +88,7 @@ module Kitchen
         #
         # The list of supported architectures
         #
-        SUPPORTED_ARCHITECTURES = %w{x86_64 i386 arm64}
+        SUPPORTED_ARCHITECTURES = %w{x86_64 i386 arm64}.freeze
 
         #
         # Find the best matching image for the given image search.
@@ -98,11 +98,11 @@ module Kitchen
           driver.debug("Searching for images matching #{image_search} ...")
           # Convert to ec2 search format (pairs of name+values)
           filters = image_search.map do |key, value|
-            { :name => key.to_s, :values => Array(value).map(&:to_s) }
+            { name: key.to_s, values: Array(value).map(&:to_s) }
           end
 
           # We prefer most recent first
-          images = driver.ec2.resource.images(:filters => filters)
+          images = driver.ec2.resource.images(filters: filters)
           images = sort_images(images)
           show_returned_images(images)
 

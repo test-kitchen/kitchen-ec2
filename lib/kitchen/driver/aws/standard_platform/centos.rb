@@ -43,9 +43,9 @@ module Kitchen
             # 7.1 -> [ img1, img2, img3 ]
             # 6 -> [ img4, img5 ]
             # ...
-            images.group_by { |image| self.class.from_image(driver, image).version }.
-              sort_by { |k, _v| (k && k.include?(".") ? k.to_f : "#{k}.999".to_f) }.
-              reverse.flat_map { |_k, v| v }
+            images.group_by { |image| self.class.from_image(driver, image).version }
+              .sort_by { |k, _v| (k && k.include?(".") ? k.to_f : "#{k}.999".to_f) }
+              .reverse.flat_map { |_k, v| v }
           end
 
           def self.from_image(driver, image)

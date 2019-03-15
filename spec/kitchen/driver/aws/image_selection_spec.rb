@@ -327,7 +327,7 @@ describe "Default images for various platforms" do
       { name: "name", values: %w{
         Windows_Server-2016-English-Full-Base-*} },
     ],
-  }
+  }.freeze
 
   describe "Platform defaults" do
     PLATFORM_SEARCHES.each do |platform_name, filters|
@@ -335,14 +335,14 @@ describe "Default images for various platforms" do
         let(:image) { FakeImage.new(name: platform_name.split("-", 2)[0]) }
 
         it "searches for #{filters} and uses the resulting image" do
-          expect(driver.ec2.resource).
-            to receive(:images).with(filters: filters).and_return([image])
-          expect(driver.ec2.resource).
-            to receive(:image).with(image.id).and_return(image)
+          expect(driver.ec2.resource)
+            .to receive(:images).with(filters: filters).and_return([image])
+          expect(driver.ec2.resource)
+            .to receive(:image).with(image.id).and_return(image)
 
           instance = new_instance(platform_name: platform_name)
-          expect(instance.driver.instance_generator.ec2_instance_data[:image_id]).
-            to eq image.id
+          expect(instance.driver.instance_generator.ec2_instance_data[:image_id])
+            .to eq image.id
         end
       end
     end
@@ -354,28 +354,28 @@ describe "Default images for various platforms" do
 
     context "and platform.name is a well known platform name" do
       it "searches for an image id without using the standard filters" do
-        expect(driver.ec2.resource).
-          to receive(:images).
-          with(filters: [{ name: "name", values: %w{SuperImage} }]).
-          and_return([image])
-        expect(driver.ec2.resource).
-          to receive(:image).with(image.id).and_return(image)
+        expect(driver.ec2.resource)
+          .to receive(:images)
+          .with(filters: [{ name: "name", values: %w{SuperImage} }])
+          .and_return([image])
+        expect(driver.ec2.resource)
+          .to receive(:image).with(image.id).and_return(image)
 
         instance = new_instance(platform_name: "ubuntu")
-        expect(instance.driver.instance_generator.ec2_instance_data[:image_id]).
-          to eq image.id
+        expect(instance.driver.instance_generator.ec2_instance_data[:image_id])
+          .to eq image.id
       end
     end
 
     context "and platform.name is not a well known platform name" do
       let(:image) { FakeImage.new(name: "ubuntu") }
       it "does not search for (or find) an image, and informs the user they need to set image_id" do
-        expect(driver.ec2.resource).
-          to receive(:images).
-          with(filters: [{ name: "name", values: %w{SuperImage} }]).
-          and_return([image])
-        expect(driver.ec2.resource).
-          to receive(:image).with(image.id).and_return(image)
+        expect(driver.ec2.resource)
+          .to receive(:images)
+          .with(filters: [{ name: "name", values: %w{SuperImage} }])
+          .and_return([image])
+        expect(driver.ec2.resource)
+          .to receive(:image).with(image.id).and_return(image)
 
         instance = new_instance(platform_name: "blarghle")
         expect(instance.driver.instance_generator.ec2_instance_data[:image_id]).to eq image.id
