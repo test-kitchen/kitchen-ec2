@@ -60,9 +60,9 @@ module Kitchen
             # 2008r2rtm -> [ img1, img2, img3 ]
             # 2012r2sp1 -> [ img4, img5 ]
             # ...
-            images.group_by { |image| self.class.from_image(driver, image).windows_version_parts }.
-              sort_by { |version, _platform_images| version }.
-              reverse.flat_map { |_version, platform_images| platform_images }
+            images.group_by { |image| self.class.from_image(driver, image).windows_version_parts }
+              .sort_by { |version, _platform_images| version }
+              .reverse.flat_map { |_version, platform_images| platform_images }
           end
 
           def self.from_image(driver, image)
