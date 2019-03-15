@@ -18,7 +18,7 @@ Gem::Specification.new do |gem|
 
   gem.required_ruby_version = ">= 2.2.2"
 
-  gem.add_dependency "test-kitchen", "~> 1.4", ">= 1.4.1"
+  gem.add_dependency "test-kitchen", ">= 1.4.1", "< 3"
   gem.add_dependency "excon"
   gem.add_dependency "multi_json"
   gem.add_dependency "aws-sdk", "~> 2"
@@ -28,7 +28,7 @@ Gem::Specification.new do |gem|
   gem.add_development_dependency "countloc",  "~> 0.4"
   gem.add_development_dependency "maruku",    "~> 0.6"
   gem.add_development_dependency "simplecov", "~> 0.7"
-  gem.add_development_dependency "yard",      "~> 0.9", ">= 0.9.11"
+  gem.add_development_dependency "yard",      ">= 0.9.11"
 
   # style and complexity libraries are tightly version pinned as newer releases
   # may introduce new and undesireable style choices which would be immediately
