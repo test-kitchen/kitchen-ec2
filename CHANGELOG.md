@@ -1,5 +1,13 @@
 # Change Log
 
+## [v2.5.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.5.0) (2018-12-20)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.4.0..v2.5.0)
+
+- Loosen the test-kitchen and yard deps to allow this plugin to run on Test Kitchen 2.0
+- Fix hostname detection to not fail when the system doesn't have a public IP. Thanks [@niekrasp](https://github.com/niekrasp)
+- Added a new `security_group_cidr_ip` config for specifying IP CIDRs in the security group. Defaults to 0.0.0.0/0. Thanks [@dpattmann](https://github.com/dpattmann)
+- Support providing full Debian versions like 9.6 instead of just the major release like 9
+
 ## [v2.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.4.0) (2018-12-20)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.4..v2.4.0)
 
