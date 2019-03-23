@@ -54,7 +54,7 @@ module Kitchen
       plugin_version Kitchen::Driver::EC2_VERSION
 
       default_config :region, ENV["AWS_REGION"] || "us-east-1"
-      default_config :shared_credentials_profile, nil
+      default_config :shared_credentials_profile, ENV["AWS_PROFILE"]
       default_config :availability_zone, nil
       default_config :instance_type do |driver|
         driver.default_instance_type
