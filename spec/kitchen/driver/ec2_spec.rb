@@ -657,7 +657,7 @@ describe Kitchen::Driver::Ec2 do
 
         include_examples "common create"
       end
-      
+
       context "with a ip address configured" do
         before do
           config[:security_group_cidr_ip] = "1.2.3.4/32"
