@@ -18,7 +18,7 @@
 # limitations under the License.
 
 require "base64"
-require "aws-sdk"
+require "aws-sdk-ec2"
 
 module Kitchen
 
@@ -45,12 +45,12 @@ module Kitchen
           # Support for looking up security group id and subnet id using tags.
 
           if config[:subnet_id].nil? && config[:subnet_filter]
-            config[:subnet_id] = ::Aws::EC2::Client.
-              new(:region => config[:region]).describe_subnets(
-                :filters => [
+            config[:subnet_id] = ::Aws::EC2::Client
+              .new(region: config[:region]).describe_subnets(
+                filters: [
                   {
-                    :name   => "tag:#{config[:subnet_filter][:tag]}",
-                    :values => [config[:subnet_filter][:value]],
+                    name: "tag:#{config[:subnet_filter][:tag]}",
+                    values: [config[:subnet_filter][:value]],
                   },
                 ]
               )[0][0].subnet_id
@@ -62,12 +62,12 @@ module Kitchen
           end
 
           if config[:security_group_ids].nil? && config[:security_group_filter]
-            security_group = ::Aws::EC2::Client.
-                new(:region => config[:region]).describe_security_groups(
-                :filters => [
+            security_group = ::Aws::EC2::Client
+                .new(region: config[:region]).describe_security_groups(
+                filters: [
                     {
-                        :name => "tag:#{config[:security_group_filter][:tag]}",
-                        :values => [config[:security_group_filter][:value]],
+                        name: "tag:#{config[:security_group_filter][:tag]}",
+                        values: [config[:security_group_filter][:value]],
                     },
                 ]
             )[0][0]
@@ -81,12 +81,12 @@ module Kitchen
           end
 
           i = {
-            :instance_type                => config[:instance_type],
-            :ebs_optimized                => config[:ebs_optimized],
-            :image_id                     => config[:image_id],
-            :key_name                     => config[:aws_ssh_key_id],
-            :subnet_id                    => config[:subnet_id],
-            :private_ip_address           => config[:private_ip_address],
+            instance_type: config[:instance_type],
+            ebs_optimized: config[:ebs_optimized],
+            image_id: config[:image_id],
+            key_name: config[:aws_ssh_key_id],
+            subnet_id: config[:subnet_id],
+            private_ip_address: config[:private_ip_address],
           }
 
           availability_zone = config[:availability_zone]
@@ -94,14 +94,14 @@ module Kitchen
             if availability_zone =~ /^[a-z]$/i
               availability_zone = "#{config[:region]}#{availability_zone}"
             end
-            i[:placement] = { :availability_zone => availability_zone.downcase }
+            i[:placement] = { availability_zone: availability_zone.downcase }
           end
           tenancy = config[:tenancy]
           if tenancy
             if i.key?(:placement)
               i[:placement][:tenancy] = tenancy
             else
-              i[:placement] = { :tenancy => tenancy }
+              i[:placement] = { tenancy: tenancy }
             end
           end
           unless config[:block_device_mappings].nil? || config[:block_device_mappings].empty?
@@ -110,14 +110,14 @@ module Kitchen
           i[:security_group_ids] = Array(config[:security_group_ids]) if config[:security_group_ids]
           i[:user_data] = prepared_user_data if prepared_user_data
           if config[:iam_profile_name]
-            i[:iam_instance_profile] = { :name => config[:iam_profile_name] }
+            i[:iam_instance_profile] = { name: config[:iam_profile_name] }
           end
           if !config.fetch(:associate_public_ip, nil).nil?
             i[:network_interfaces] =
               [{
-                :device_index => 0,
-                :associate_public_ip_address => config[:associate_public_ip],
-                :delete_on_termination => true,
+                device_index: 0,
+                associate_public_ip_address: config[:associate_public_ip],
+                delete_on_termination: true,
               }]
             # If specifying `:network_interfaces` in the request, you must specify
             # network specific configs in the network_interfaces block and not at
@@ -137,14 +137,14 @@ module Kitchen
             if availability_zone =~ /^[a-z]$/i
               availability_zone = "#{config[:region]}#{availability_zone}"
             end
-            i[:placement] = { :availability_zone => availability_zone.downcase }
+            i[:placement] = { availability_zone: availability_zone.downcase }
           end
           tenancy = config[:tenancy]
           if tenancy
             if i.key?(:placement)
               i[:placement][:tenancy] = tenancy
             else
-              i[:placement] = { :tenancy => tenancy }
+              i[:placement] = { tenancy: tenancy }
             end
           end
           unless config[:instance_initiated_shutdown_behavior].nil? ||

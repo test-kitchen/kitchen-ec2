@@ -26,20 +26,25 @@ module Kitchen
           # 10/11 are listed last since we default to the first item in the hash
           # and 10/11 are not released yet. When they're released move them up
           DEBIAN_CODENAMES = {
-            "9" => "stretch",
-            "8" => "jessie",
-            "7" => "wheezy",
-            "6" => "squeeze",
-            "11" => "bullseye",
-            "10" => "buster",
-          }
+            9 => "stretch",
+            8 => "jessie",
+            7 => "wheezy",
+            6 => "squeeze",
+            11 => "bullseye",
+            10 => "buster",
+          }.freeze
 
           def username
             "admin"
           end
 
           def codename
-            version ? DEBIAN_CODENAMES[version] : DEBIAN_CODENAMES.values.first
+            v = version
+            if v && v.size > 1
+              warn("WARN: Debian version #{version} specified, but searching for #{version.to_i} instead.")
+              v = v.to_i
+            end
+            v ? DEBIAN_CODENAMES[v.to_i] : DEBIAN_CODENAMES.values.first
           end
 
           def image_search

@@ -60,9 +60,9 @@ module Kitchen
             # 2008r2rtm -> [ img1, img2, img3 ]
             # 2012r2sp1 -> [ img4, img5 ]
             # ...
-            images.group_by { |image| self.class.from_image(driver, image).windows_version_parts }.
-              sort_by { |version, _platform_images| version }.
-              reverse.flat_map { |_version, platform_images| platform_images }
+            images.group_by { |image| self.class.from_image(driver, image).windows_version_parts }
+              .sort_by { |version, _platform_images| version }
+              .reverse.flat_map { |_version, platform_images| platform_images }
           end
 
           def self.from_image(driver, image)
@@ -94,6 +94,8 @@ module Kitchen
           # 2012sp4 -> [ 2012, 0, 4 ]
           # 2012rtm -> [ 2012, 0, 0 ]
           # 2016 -> [ 2016, 0, nil ]
+          # 1709 -> [ 1709, 0, nil ]
+          # 1803 -> [ 1803, 0, nil ]
           def windows_version_parts
             version = self.version
             if version
@@ -130,6 +132,8 @@ module Kitchen
 
             if major == 2016
               "Windows_Server-2016-English-Full-Base-*"
+            elsif major == 1709 || major == 1803
+              "Windows_Server-#{major}-English-Core-ContainersLatest-*"
             else
               case revision
               when nil

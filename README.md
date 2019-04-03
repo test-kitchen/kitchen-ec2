@@ -61,6 +61,8 @@ platforms:
   - name: centos-6.3
   # The latest patch release of Amazon Linux 2017.03
   - name: amazon-2017.03
+  # The latest patch release of Amazon Linux 2 2018
+  - name: amazon2-2018
   # 32-bit version of latest major+minor+patch release of Ubuntu
   - name: ubuntu-i386
   # 32-bit version of Debian 6
@@ -219,6 +221,12 @@ security_group_filter:
   tag:   'Name'
   value: 'example-group-name'
 ```
+
+### `security_group_cidr_ip`
+
+The EC2 [security group][group_docs] ip, in CIDR block format, to use when creating the security group.
+
+The default is "0.0.0.0/0".
 
 #### `region`
 

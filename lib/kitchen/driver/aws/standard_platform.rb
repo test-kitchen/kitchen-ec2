@@ -46,7 +46,7 @@ module Kitchen
         # @param driver [Kitchen::Driver::Ec2] The driver.
         # @param name [String] The name of the platform (rhel, centos, etc.)
         # @param version [String] The version of the platform (7.1, 2008sp1, etc.)
-        # @param architecture [String] The architecture (i386, x86_64)
+        # @param architecture [String] The architecture (i386, x86_64, arm64)
         #
         def initialize(driver, name, version, architecture)
           @driver = driver
@@ -81,9 +81,14 @@ module Kitchen
         #
         # @return [String]
         #
-        # @see ARCHITECTURES
+        # @see SUPPORTED_ARCHITECTURESS
         #
         attr_reader :architecture
+
+        #
+        # The list of supported architectures
+        #
+        SUPPORTED_ARCHITECTURES = %w{x86_64 i386 arm64}.freeze
 
         #
         # Find the best matching image for the given image search.
@@ -93,11 +98,11 @@ module Kitchen
           driver.debug("Searching for images matching #{image_search} ...")
           # Convert to ec2 search format (pairs of name+values)
           filters = image_search.map do |key, value|
-            { :name => key.to_s, :values => Array(value).map(&:to_s) }
+            { name: key.to_s, values: Array(value).map(&:to_s) }
           end
 
           # We prefer most recent first
-          images = driver.ec2.resource.images(:filters => filters)
+          images = driver.ec2.resource.images(filters: filters)
           images = sort_images(images)
           show_returned_images(images)
 
@@ -151,11 +156,6 @@ module Kitchen
           nil
         end
 
-        #
-        # The list of supported architectures
-        #
-        ARCHITECTURE = %w{x86_64 i386 i86pc sun4v powerpc}
-
         protected
 
         #
@@ -196,7 +196,7 @@ module Kitchen
 
           # If the right side is a valid architecture, use it as such
           # i.e. debian-i386 or windows-server-2012r2-i386
-          if version && ARCHITECTURE.include?(version.split("-")[-1])
+          if version && SUPPORTED_ARCHITECTURES.include?(version.split("-")[-1])
             # server-2012r2-i386 -> server-2012r2, -, i386
             version, _dash, architecture = version.rpartition("-")
             version = nil if version == ""
@@ -209,7 +209,7 @@ module Kitchen
           # P6: We prefer more recent images over older ones
           images = images.sort_by(&:creation_date).reverse
           # P5: We prefer x86_64 over i386 (if available)
-          images = prefer(images) { |image| image.architecture == :x86_64 }
+          images = prefer(images) { |image| image.architecture == "x86_64" }
           # P4: We prefer gp2 (SSD) (if available)
           images = prefer(images) do |image|
             image.block_device_mappings.any? do |b|

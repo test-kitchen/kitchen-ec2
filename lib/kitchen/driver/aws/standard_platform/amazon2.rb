@@ -19,39 +19,27 @@ module Kitchen
   module Driver
     class Aws
       class StandardPlatform
-        # https://wiki.centos.org/Cloud/AWS
-        class Centos < StandardPlatform
-          StandardPlatform.platforms["centos"] = self
+        # https://aws.amazon.com/de/amazon-linux-2/release-notes/
+        class Amazon2 < StandardPlatform
+          StandardPlatform.platforms["amazon2"] = self
 
           def username
-            # Centos 6.x images use root as the username (but the "centos 6"
-            # updateable image uses "centos")
-            return "root" if version && version.start_with?("6.")
-            "centos"
+            "ec2-user"
           end
 
           def image_search
             search = {
-              "owner-alias" => "aws-marketplace",
-              "name" => ["CentOS Linux #{version}*", "CentOS-#{version}*-GA-*"],
+              "owner-id" => "137112412989",
+              "name" => version ? "amzn2-ami-hvm-2.0.#{version}*" : "amzn2-ami-hvm-2.0.*",
             }
             search["architecture"] = architecture if architecture
             search
           end
 
-          def sort_by_version(images)
-            # 7.1 -> [ img1, img2, img3 ]
-            # 6 -> [ img4, img5 ]
-            # ...
-            images.group_by { |image| self.class.from_image(driver, image).version }
-              .sort_by { |k, _v| (k && k.include?(".") ? k.to_f : "#{k}.999".to_f) }
-              .reverse.flat_map { |_k, v| v }
-          end
-
           def self.from_image(driver, image)
-            if image.name =~ /centos/i
-              image.name =~ /\b(\d+(\.\d+)?)\b/i
-              new(driver, "centos", (Regexp.last_match || [])[1], image.architecture)
+            if image.name =~ /amzn2-ami/i
+              image.name =~ /\b(\d+(\.\d+[\.\d])?)/i
+              new(driver, "amazon2", (Regexp.last_match || [])[1], image.architecture)
             end
           end
         end
