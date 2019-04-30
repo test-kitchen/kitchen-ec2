@@ -277,8 +277,18 @@ describe Kitchen::Driver::Ec2 do
         config[:tags] = { key1: "value1", key2: "value2" }
         expect(server).to receive(:create_tags).with(
           tags: [
-            { key: :key1, value: "value1" },
-            { key: :key2, value: "value2" },
+            { key: "key1", value: "value1" },
+            { key: "key2", value: "value2" },
+          ]
+        )
+        driver.tag_server(server)
+      end
+      it "tags the server with String keys" do
+        config[:tags] = { key1: "value1", "key2" => "value2" }
+        expect(server).to receive(:create_tags).with(
+          tags: [
+            { key: "key1", value: "value1" },
+            { key: "key2", value: "value2" },
           ]
         )
         driver.tag_server(server)
@@ -290,8 +300,8 @@ describe Kitchen::Driver::Ec2 do
         config[:tags] = { key1: "value1", key2: 1 }
         expect(server).to receive(:create_tags).with(
           tags: [
-            { key: :key1, value: "value1" },
-            { key: :key2, value: "1" },
+            { key: "key1", value: "value1" },
+            { key: "key2", value: "1" },
           ]
         )
         driver.tag_server(server)
@@ -303,8 +313,8 @@ describe Kitchen::Driver::Ec2 do
         config[:tags] = { key1: "value1", key2: nil }
         expect(server).to receive(:create_tags).with(
           tags: [
-            { key: :key1, value: "value1" },
-            { key: :key2, value: "" },
+            { key: "key1", value: "value1" },
+            { key: "key2", value: "" },
           ]
         )
         driver.tag_server(server)
@@ -322,8 +332,8 @@ describe Kitchen::Driver::Ec2 do
         config[:tags] = { key1: "value1", key2: "value2" }
         expect(volume).to receive(:create_tags).with(
           tags: [
-            { key: :key1, value: "value1" },
-            { key: :key2, value: "value2" },
+            { key: "key1", value: "value1" },
+            { key: "key2", value: "value2" },
           ]
         )
         driver.tag_volumes(server)
@@ -335,8 +345,8 @@ describe Kitchen::Driver::Ec2 do
         config[:tags] = { key1: "value1", key2: 2 }
         expect(volume).to receive(:create_tags).with(
           tags: [
-            { key: :key1, value: "value1" },
-            { key: :key2, value: "2" },
+            { key: "key1", value: "value1" },
+            { key: "key2", value: "2" },
           ]
         )
         driver.tag_volumes(server)
@@ -348,8 +358,8 @@ describe Kitchen::Driver::Ec2 do
         config[:tags] = { key1: "value1", key2: nil }
         expect(volume).to receive(:create_tags).with(
           tags: [
-            { key: :key1, value: "value1" },
-            { key: :key2, value: "" },
+            { key: "key1", value: "value1" },
+            { key: "key2", value: "" },
           ]
         )
         driver.tag_volumes(server)
