@@ -465,7 +465,7 @@ module Kitchen
             # we convert the value to a string because
             # nils should be passed as an empty String
             # and Integers need to be represented as Strings
-            { key: k, value: v.to_s }
+            { key: k.to_s, value: v.to_s }
           end
           server.create_tags(tags: tags)
         end
@@ -474,7 +474,7 @@ module Kitchen
       def tag_volumes(server)
         if config[:tags] && !config[:tags].empty?
           tags = config[:tags].map do |k, v|
-            { key: k, value: v.to_s }
+            { key: k.to_s, value: v.to_s }
           end
           server.volumes.each do |volume|
             volume.create_tags(tags: tags)
