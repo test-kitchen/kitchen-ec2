@@ -1,5 +1,15 @@
 # Change Log
 
+## [v3.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.0.0) (2019-03-19)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.4.0..v3.0.0)
+
+- Switch from the monolithic aws-sdk-v2 to the just aws-sdk-ec2 aka aws-sdk-v3. This greatly reduces the number of dependencies necessary for this plugin, but is a major change that makes it incompatible with older released of Chef-DK that require aws-sdk-v2.
+- Require Ruby 2.3 or later as Ruby 2.2 is now EOL
+- Loosen the dependency on Test Kitchen to allow this plugin to work with Test Kitchen 2.0
+- Fix hostname detection to not fail when the system doesn't have a public IP. Thanks [@niekrasp](https://github.com/niekrasp)
+- Added a new `security_group_cidr_ip` config for specifying IP CIDRs in the security group. Defaults to 0.0.0.0/0. Thanks [@dpattmann](https://github.com/dpattmann)
+- Support providing full Debian versions like 9.6 instead of just the major release like 9
+
 ## [v2.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.4.0) (2018-12-20)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.4..v2.4.0)
 
