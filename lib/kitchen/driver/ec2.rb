@@ -229,15 +229,17 @@ module Kitchen
 
         if config[:spot_price]
           # Spot instance when a price is set
-          server = submit_spot(state)
+          server = with_request_limit_backoff(state) { submit_spot(state) }
         else
           # On-demand instance
-          server = submit_server
+          server = with_request_limit_backoff(state) { submit_server }
         end
         info("Instance <#{server.id}> requested.")
-        server.wait_until_exists do |w|
-          w.before_attempt do |attempts|
-            info("Polling AWS for existence, attempt #{attempts}...")
+        with_request_limit_backoff(state) do
+          server.wait_until_exists do |w|
+            w.before_attempt do |attempts|
+              info("Polling AWS for existence, attempt #{attempts}...")
+            end
           end
         end
 
