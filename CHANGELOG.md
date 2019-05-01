@@ -9,6 +9,9 @@
 - Fix hostname detection to not fail when the system doesn't have a public IP. Thanks [@niekrasp](https://github.com/niekrasp)
 - Added a new `security_group_cidr_ip` config for specifying IP CIDRs in the security group. Defaults to 0.0.0.0/0. Thanks [@dpattmann](https://github.com/dpattmann)
 - Support providing full Debian versions like 9.6 instead of just the major release like 9
+- Ensure tags keys are strings as expected by AWS SDK. Thanks [@Annih](https://github.com/Annih)
+- Leverage quadratic backoff retry on instance creation throttling. Thanks [@Annih](https://github.com/Annih)
+- Honor AWS_PROFILE if present. Thanks [@bdwyertech](https://github.com/bdwyertech)
 
 ## [v2.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.4.0) (2018-12-20)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.4..v2.4.0)
