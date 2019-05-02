@@ -50,7 +50,7 @@ module Kitchen
         end
 
         def create_instance(options)
-          resource.create_instances(options)[0]
+          resource.create_instances(options).first
         end
 
         def get_instance(id)
