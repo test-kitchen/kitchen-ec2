@@ -1,6 +1,11 @@
 # Change Log
 
-## [v3.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.0.0) (2019-03-19)
+## [v3.0.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.0.1) (2019-05-08)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.0.0..v3.0.1)
+
+- Resolve several deprecation warnings from the new aws-sdk-v3 dependency
+
+## [v3.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.0.0) (2019-05-01)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.4.0..v3.0.0)
 
 - Switch from the monolithic aws-sdk-v2 to the just aws-sdk-ec2 aka aws-sdk-v3. This greatly reduces the number of dependencies necessary for this plugin, but is a major change that makes it incompatible with older released of Chef-DK that require aws-sdk-v2.
