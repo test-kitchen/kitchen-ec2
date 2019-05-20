@@ -200,7 +200,7 @@ region.
 The EC2 [instance type][instance_docs] (also known as size) to use.
 
 The default is `t2.micro` or `t1.micro`, depending on whether the image is `hvm`
-or `paravirtual`. (`paravirtual` images are incompatible with `t2.micro`.)
+or `paravirtual`. (`paravirtual` images are incompatible with `t2.micro`). When working with spots, you can provide an array of instance types in which case the driver will try each type until it can get a spot.
 
 #### `security_group_ids`
 
@@ -238,6 +238,7 @@ Otherwise the default is `"us-east-1"`.
 #### `subnet_id`
 
 The EC2 [subnet][subnet_docs] to use.
+When working with spots, you can provide an array in which case the driver will try each subnet until it can get a spot.
 
 The default is unset, or `nil`.
 
@@ -304,7 +305,7 @@ See [AWS documentation](https://aws.amazon.com/de/blogs/security/granting-permis
 
 #### `spot_price`
 
-The price you bid in order to submit a spot request. An additional step will be required during the spot request process submission. If no price is set, it will use an on-demand instance.
+The price you bid in order to submit a spot request. An additional step will be required during the spot request process submission. If no price is set, it will use an on-demand instance. It accepts `on-demand` string in which case the price is the current on-demand price.
 
 The default is `nil`.
 
