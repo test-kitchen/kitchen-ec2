@@ -74,6 +74,7 @@ module Kitchen
       default_config :spot_price,         nil
       default_config :block_duration_minutes, nil
       default_config :retryable_tries,    60
+      default_config :spot_wait,          60
       default_config :retryable_sleep,    5
       default_config :aws_access_key_id,  nil
       default_config :aws_secret_access_key, nil
@@ -229,7 +230,7 @@ module Kitchen
 
         if config[:spot_price]
           # Spot instance when a price is set
-          server = with_request_limit_backoff(state) { submit_spot(state) }
+          server = with_request_limit_backoff(state) { submit_spots(state) }
         else
           # On-demand instance
           server = with_request_limit_backoff(state) { submit_server }
@@ -407,7 +408,7 @@ module Kitchen
       end
 
       def instance_generator
-        @instance_generator ||= Aws::InstanceGenerator.new(config, ec2, instance.logger)
+        @instance_generator = Aws::InstanceGenerator.new(config, ec2, instance.logger)
       end
 
       # Fog AWS helper for creating the instance
@@ -422,6 +423,53 @@ module Kitchen
         ec2.create_instance(instance_data)
       end
 
+      def config
+        return super unless @config
+        @config
+      end
+
+      # Take one config and expand to multiple configs
+      def expand_config(conf, key)
+        configs = []
+
+        if conf[key] && conf[key].kind_of?(Array)
+          values = conf[key]
+          values.each do |value|
+            new_config = conf.clone
+            new_config[key] = value
+            configs.push new_config
+          end
+        else
+          configs.push conf
+        end
+
+        configs
+      end
+
+      def submit_spots(state)
+        configs = [config]
+        expanded = []
+        keys = [:instance_type, :subnet_id]
+
+        keys.each do |key|
+          configs.each do |conf|
+            expanded.push expand_config(conf, key)
+          end
+          configs = expanded.flatten
+          expanded = []
+        end
+
+        configs.each do |conf|
+          begin
+            @config = conf
+            return submit_spot(state)
+          rescue
+          end
+        end
+
+        raise "Could not create a spot"
+      end
+
       def submit_spot(state)
         debug("Creating EC2 Spot Instance..")
 
@@ -433,11 +481,11 @@ module Kitchen
           :spot_instance_request_fulfilled,
           spot_instance_request_ids: [spot_request_id]
         ) do |w|
-          w.max_attempts = config[:retryable_tries]
+          w.max_attempts = config[:spot_wait] / config[:retryable_sleep]
           w.delay = config[:retryable_sleep]
           w.before_attempt do |attempts|
             c = attempts * config[:retryable_sleep]
-            t = config[:retryable_tries] * config[:retryable_sleep]
+            t = config[:spot_wait]
             info "Waited #{c}/#{t}s for spot request <#{spot_request_id}> to become fulfilled."
           end
         end
@@ -445,9 +493,15 @@ module Kitchen
       end
 
       def create_spot_request
-        request_duration = config[:retryable_tries] * config[:retryable_sleep]
+        request_duration = config[:spot_wait]
+        config_spot_price = config[:spot_price].to_s
+        if ["ondemand", "on-demand"].include?(config_spot_price)
+          spot_price = ""
+        else
+          spot_price = config_spot_price
+        end
         request_data = {
-          spot_price: config[:spot_price].to_s,
+          spot_price: spot_price,
           launch_specification: instance_generator.ec2_instance_data,
           valid_until: Time.now + request_duration,
         }
