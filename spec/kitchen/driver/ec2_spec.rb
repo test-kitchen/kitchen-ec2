@@ -92,6 +92,15 @@ describe Kitchen::Driver::Ec2 do
           '$logfile=C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
         end
       end
+      context "Windows 2019" do
+        let(:image) do
+          FakeImage.new(name: "Windows_Server-2019-English-Full-Base-2019.06.12")
+        end
+        it "sets :user_data to something" do
+          expect(driver[:user_data]).to include
+          '$logfile=C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
+        end
+      end
       context "Windows 2012R2" do
         let(:image) do
           FakeImage.new(name: "Windows_Server-2012-R2_RTM-English-64Bit-Base-2017.01.11")
