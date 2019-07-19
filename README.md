@@ -401,12 +401,13 @@ If you don't set this it will default to whatever DHCP address EC2 hands out.
 
 #### `interface`
 
-The place from which to derive the hostname for communicating with the instance.  May be `dns`, `public`, `private` or `private_dns`.  If this is unset, the driver will derive the hostname by failing back in the following order:
+The place from which to derive the hostname for communicating with the instance.  May be `dns`, `public`, `private`, `private_dns` or `id`.  If this is unset, the driver will derive the hostname by failing back in the following order:
 
 1. DNS Name
 2. Public IP Address
 3. Private IP Address
 4. Private DNS Name
+5. Instance ID (Useful for [SSH through Session Manger][ssh_over_ssm])
 
 The default is unset. Under normal circumstances, the lookup will return the `Private IP Address`.
 
@@ -503,4 +504,5 @@ Apache 2.0 (see [LICENSE][license])
 [kitchenci]:        https://kitchen.ci/
 [region_docs]:      https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/using-regions-availability-zones.html
 [subnet_docs]:      https://docs.aws.amazon.com/AWSCloudFormation/latest/UserGuide/aws-resource-ec2-subnet.html
+[ssh_over_ssm]:     https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-getting-started-enable-ssh-connections.html
 [vpc_docs]:         https://docs.aws.amazon.com/AmazonVPC/latest/GettingStartedGuide/ExerciseOverview.html
