@@ -407,7 +407,7 @@ The place from which to derive the hostname for communicating with the instance.
 2. Public IP Address
 3. Private IP Address
 4. Private DNS Name
-5. Instance ID (Useful for [SSH through Session Manger][ssh_over_ssm])
+5. Instance ID (Useful for [SSH through Session Manager][ssh_over_ssm])
 
 The default is unset. Under normal circumstances, the lookup will return the `Private IP Address`.
 
