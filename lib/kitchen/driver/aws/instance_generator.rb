@@ -89,8 +89,7 @@ module Kitchen
               if security_group
                 security_groups.push(security_group.group_id)
               else
-                raise "The group tagged '#{sg_filter[:tag]} " +
-                  "#{sg_filter[:value]}' does not exist!"
+                raise "A Security Group matching the following filter could not be found:\n#{sg_filter}"
               end
             end
             config[:security_group_ids] = security_groups

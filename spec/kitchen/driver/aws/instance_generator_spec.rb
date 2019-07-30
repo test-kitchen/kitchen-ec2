@@ -240,8 +240,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           ]
         ).and_return(ec2_stub_whithout_security_group.describe_security_groups)
 
-        expect { generator.ec2_instance_data }.to raise_error("The group tagged '#{config[:security_group_filter][:tag]} " +
-                                                              "#{config[:security_group_filter][:value]}' does not exist!")
+        expect { generator.ec2_instance_data }.to raise_error(
+          "A Security Group matching the following filter could not be found:\n#{config[:security_group_filter]}"
+        )
       end
     end
 
