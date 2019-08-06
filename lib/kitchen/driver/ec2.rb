@@ -647,6 +647,7 @@ module Kitchen
           "public" => "public_ip_address",
           "private" => "private_ip_address",
           "private_dns" => "private_dns_name",
+          "id" => "id",
         }.freeze
 
       #

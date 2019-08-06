@@ -109,12 +109,14 @@ describe Kitchen::Driver::Ec2 do
     let(:private_dns_name) { nil }
     let(:public_ip_address) { nil }
     let(:private_ip_address) { nil }
+    let(:id) { nil }
     let(:server) do
       double("server",
         public_dns_name: public_dns_name,
         private_dns_name: private_dns_name,
         public_ip_address: public_ip_address,
-        private_ip_address: private_ip_address
+        private_ip_address: private_ip_address,
+        id: id
       )
     end
 
@@ -138,6 +140,9 @@ describe Kitchen::Driver::Ec2 do
       end
       it "returns private_dns_name when requested" do
         expect(driver.hostname(server, "private_dns")).to eq(private_dns_name)
+      end
+      it "returns id when requested" do
+        expect(driver.hostname(server, "id")).to eq(id)
       end
     end
 
