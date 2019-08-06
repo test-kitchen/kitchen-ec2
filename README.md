@@ -210,16 +210,31 @@ automatically which allows SSH and WinRM (**>= 2.1.0**).
 
 #### `security_group_filter`
 
-The EC2 [security group][group_docs] which will be applied to the instance,
-specified by tag. Only one group can be specified this way.
+The EC2 [security group(s)][group_docs] which will be applied to the instance,
+specified by name or tag. One or more groups can be specified.
 
 The default is unset, or `nil`.
 
 An example of usage:
 ```yaml
+# By Name
+security_group_filter:
+  name:   'example-group-name'
+
+# By Tag
 security_group_filter:
   tag:   'Name'
   value: 'example-group-name'
+
+# Multiple Groups
+security_group_filter:
+  - name: 'AWS-Egress'
+  - tag: 'Name'
+    value: 'MyApplicationSG'
+  - tag: 'Name'
+    value: 'MyApplicationDatabaseSG'
+  - tag: 'Name'
+    value: 'MyOtherSG'
 ```
 
 ### `security_group_cidr_ip`
