@@ -237,11 +237,8 @@ module Kitchen
         end
         info("Instance <#{server.id}> requested.")
         with_request_limit_backoff(state) do
-          server.wait_until_exists do |w|
-            w.before_attempt do |attempts|
-              info("Polling AWS for existence, attempt #{attempts}...")
-            end
-          end
+          logging_proc = ->(attempts) { info("Polling AWS for existence, attempt #{attempts}...") }
+          server.wait_until_exists(before_attempt: logging_proc)
         end
 
         # See https://github.com/aws/aws-sdk-ruby/issues/859
