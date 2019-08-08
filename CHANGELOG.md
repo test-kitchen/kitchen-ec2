@@ -1,9 +1,17 @@
 # Change Log
 
+## [v3.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.1.0) (2019-08-07)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.0.1..v3.1.0)
+
+- Resolve additional deprecation warnings from the new aws-sdk-v3 dependency. Thanks [@Annih](https://github.com/Annih)
+- Add support for SSH through Session Manager. Thanks [@awiddersheim](https://github.com/awiddersheim)
+- Adds support for searching for multiple security groups, as well as searching by group name. Thanks [@bdwyertech](https://github.com/bdwyertech)
+- Allow asking for multiple instance types and subnets for spot pricing. Thanks [@vmiszczak-teads](https://github.com/vmiszczak-teads)
+
 ## [v3.0.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.0.1) (2019-05-08)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.0.0..v3.0.1)
 
-- Resolve several deprecation warnings from the new aws-sdk-v3 dependency
+- Resolve deprecation warnings from the new aws-sdk-v3 dependency
 
 ## [v3.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.0.0) (2019-05-01)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.4.0..v3.0.0)
