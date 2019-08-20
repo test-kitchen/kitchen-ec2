@@ -291,7 +291,11 @@ module Kitchen
           server = ec2.get_instance(state[:server_id])
           unless server.nil?
             instance.transport.connection(state).close
-            server.terminate
+            begin
+              server.terminate
+            rescue ::Aws::EC2::Errors::InvalidInstanceIDNotFound => e
+              warn("Received #{e}, instance was probably already destroyed. Ignoring")
+            end
           end
           if state[:spot_request_id]
             debug("Deleting spot request <#{state[:server_id]}>")
