@@ -127,7 +127,7 @@ module Kitchen
           if config[:iam_profile_name]
             i[:iam_instance_profile] = { name: config[:iam_profile_name] }
           end
-          if !config.fetch(:associate_public_ip, nil).nil?
+          unless config.fetch(:associate_public_ip, nil).nil?
             i[:network_interfaces] =
               [{
                 device_index: 0,

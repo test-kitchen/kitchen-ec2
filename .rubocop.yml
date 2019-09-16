@@ -1,0 +1,6 @@
+AllCops:
+  TargetRubyVersion: 2.3
+
+Lint/IneffectiveAccessModifier:
+  Exclude:
+    - lib/kitchen/driver/aws/standard_platform.rb

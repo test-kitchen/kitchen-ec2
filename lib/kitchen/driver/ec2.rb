@@ -56,9 +56,7 @@ module Kitchen
       default_config :region, ENV["AWS_REGION"] || "us-east-1"
       default_config :shared_credentials_profile, ENV["AWS_PROFILE"]
       default_config :availability_zone, nil
-      default_config :instance_type do |driver|
-        driver.default_instance_type
-      end
+      default_config :instance_type, &:default_instance_type
       default_config :ebs_optimized,      false
       default_config :security_group_ids, nil
       default_config :security_group_filter, nil
@@ -80,9 +78,7 @@ module Kitchen
       default_config :aws_secret_access_key, nil
       default_config :aws_session_token,  nil
       default_config :aws_ssh_key_id,     ENV["AWS_SSH_KEY_ID"]
-      default_config :image_id do |driver|
-        driver.default_ami
-      end
+      default_config :image_id, &:default_ami
       default_config :image_search,       nil
       default_config :username,           nil
       default_config :associate_public_ip, nil
@@ -110,7 +106,7 @@ module Kitchen
       end
 
       # TODO: remove these in 1.1
-      deprecated_configs = [:ebs_volume_size, :ebs_delete_on_termination, :ebs_device_name]
+      deprecated_configs = %i{ebs_volume_size ebs_delete_on_termination ebs_device_name}
       deprecated_configs.each do |d|
         validations[d] = lambda do |attr, val, driver|
           unless val.nil?
@@ -200,6 +196,7 @@ module Kitchen
 
       def create(state)
         return if state[:server_id]
+
         update_username(state)
 
         info(Kitchen::Util.outdent!(<<-END)) unless config[:skip_cost_warning]
@@ -422,6 +419,7 @@ module Kitchen
 
       def config
         return super unless @config
+
         @config
       end
 
@@ -429,7 +427,7 @@ module Kitchen
       def expand_config(conf, key)
         configs = []
 
-        if conf[key] && conf[key].kind_of?(Array)
+        if conf[key] && conf[key].is_a?(Array)
           values = conf[key]
           values.each do |value|
             new_config = conf.clone
@@ -446,7 +444,7 @@ module Kitchen
       def submit_spots(state)
         configs = [config]
         expanded = []
-        keys = [:instance_type, :subnet_id]
+        keys = %i{instance_type subnet_id}
 
         keys.each do |key|
           configs.each do |conf|
@@ -492,7 +490,7 @@ module Kitchen
       def create_spot_request
         request_duration = config[:spot_wait]
         config_spot_price = config[:spot_price].to_s
-        if ["ondemand", "on-demand"].include?(config_spot_price)
+        if %w{ondemand on-demand}.include?(config_spot_price)
           spot_price = ""
         else
           spot_price = config_spot_price
@@ -543,8 +541,7 @@ module Kitchen
           ready_volume_count = 0
           if aws_instance.exists?
             described_volume_count = ec2.client.describe_volumes(filters: [
-              { name: "attachment.instance-id", values: ["#{state[:server_id]}"] }]
-              ).volumes.length
+              { name: "attachment.instance-id", values: ["#{state[:server_id]}"] }]).volumes.length
             aws_instance.volumes.each { ready_volume_count += 1 }
           end
           (described_volume_count > 0) && (described_volume_count == ready_volume_count)
@@ -626,6 +623,7 @@ module Kitchen
           yield
         rescue ::Aws::EC2::Errors::RequestLimitExceeded, ::Aws::Waiters::Errors::UnexpectedError => e
           raise unless retries < 5 && e.message.include?("Request limit exceeded")
+
           retries += 1
           info("Request limit exceeded for instance <#{state[:server_id]}>." \
                " Trying again in #{retries**2} seconds.")
@@ -779,11 +777,13 @@ module Kitchen
       # @return [void]
       def create_security_group(state)
         return if state[:auto_security_group_id]
+
         # Work out which VPC, if any, we are creating in.
         vpc_id = if config[:subnet_id]
                    # Get the VPC ID for the subnet.
                    subnets = ec2.client.describe_subnets(filters: [{ name: "subnet-id", values: [config[:subnet_id]] }]).subnets
                    raise "Subnet #{config[:subnet_id]} not found during security group creation" if subnets.empty?
+
                    subnets.first.vpc_id
                  else
                    # Try to check for a default VPC.
@@ -799,13 +799,13 @@ module Kitchen
         # Create the SG.
         params = {
           group_name: "kitchen-#{Array.new(8) { rand(36).to_s(36) }.join}",
-          description: "Test Kitchen for #{instance.name} by #{Etc.getlogin || 'nologin'} on #{Socket.gethostname}",
+          description: "Test Kitchen for #{instance.name} by #{Etc.getlogin || "nologin"} on #{Socket.gethostname}",
         }
         params[:vpc_id] = vpc_id if vpc_id
         resp = ec2.client.create_security_group(params)
         state[:auto_security_group_id] = resp.group_id
         info("Created automatic security group #{state[:auto_security_group_id]}")
-        debug("  in VPC #{vpc_id || 'none'}")
+        debug("  in VPC #{vpc_id || "none"}")
         # Set up SG rules.
         ec2.client.authorize_security_group_ingress(
           group_id: state[:auto_security_group_id],
@@ -828,6 +828,7 @@ module Kitchen
       # @return [void]
       def create_key(state)
         return if state[:auto_key_id]
+
         # Encode a bunch of metadata into the name because that's all we can
         # set for a key pair.
         name_parts = [
@@ -842,7 +843,7 @@ module Kitchen
         # to rapidly exhaust local entropy by creating a lot of keys. So this is
         # probably fine. If you want very high security, probably don't use this
         # feature anyway.
-        resp = ec2.client.create_key_pair(key_name: "kitchen-#{name_parts.join('-')}")
+        resp = ec2.client.create_key_pair(key_name: "kitchen-#{name_parts.join("-")}")
         state[:auto_key_id] = resp.key_name
         info("Created automatic key pair #{state[:auto_key_id]}")
         # Write the key out with safe permissions
@@ -862,6 +863,7 @@ module Kitchen
       # @return [void]
       def delete_security_group(state)
         return unless state[:auto_security_group_id]
+
         info("Removing automatic security group #{state[:auto_security_group_id]}")
         ec2.client.delete_security_group(group_id: state[:auto_security_group_id])
         state.delete(:auto_security_group_id)
@@ -874,6 +876,7 @@ module Kitchen
       # @return [void]
       def delete_key(state)
         return unless state[:auto_key_id]
+
         info("Removing automatic key pair #{state[:auto_key_id]}")
         ec2.client.delete_key_pair(key_name: state[:auto_key_id])
         state.delete(:auto_key_id)

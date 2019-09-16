@@ -20,9 +20,9 @@ RuboCop::RakeTask.new(:style) do |task|
 end
 
 desc "Run all quality tasks"
-task quality: [:style, :stats]
+task quality: %i{style stats}
 
 require "yard"
 YARD::Rake::YardocTask.new
 
-task default: [:test, :quality]
+task default: %i{test quality}

@@ -27,6 +27,7 @@ module Kitchen
             # Centos 6.x images use root as the username (but the "centos 6"
             # updateable image uses "centos")
             return "root" if version && version.start_with?("6.")
+
             "centos"
           end
 
