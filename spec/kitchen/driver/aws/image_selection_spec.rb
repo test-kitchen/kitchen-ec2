@@ -327,6 +327,11 @@ describe "Default images for various platforms" do
       { name: "name", values: %w{
         Windows_Server-2016-English-Full-Base-*} },
     ],
+    "windows-2019" => [
+      { name: "owner-alias", values: %w{amazon} },
+      { name: "name", values: %w{
+        Windows_Server-2019-English-Full-Base-*} },
+    ],
   }.freeze
 
   describe "Platform defaults" do

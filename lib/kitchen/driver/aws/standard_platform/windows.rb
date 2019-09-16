@@ -47,6 +47,8 @@ module Kitchen
           #   Windows_Server-2012-R2_RTM-
           # "windows-2016" -> [2016, 0, nil]
           #   Windows_Server-2016-
+          # "windows-2019" -> [2019, 0, nil]
+          #   Windows_Server-2019-
           def image_search
             search = {
               "owner-alias" => "amazon",
@@ -94,6 +96,7 @@ module Kitchen
           # 2012sp4 -> [ 2012, 0, 4 ]
           # 2012rtm -> [ 2012, 0, 0 ]
           # 2016 -> [ 2016, 0, nil ]
+          # 2019 -> [ 2019, 0, nil ]
           # 1709 -> [ 1709, 0, nil ]
           # 1803 -> [ 1803, 0, nil ]
           def windows_version_parts
@@ -129,9 +132,8 @@ module Kitchen
 
           def windows_name_filter # rubocop:disable Metrics/MethodLength
             major, revision, service_pack = windows_version_parts
-
-            if major == 2016
-              "Windows_Server-2016-English-Full-Base-*"
+            if major == 2019 || major == 2016
+              "Windows_Server-#{major}-English-Full-Base-*"
             elsif major == 1709 || major == 1803
               "Windows_Server-#{major}-English-Core-ContainersLatest-*"
             else
