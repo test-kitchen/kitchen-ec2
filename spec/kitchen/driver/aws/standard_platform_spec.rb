@@ -73,8 +73,7 @@ describe Kitchen::Driver::Aws::StandardPlatform do
         block_device_mappings: [],
         root_device_type: "other",
         virtualization_type: "other",
-        name: "ubuntu"
-      )
+        name: "ubuntu")
     end
     let(:img2) do
       instance_double(::Aws::EC2::Image,
@@ -83,8 +82,7 @@ describe Kitchen::Driver::Aws::StandardPlatform do
         block_device_mappings: [],
         root_device_type: "other",
         virtualization_type: "other",
-        name: "ubuntu"
-      )
+        name: "ubuntu")
     end
     let(:img3) do
       instance_double(::Aws::EC2::Image,
@@ -93,8 +91,7 @@ describe Kitchen::Driver::Aws::StandardPlatform do
         block_device_mappings: [],
         root_device_type: "ebs",
         virtualization_type: "other",
-        name: "ubuntu"
-      )
+        name: "ubuntu")
     end
     let(:img4) do
       instance_double(::Aws::EC2::Image,
@@ -103,8 +100,7 @@ describe Kitchen::Driver::Aws::StandardPlatform do
         block_device_mappings: [],
         root_device_type: "ebs",
         virtualization_type: "hvm",
-        name: "ubuntu"
-      )
+        name: "ubuntu")
     end
     let(:images) { [img1, img2, img3, img4] }
     let(:sorted_images) { [img4, img3, img2, img1] }

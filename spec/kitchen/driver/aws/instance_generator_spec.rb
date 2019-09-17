@@ -25,7 +25,7 @@ require "aws-sdk-ec2"
 
 describe Kitchen::Driver::Aws::InstanceGenerator do
 
-  let(:config) { Hash.new }
+  let(:config) { {} }
   let(:resource) { instance_double(Aws::EC2::Resource) }
   let(:ec2) { instance_double(Kitchen::Driver::Aws::Client, resource: resource) }
   let(:logger) { instance_double(Logger) }
@@ -115,12 +115,12 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
       it "returns the minimum data" do
         expect(generator.ec2_instance_data).to eq(
-           instance_type: "micro",
-           ebs_optimized: true,
-           image_id: "ami-123",
-           key_name: nil,
-           subnet_id: "s-456",
-           private_ip_address: "0.0.0.0"
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          key_name: nil,
+          subnet_id: "s-456",
+          private_ip_address: "0.0.0.0"
         )
       end
     end

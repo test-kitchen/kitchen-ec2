@@ -72,7 +72,8 @@ describe Kitchen::Driver::Ec2 do
 
   it "plugin_version is set to Kitchen::Vagrant::VERSION" do
     expect(driver.diagnose_plugin[:version]).to eq(
-      Kitchen::Driver::EC2_VERSION)
+      Kitchen::Driver::EC2_VERSION
+    )
   end
 
   describe "default_config" do
@@ -125,8 +126,7 @@ describe Kitchen::Driver::Ec2 do
         private_dns_name: private_dns_name,
         public_ip_address: public_ip_address,
         private_ip_address: private_ip_address,
-        id: id
-      )
+        id: id)
     end
 
     it "returns nil if all sources are nil" do
@@ -438,23 +438,20 @@ describe Kitchen::Driver::Ec2 do
     end
     it "second, it checks for prescence of described volumes" do
       expect(aws_instance).to receive(:exists?).and_return(true)
-      expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length
-      ).and_return(0)
+      expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length).and_return(0)
       expect(aws_instance).to receive(:volumes).and_return([])
       expect(driver.wait_until_volumes_ready(server, state)).to eq(false)
     end
     it "third, it compares the described volumes and instance volumes" do
       expect(aws_instance).to receive(:exists?).and_return(true)
-      expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length
-      ).and_return(2)
+      expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length).and_return(2)
       expect(aws_instance).to receive(:volumes).and_return([volume])
       expect(driver.wait_until_volumes_ready(server, state)).to eq(false)
     end
     context "when it exists, and both client and instance agree on volumes" do
       it "returns true" do
         expect(aws_instance).to receive(:exists?).and_return(true)
-        expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length
-        ).and_return(1)
+        expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length).and_return(1)
         expect(aws_instance).to receive(:volumes).and_return([volume])
         expect(driver.wait_until_volumes_ready(server, state)).to eq(true)
       end
@@ -531,7 +528,7 @@ describe Kitchen::Driver::Ec2 do
         allow(instance).to receive(:name).and_return("instance_name")
 
         expect(actual_client).to receive(:create_key_pair).with(key_name: /kitchen-/).and_return(double(key_name: "expected-key-name", key_material: "RSA PRIVATE KEY"))
-        fake_file = double()
+        fake_file = double
         allow(File).to receive(:open).and_call_original
         expect(File).to receive(:open).with("/kitchen/.kitchen/instance_name.pem", kind_of(Numeric), kind_of(Numeric)).and_yield(fake_file)
         expect(fake_file).to receive(:write).with("RSA PRIVATE KEY")

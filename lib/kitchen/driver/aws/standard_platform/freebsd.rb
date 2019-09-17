@@ -27,8 +27,7 @@ module Kitchen
             "ec2-user"
           end
 
-          def sudo_command
-          end
+          def sudo_command; end
 
           def image_search
             search = {
