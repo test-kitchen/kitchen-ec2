@@ -1,5 +1,13 @@
 # Change Log
 
+## [v3.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.2.0) (2019-09-17)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.1.0..v3.2.0)
+
+- Allow for retryable 3.0 [\#466](https://github.com/test-kitchen/kitchen-ec2/pull/466) ([tas50](https://github.com/tas50))
+- Update Chefstyle to 0.13.3 [\#465](https://github.com/test-kitchen/kitchen-ec2/pull/465) ([tas50](https://github.com/tas50))
+- Adds Windows Server 2019 \(and tests\) [\#462](https://github.com/test-kitchen/kitchen-ec2/pull/462) ([mbaitelman](https://github.com/mbaitelman))
+- \#394: Check subnet\_filter as well when creating security group [\#413](https://github.com/test-kitchen/kitchen-ec2/pull/413) ([llibicpep](https://github.com/llibicpep))
+
 ## [v3.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.1.0) (2019-08-07)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.0.1..v3.1.0)
 
