@@ -694,8 +694,8 @@ describe Kitchen::Driver::Ec2 do
         before do
           config.delete(:subnet_id)
           config[:subnet_filter] = {
-            :tag => "foo",
-            :value => "bar",
+            tag: "foo",
+            value: "bar",
           }
           expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "tag:foo", values: ["bar"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
           expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
