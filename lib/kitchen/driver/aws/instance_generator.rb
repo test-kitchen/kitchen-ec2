@@ -96,7 +96,7 @@ module Kitchen
               security_group = client.describe_security_groups(r).security_groups
 
               if security_group.any?
-                security_groups.push(security_group[0].group_id)
+                security_group.each { |sg| security_groups.push(sg.group_id) }
               else
                 raise "A Security Group matching the following filter could not be found:\n#{sg_filter}"
               end
