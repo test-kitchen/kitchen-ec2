@@ -33,6 +33,6 @@ Gem::Specification.new do |gem|
   # style and complexity libraries are tightly version pinned as newer releases
   # may introduce new and undesireable style choices which would be immediately
   # enforced in CI
-  gem.add_development_dependency "chefstyle", "= 0.13.3"
+  gem.add_development_dependency "chefstyle", "= 0.14.0"
   gem.add_development_dependency "climate_control"
 end
