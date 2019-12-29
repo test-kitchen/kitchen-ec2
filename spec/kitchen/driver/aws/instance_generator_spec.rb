@@ -25,7 +25,7 @@ require "aws-sdk-ec2"
 
 describe Kitchen::Driver::Aws::InstanceGenerator do
 
-  let(:config) { {} }
+  let(:config) { { region: "us-east-1" } }
   let(:resource) { instance_double(Aws::EC2::Resource) }
   let(:ec2) { instance_double(Kitchen::Driver::Aws::Client, resource: resource) }
   let(:logger) { instance_double(Logger) }
@@ -76,6 +76,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       subnets: [
         {
           subnet_id: "s-123",
+          vpc_id: "vpc-456",
           tags: [{ key: "foo", value: "bar" }],
         },
       ]
@@ -105,6 +106,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when populated with minimum requirements" do
       let(:config) do
         {
+          region: "us-east-1",
           instance_type: "micro",
           ebs_optimized: true,
           image_id: "ami-123",
@@ -128,6 +130,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when populated with ssh key" do
       let(:config) do
         {
+          region: "us-east-1",
           instance_type: "micro",
           ebs_optimized: true,
           image_id: "ami-123",
@@ -204,6 +207,10 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               name: "tag:foo",
               values: ["bar"],
             },
+            {
+              name: "vpc-id",
+              values: ["vpc-456"],
+            },
           ]
         ).and_return(ec2_stub.describe_security_groups)
         expect(generator.ec2_instance_data[:security_group_ids]).to eq(["sg-123"])
@@ -212,6 +219,16 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
 
     context "when provided a non existing security_group tag filter" do
       ec2_stub_whithout_security_group = Aws::EC2::Client.new(stub_responses: true)
+      ec2_stub_whithout_security_group.stub_responses(
+        :describe_subnets,
+        subnets: [
+          {
+            subnet_id: "s-123",
+            vpc_id: "vpc-456",
+            tags: [{ key: "foo", value: "bar" }],
+          },
+        ]
+      )
 
       let(:config) do
         {
@@ -237,6 +254,10 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               name: "tag:foo",
               values: ["bar"],
             },
+            {
+              name: "vpc-id",
+              values: ["vpc-456"],
+            },
           ]
         ).and_return(ec2_stub_whithout_security_group.describe_security_groups)
 
@@ -249,6 +270,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when passed an empty block_device_mappings" do
       let(:config) do
         {
+          region: "us-east-1",
           instance_type: "micro",
           ebs_optimized: true,
           image_id: "ami-123",
@@ -416,6 +438,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when subnet_id is provided" do
       let(:config) do
         {
+          region: "us-east-1",
           subnet_id: "s-456",
         }
       end
@@ -435,6 +458,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when associate_public_ip is provided" do
       let(:config) do
         {
+          region: "us-east-1",
           associate_public_ip: true,
         }
       end
@@ -458,6 +482,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       context "and subnet is provided" do
         let(:config) do
           {
+            region: "us-east-1",
             associate_public_ip: true,
             subnet_id: "s-456",
           }
@@ -483,6 +508,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       context "and security_group_ids is provided" do
         let(:config) do
           {
+            region: "us-east-1",
             associate_public_ip: true,
             security_group_ids: ["sg-789"],
           }
@@ -522,6 +548,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       context "and private_ip_address is provided" do
         let(:config) do
           {
+            region: "us-east-1",
             associate_public_ip: true,
             private_ip_address: "0.0.0.0",
           }
@@ -548,6 +575,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     context "when provided the maximum config" do
       let(:config) do
         {
+          region: "eu-west-1",
           availability_zone: "eu-west-1a",
           instance_type: "micro",
           ebs_optimized: true,

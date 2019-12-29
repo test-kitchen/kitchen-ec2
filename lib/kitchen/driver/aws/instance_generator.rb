@@ -43,25 +43,26 @@ module Kitchen
         # can be passed in null, others need to be ommitted if they are null
         def ec2_instance_data # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
           # Support for looking up security group id and subnet id using tags.
-
+          vpc_id = nil
+          client = ::Aws::EC2::Client.new(region: config[:region])
           if config[:subnet_id].nil? && config[:subnet_filter]
-            config[:subnet_id] = ::Aws::EC2::Client
-              .new(region: config[:region]).describe_subnets(
-                filters: [
-                  {
-                    name: "tag:#{config[:subnet_filter][:tag]}",
-                    values: [config[:subnet_filter][:value]],
-                  },
-                ]
-              )[0][0].subnet_id
+            subnets = client.describe_subnets(
+              filters: [
+                {
+                  name: "tag:#{config[:subnet_filter][:tag]}",
+                  values: [config[:subnet_filter][:value]],
+                },
+              ]
+            ).subnets
+            raise "The subnet tagged '#{config[:subnet_filter][:tag]}:#{config[:subnet_filter][:value]}' does not exist!" unless subnets.any?
 
-            if config[:subnet_id].nil?
-              raise "The subnet tagged '#{config[:subnet_filter][:tag]}\
-              #{config[:subnet_filter][:value]}' does not exist!"
-            end
+            vpc_id = subnets[0].vpc_id
+            config[:subnet_id] = subnets[0].subnet_id
           end
 
           if config[:security_group_ids].nil? && config[:security_group_filter]
+            # => Grab the VPC in the case a Subnet ID rather than Filter was set
+            vpc_id ||= client.describe_subnets(subnet_ids: [config[:subnet_id]]).subnets[0].vpc_id
             security_groups = []
             filters = [config[:security_group_filter]].flatten
             filters.each do |sg_filter|
@@ -72,6 +73,10 @@ module Kitchen
                     name: "group-name",
                     values: [sg_filter[:name]],
                   },
+                  {
+                    name: "vpc-id",
+                    values: [vpc_id],
+                  },
                 ]
               end
 
@@ -81,13 +86,17 @@ module Kitchen
                     name: "tag:#{sg_filter[:tag]}",
                     values: [sg_filter[:value]],
                   },
+                  {
+                    name: "vpc-id",
+                    values: [vpc_id],
+                  },
                 ]
               end
 
-              security_group = ::Aws::EC2::Client.new(region: config[:region]).describe_security_groups(r)[0][0]
+              security_group = client.describe_security_groups(r).security_groups
 
-              if security_group
-                security_groups.push(security_group.group_id)
+              if security_group.any?
+                security_group.each { |sg| security_groups.push(sg.group_id) }
               else
                 raise "A Security Group matching the following filter could not be found:\n#{sg_filter}"
               end
