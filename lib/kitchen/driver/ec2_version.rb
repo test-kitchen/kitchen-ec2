@@ -2,7 +2,7 @@
 #
 # Author:: Fletcher Nichol (<fnichol@nichol.ca>)
 #
-# Copyright:: 2016-2018, Chef Software, Inc.
+# Copyright:: 2016-2020, Chef Software, Inc.
 # Copyright:: 2012-2018, Fletcher Nichol
 #
 # Licensed under the Apache License, Version 2.0 (the "License");

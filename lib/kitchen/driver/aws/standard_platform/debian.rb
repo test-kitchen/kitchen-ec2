@@ -13,7 +13,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "kitchen/driver/aws/standard_platform"
+require_relative "../standard_platform"
 
 module Kitchen
   module Driver
