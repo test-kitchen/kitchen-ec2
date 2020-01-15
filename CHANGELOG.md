@@ -1,5 +1,13 @@
 # Change Log
 
+## [v3.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.3.0) (2020-01-20)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.2.0..v3.3.0)
+
+- Ignore case when checking if the instance provisioner is Chef [\#474](https://github.com/test-kitchen/kitchen-ec2/pull/474) ([slapvanilla](https://github.com/slapvanilla))
+- Enhancements: Security Group Search & Spot Instance Provisioning [\#470](https://github.com/test-kitchen/kitchen-ec2/pull/470) ([bdwyertech](https://github.com/bdwyertech))
+- Update chefstyle requirement from = 0.13.3 to = 0.14.0 [\#472](https://github.com/test-kitchen/kitchen-ec2/pull/472) ([tas50](https://github.com/tas50))
+- Use require_relative instead of require [\#478](https://github.com/test-kitchen/kitchen-ec2/pull/478) ([tas50](https://github.com/tas50))
+
 ## [v3.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.2.0) (2019-09-17)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.1.0..v3.2.0)
 
