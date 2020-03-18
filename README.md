@@ -446,7 +446,6 @@ driver:
   security_group_ids: ["sg-1a2b3c4d"]
   region: us-west-2
   availability_zone: b
-  require_chef_omnibus: true
   subnet_id: subnet-6e5d4c3b
   iam_profile_name: chef-client
   instance_type: m3.medium
