@@ -6,5 +6,4 @@ gemspec
 group :test do
   gem "rake"
   gem "pry"
-  gem "chefstyle"
 end
