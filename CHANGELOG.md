@@ -1,5 +1,10 @@
 # Change Log
 
+## [v3.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.4.0) (2020-03-18)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.3.0..v3.4.0)
+
+- Don't crash upon destroy if instance is already dead [\#482](https://github.com/test-kitchen/kitchen-ec2/pull/482) ([kamaradclimber](https://github.com/kamaradclimber))
+
 ## [v3.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.3.0) (2020-01-20)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.2.0..v3.3.0)
 
