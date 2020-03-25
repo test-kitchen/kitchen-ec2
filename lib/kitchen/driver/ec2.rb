@@ -446,6 +446,7 @@ module Kitchen
       end
 
       def submit_spots(state)
+        instance_generator.subnet_filter_to_subnet_ids
         configs = [config]
         expanded = []
         keys = %i{instance_type subnet_id}

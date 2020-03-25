@@ -39,10 +39,8 @@ module Kitchen
           @logger = logger
         end
 
-        # Transform the provided config into the hash to send to AWS.  Some fields
-        # can be passed in null, others need to be ommitted if they are null
-        def ec2_instance_data # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
-          # Support for looking up security group id and subnet id using tags.
+        # Query AWS for subnet_ids matching subnet_filter config.
+        def subnet_filter_to_subnet_ids
           vpc_id = nil
           client = ::Aws::EC2::Client.new(region: config[:region])
           if config[:subnet_id].nil? && config[:subnet_filter]
@@ -57,7 +55,20 @@ module Kitchen
             raise "The subnet tagged '#{config[:subnet_filter][:tag]}:#{config[:subnet_filter][:value]}' does not exist!" unless subnets.any?
 
             vpc_id = subnets[0].vpc_id
-            config[:subnet_id] = subnets[0].subnet_id
+            # Return array of subnets matching vpc_id.
+            config[:subnet_id] = subnets.find_all { |s| s.vpc_id == vpc_id }.map(&:subnet_id)
+          end
+        end
+
+        # Transform the provided config into the hash to send to AWS.  Some fields
+        # can be passed in null, others need to be ommitted if they are null
+        def ec2_instance_data # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+          # Support for looking up security group id and subnet id using tags.
+          vpc_id = nil
+          client = ::Aws::EC2::Client.new(region: config[:region])
+          if config[:subnet_id].nil? && config[:subnet_filter]
+            subnet_filter_to_subnet_ids
+            config[:subnet_id] = config[:subnet_id].first
           end
 
           if config[:security_group_ids].nil? && config[:security_group_filter]
