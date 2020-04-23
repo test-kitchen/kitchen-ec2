@@ -56,8 +56,10 @@ module Kitchen
             ).subnets
             raise "The subnet tagged '#{config[:subnet_filter][:tag]}:#{config[:subnet_filter][:value]}' does not exist!" unless subnets.any?
 
-            vpc_id = subnets[0].vpc_id
-            config[:subnet_id] = subnets[0].subnet_id
+            # => Select the least-populated subnet if we have multiple matches
+            subnet = subnets.sort_by { |s| s[:available_ip_address_count] }.last
+            vpc_id = subnet.vpc_id
+            config[:subnet_id] = subnet.subnet_id
           end
 
           if config[:security_group_ids].nil? && config[:security_group_filter]
