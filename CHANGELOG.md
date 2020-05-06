@@ -1,5 +1,11 @@
 # Change Log
 
+## [v3.5.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.5.0) (2020-05-06)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.4.0..v3.5.0)
+
+- Select the least-populated subnet if we have multiple matches. This should help to distribute the test-kitchen load more evenly across multi-az VPC's while maintaining full backward compatibility. [\#489](https://github.com/test-kitchen/kitchen-ec2/pull/489) ([bdwyertech](https://github.com/bdwyertech))
+- Readme example cleanup [\#484](https://github.com/test-kitchen/kitchen-ec2/pull/484) ([arothian](https://github.com/arothian))
+
 ## [v3.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.4.0) (2020-03-18)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.3.0..v3.4.0)
 
