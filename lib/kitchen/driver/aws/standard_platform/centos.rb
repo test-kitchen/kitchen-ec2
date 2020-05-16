@@ -23,6 +23,8 @@ module Kitchen
         class Centos < StandardPlatform
           StandardPlatform.platforms["centos"] = self
 
+          # default username for this platform's ami
+          # @return [String]
           def username
             # Centos 6.x images use root as the username (but the "centos 6"
             # updateable image uses "centos")

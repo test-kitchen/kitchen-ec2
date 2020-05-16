@@ -23,6 +23,8 @@ module Kitchen
         class Windows < StandardPlatform
           StandardPlatform.platforms["windows"] = self
 
+          # default username for this platform's ami
+          # @return [String]
           def username
             "administrator"
           end
