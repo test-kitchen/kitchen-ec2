@@ -23,6 +23,8 @@ module Kitchen
         class Amazon2 < StandardPlatform
           StandardPlatform.platforms["amazon2"] = self
 
+          # default username for this platform's ami
+          # @return [String]
           def username
             "ec2-user"
           end

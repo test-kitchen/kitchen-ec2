@@ -34,6 +34,8 @@ module Kitchen
             10 => "buster",
           }.freeze
 
+          # default username for this platform's ami
+          # @return [String]
           def username
             "admin"
           end

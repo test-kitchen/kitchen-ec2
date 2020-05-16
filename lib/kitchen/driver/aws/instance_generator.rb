@@ -39,8 +39,10 @@ module Kitchen
           @logger = logger
         end
 
-        # Transform the provided config into the hash to send to AWS.  Some fields
+        # Transform the provided kitchen config into the hash we'll use to create the aws instance
         # can be passed in null, others need to be ommitted if they are null
+        # Some fields can be passed in null, others need to be ommitted if they are null
+        # @return [Hash]
         def ec2_instance_data # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
           # Support for looking up security group id and subnet id using tags.
           vpc_id = nil
