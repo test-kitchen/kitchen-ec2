@@ -16,7 +16,7 @@ Gem::Specification.new do |gem|
   gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR).grep(/LICENSE|^lib/)
   gem.require_paths = ["lib"]
 
-  gem.required_ruby_version = ">= 2.3"
+  gem.required_ruby_version = ">= 2.4"
 
   gem.add_dependency "test-kitchen", ">= 1.4.1", "< 3"
   gem.add_dependency "excon"
@@ -33,6 +33,6 @@ Gem::Specification.new do |gem|
   # style and complexity libraries are tightly version pinned as newer releases
   # may introduce new and undesireable style choices which would be immediately
   # enforced in CI
-  gem.add_development_dependency "chefstyle", "= 0.15.1"
+  gem.add_development_dependency "chefstyle", "= 1.0.5"
   gem.add_development_dependency "climate_control"
 end
