@@ -1,5 +1,11 @@
 # Change Log
 
+## [v3.6.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.6.0) (2020-05-17)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.5.0..v3.6.0)
+
+- Remove support for EOL Ruby 2.3 [#491](https://github.com/test-kitchen/kitchen-ec2/pull/491) ([tas50](https://github.com/tas50))
+- Make Debian 10 the Debian default [#492](https://github.com/test-kitchen/kitchen-ec2/pull/492) ([tas50](https://github.com/tas50))
+
 ## [v3.5.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.5.0) (2020-05-06)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.4.0..v3.5.0)
 
