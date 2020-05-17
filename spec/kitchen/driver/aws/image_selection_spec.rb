@@ -112,7 +112,11 @@ describe "Default images for various platforms" do
 
     "debian" => [
       { name: "owner-id", values: %w{379101102735} },
-      { name: "name", values: %w{debian-stretch-*} },
+      { name: "name", values: %w{debian-buster-*} },
+    ],
+    "debian-10" => [
+      { name: "owner-id", values: %w{379101102735} },
+      { name: "name", values: %w{debian-buster-*} },
     ],
     "debian-9" => [
       { name: "owner-id", values: %w{379101102735} },
@@ -136,7 +140,7 @@ describe "Default images for various platforms" do
     ],
     "debian-x86_64" => [
       { name: "owner-id", values: %w{379101102735} },
-      { name: "name", values: %w{debian-stretch-*} },
+      { name: "name", values: %w{debian-buster-*} },
       { name: "architecture", values: %w{x86_64} },
     ],
     "debian-6-x86_64" => [
