@@ -35,6 +35,18 @@ describe Kitchen::Driver::Ec2 do
       security_group_ids: ["sg-56789"],
     }
   end
+  let(:tag_spec) do
+    [
+      {
+        resource_type: "instance",
+        tags: [ { key: "created-by", value: "test-kitchen" } ],
+      },
+      {
+        resource_type: "volume",
+        tags: [ { key: "created-by", value: "test-kitchen" } ],
+      },
+    ]
+  end
   let(:platform)      { Kitchen::Platform.new(name: "fooos-99") }
   let(:transport)     { Kitchen::Transport::Dummy.new }
   let(:provisioner)   { Kitchen::Provisioner::Dummy.new }
@@ -230,7 +242,7 @@ describe Kitchen::Driver::Ec2 do
 
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
-      expect(client).to receive(:create_instance).with(min_count: 1, max_count: 1, tag_specifications: anything)
+      expect(client).to receive(:create_instance).with(min_count: 1, max_count: 1, tag_specifications: tag_spec)
       driver.submit_server
     end
   end
@@ -246,7 +258,7 @@ describe Kitchen::Driver::Ec2 do
         instance_initiated_shutdown_behavior: "terminate"
       )
       expect(client).to receive(:create_instance).with(
-        min_count: 1, max_count: 1, instance_initiated_shutdown_behavior: "terminate", tag_specifications: anything
+        min_count: 1, max_count: 1, instance_initiated_shutdown_behavior: "terminate", tag_specifications: tag_spec
       )
       driver.submit_server
     end
@@ -816,6 +828,38 @@ describe Kitchen::Driver::Ec2 do
 
         include_examples "common create"
       end
+    end
+
+    context "and setting tags" do
+      let(:tag_spec) do
+        [
+          {
+            resource_type: "instance",
+            tags: [
+              { key: "string", value: "a_string" },
+              { key: "integer", value: "1" },
+            ],
+          },
+          {
+            resource_type: "volume",
+            tags: [
+              { key: "string", value: "a_string" },
+              { key: "integer", value: "1" },
+            ],
+          },
+        ]
+      end
+
+      before do
+        config[:tags] = {
+          "string" => "a_string",
+          "integer" => 1,
+        }
+        expect(generator).to receive(:ec2_instance_data).and_return({})
+        expect(client).to receive(:create_instance).with(max_count: 1, min_count: 1, tag_specifications: tag_spec).and_return(server)
+      end
+
+      include_examples "common create"
     end
   end
 
