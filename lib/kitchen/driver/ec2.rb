@@ -453,12 +453,11 @@ module Kitchen
         request_duration = config[:spot_wait]
         config_spot_price = config[:spot_price].to_s
         if %w{ondemand on-demand}.include?(config_spot_price)
-          spot_price = determine_current_on_demand_price
+          spot_price = ""
         else
           spot_price = config_spot_price
         end
         spot_options = {
-          max_price: spot_price,
           spot_instance_type: "persistent", # Cannot use one-time with valid_until
           valid_until: Time.now + request_duration,
           instance_interruption_behavior: "stop",
@@ -466,6 +465,10 @@ module Kitchen
         if config[:block_duration_minutes]
           spot_options[:block_duration_minutes] = config[:block_duration_minutes]
         end
+        unless spot_price == "" # i.e. on-demand
+          spot_options[:max_price] = spot_price
+        end
+
         instance_data[:instance_market_options] = {
           market_type: "spot",
           spot_options: spot_options,
@@ -485,10 +488,6 @@ module Kitchen
           info "Waited #{c}/#{t}s for spot request to become fulfilled."
           ec2.create_instance(instance_data)
         end
-      end
-
-      def determine_current_on_demand_price
-        "" # TODO @cwolfe this fails with create_instances()
       end
 
       # Normally we could use `server.wait_until_running` but we actually need

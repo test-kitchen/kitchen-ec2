@@ -264,7 +264,6 @@ describe Kitchen::Driver::Ec2 do
         instance_market_options: {
           market_type: "spot",
           spot_options: {
-            max_price: "", # TODO: @cwolfe
             spot_instance_type: "persistent",
             instance_interruption_behavior: "stop",
             valid_until: Time.now + config[:spot_wait],
