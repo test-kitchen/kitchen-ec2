@@ -115,7 +115,21 @@ module Kitchen
             key_name: config[:aws_ssh_key_id],
             subnet_id: config[:subnet_id],
             private_ip_address: config[:private_ip_address],
+            min_count: 1,
+            max_count: 1,
           }
+
+          if config[:tags] && !config[:tags].empty?
+            tags = config[:tags].map do |k, v|
+              # we convert the value to a string because
+              # nils should be passed as an empty String
+              # and Integers need to be represented as Strings
+              { key: k, value: v.to_s }
+            end
+            instance_tag_spec = { resource_type: "instance", tags: tags }
+            volume_tag_spec = { resource_type: "volume", tags: tags }
+            i[:tag_specifications] = [instance_tag_spec, volume_tag_spec]
+          end
 
           availability_zone = config[:availability_zone]
           if availability_zone

@@ -238,32 +238,16 @@ module Kitchen
           server.wait_until_exists(before_attempt: logging_proc)
         end
 
+        state[:server_id] = server.id
+        info("EC2 instance <#{state[:server_id]}> created.")
+
         # See https://github.com/aws/aws-sdk-ruby/issues/859
-        # Tagging can fail with a NotFound error even though we waited until the server exists
-        # Waiting can also fail, so we have to also retry on that. If it means we re-tag the
-        # instance, so be it.
-        # Tagging an instance is possible before volumes are attached. Tagging the volumes after
-        # instance creation is consistent.
+        # Waiting can fail, so we have to retry on that.
         Retryable.retryable(
           tries: 10,
           sleep: lambda { |n| [2**n, 30].min },
           on: ::Aws::EC2::Errors::InvalidInstanceIDNotFound
         ) do |r, _|
-          info("Attempting to tag the instance, #{r} retries")
-          tag_server(server)
-
-          # Get information about the AMI (image) used to create the image.
-          image_data = ec2.client.describe_images({ image_ids: [server.image_id] })[0][0]
-
-          state[:server_id] = server.id
-          info("EC2 instance <#{state[:server_id]}> created.")
-
-          # instance-store backed images do not have attached volumes, so only
-          # wait for the volumes to be ready if the instance EBS-backed.
-          if image_data.root_device_type == "ebs"
-            wait_until_volumes_ready(server, state)
-            tag_volumes(server)
-          end
           wait_until_ready(server, state)
         end
 
@@ -410,22 +394,6 @@ module Kitchen
           debug("- #{key} = #{value.inspect}")
         end
 
-        # TODO: @cwolfe DRY up push into instance generator
-        instance_data[:min_count] = 1
-        instance_data[:max_count] = 1
-
-        # TODO: @cwolfe DRY up push into instance generator
-        if config[:tags] && !config[:tags].empty?
-          tags = config[:tags].map do |k, v|
-            # we convert the value to a string because
-            # nils should be passed as an empty String
-            # and Integers need to be represented as Strings
-            { key: k, value: v.to_s }
-          end
-          instance_tag_spec = { resource_type: "instance", tags: tags }
-          volume_tag_spec = { resource_type: "volume", tags: tags }
-          instance_data[:tag_specifications] = [instance_tag_spec, volume_tag_spec]
-        end
         ec2.create_instance(instance_data)
       end
 
@@ -503,23 +471,6 @@ module Kitchen
           spot_options: spot_options,
         }
 
-        # TODO: @cwolfe move these to instance generator
-        instance_data[:min_count] = 1
-        instance_data[:max_count] = 1
-
-        # TODO: @cwolfe DRY up push into instance generator
-        if config[:tags] && !config[:tags].empty?
-          tags = config[:tags].map do |k, v|
-            # we convert the value to a string because
-            # nils should be passed as an empty String
-            # and Integers need to be represented as Strings
-            { key: k, value: v.to_s }
-          end
-          instance_tag_spec = { resource_type: "instance", tags: tags }
-          volume_tag_spec = { resource_type: "volume", tags: tags }
-          instance_data[:tag_specifications] = [instance_tag_spec, volume_tag_spec]
-        end
-
         # The preferred way to create a spot instance is via request_spot_instances()
         # However, it does not allow for tagging to occur at creation time.
         # create_instances() allows creation of tagged spot instances, but does
@@ -527,7 +478,7 @@ module Kitchen
         Retryable.retryable(
           tries: config[:spot_wait] / config[:retryable_sleep],
           sleep: lambda { |_n| config[:retryable_sleep] },
-          on: ::Aws::EC2::Errors::SpotMaxPriceTooLow,
+          on: ::Aws::EC2::Errors::SpotMaxPriceTooLow
         ) do |retries|
           c = retries * config[:retryable_sleep]
           t = config[:spot_wait]
@@ -538,46 +489,6 @@ module Kitchen
 
       def determine_current_on_demand_price
         "" # TODO @cwolfe this fails with create_instances()
-      end
-
-      def tag_server(server)
-        if config[:tags] && !config[:tags].empty?
-          tags = config[:tags].map do |k, v|
-            # we convert the value to a string because
-            # nils should be passed as an empty String
-            # and Integers need to be represented as Strings
-            { key: k.to_s, value: v.to_s }
-          end
-          server.create_tags(tags: tags)
-        end
-      end
-
-      def tag_volumes(server)
-        if config[:tags] && !config[:tags].empty?
-          tags = config[:tags].map do |k, v|
-            { key: k.to_s, value: v.to_s }
-          end
-          server.volumes.each do |volume|
-            volume.create_tags(tags: tags)
-          end
-        end
-      end
-
-      # Compares the requested volume count vs what has actually been set to be
-      # attached to the instance. The information requested through
-      # ec2.client.described_volumes is updated before the instance volume
-      # information.
-      def wait_until_volumes_ready(server, state)
-        wait_with_destroy(server, state, "volumes to be ready") do |aws_instance|
-          described_volume_count = 0
-          ready_volume_count = 0
-          if aws_instance.exists?
-            described_volume_count = ec2.client.describe_volumes(filters: [
-              { name: "attachment.instance-id", values: ["#{state[:server_id]}"] }]).volumes.length
-            aws_instance.volumes.each { ready_volume_count += 1 }
-          end
-          (described_volume_count > 0) && (described_volume_count == ready_volume_count)
-        end
       end
 
       # Normally we could use `server.wait_until_running` but we actually need
