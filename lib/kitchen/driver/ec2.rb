@@ -227,7 +227,7 @@ module Kitchen
 
         if config[:spot_price]
           # Spot instance when a price is set
-          server = with_request_limit_backoff(state) { submit_spots(state) }
+          server = with_request_limit_backoff(state) { submit_spots }
         else
           # On-demand instance
           server = with_request_limit_backoff(state) { submit_server }
@@ -296,13 +296,6 @@ module Kitchen
             rescue ::Aws::EC2::Errors::InvalidInstanceIDNotFound => e
               warn("Received #{e}, instance was probably already destroyed. Ignoring")
             end
-          end
-          if state[:spot_request_id]
-            debug("Deleting spot request <#{state[:server_id]}>")
-            ec2.client.cancel_spot_instance_requests(
-              spot_instance_request_ids: [state[:spot_request_id]]
-            )
-            state.delete(:spot_request_id)
           end
           # If we are going to clean up an automatic security group, we need
           # to wait for the instance to shut down. This slightly breaks the
@@ -409,15 +402,19 @@ module Kitchen
         @instance_generator = Aws::InstanceGenerator.new(config, ec2, instance.logger)
       end
 
-      # Fog AWS helper for creating the instance
+      # AWS helper for creating the instance
       def submit_server
         instance_data = instance_generator.ec2_instance_data
         debug("Creating EC2 instance in region #{config[:region]} with properties:")
         instance_data.each do |key, value|
           debug("- #{key} = #{value.inspect}")
         end
+
+        # TODO: @cwolfe DRY up push into instance generator
         instance_data[:min_count] = 1
         instance_data[:max_count] = 1
+
+        # TODO: @cwolfe DRY up push into instance generator
         if config[:tags] && !config[:tags].empty?
           tags = config[:tags].map do |k, v|
             # we convert the value to a string because
@@ -456,7 +453,7 @@ module Kitchen
         configs
       end
 
-      def submit_spots(state)
+      def submit_spots
         configs = [config]
         expanded = []
         keys = %i{instance_type subnet_id}
@@ -473,7 +470,7 @@ module Kitchen
         configs.each do |conf|
           begin
             @config = conf
-            return submit_spot(state)
+            return submit_spot
           rescue => e
             errs.append(e)
           end
@@ -481,47 +478,66 @@ module Kitchen
         raise ["Could not create a spot instance:", errs].flatten.join("\n")
       end
 
-      def submit_spot(state)
+      def submit_spot
         debug("Creating EC2 Spot Instance..")
+        instance_data = instance_generator.ec2_instance_data
 
-        spot_request_id = create_spot_request
-        # deleting the instance cancels the request, but deleting the request
-        # does not affect the instance
-        state[:spot_request_id] = spot_request_id
-        ec2.client.wait_until(
-          :spot_instance_request_fulfilled,
-          spot_instance_request_ids: [spot_request_id]
-        ) do |w|
-          w.max_attempts = config[:spot_wait] / config[:retryable_sleep]
-          w.delay = config[:retryable_sleep]
-          w.before_attempt do |attempts|
-            c = attempts * config[:retryable_sleep]
-            t = config[:spot_wait]
-            info "Waited #{c}/#{t}s for spot request <#{spot_request_id}> to become fulfilled."
-          end
-        end
-        ec2.get_instance_from_spot_request(spot_request_id)
-      end
-
-      def create_spot_request
         request_duration = config[:spot_wait]
         config_spot_price = config[:spot_price].to_s
         if %w{ondemand on-demand}.include?(config_spot_price)
-          spot_price = ""
+          spot_price = determine_current_on_demand_price
         else
           spot_price = config_spot_price
         end
-        request_data = {
-          spot_price: spot_price,
-          launch_specification: instance_generator.ec2_instance_data,
+        spot_options = {
+          max_price: spot_price,
+          spot_instance_type: "persistent", # Cannot use one-time with valid_until
           valid_until: Time.now + request_duration,
+          instance_interruption_behavior: "stop",
         }
         if config[:block_duration_minutes]
-          request_data[:block_duration_minutes] = config[:block_duration_minutes]
+          spot_options[:block_duration_minutes] = config[:block_duration_minutes]
+        end
+        instance_data[:instance_market_options] = {
+          market_type: "spot",
+          spot_options: spot_options,
+        }
+
+        # TODO: @cwolfe move these to instance generator
+        instance_data[:min_count] = 1
+        instance_data[:max_count] = 1
+
+        # TODO: @cwolfe DRY up push into instance generator
+        if config[:tags] && !config[:tags].empty?
+          tags = config[:tags].map do |k, v|
+            # we convert the value to a string because
+            # nils should be passed as an empty String
+            # and Integers need to be represented as Strings
+            { key: k, value: v.to_s }
+          end
+          instance_tag_spec = { resource_type: "instance", tags: tags }
+          volume_tag_spec = { resource_type: "volume", tags: tags }
+          instance_data[:tag_specifications] = [instance_tag_spec, volume_tag_spec]
         end
 
-        response = ec2.client.request_spot_instances(request_data)
-        response[:spot_instance_requests][0][:spot_instance_request_id]
+        # The preferred way to create a spot instance is via request_spot_instances()
+        # However, it does not allow for tagging to occur at creation time.
+        # create_instances() allows creation of tagged spot instances, but does
+        # not retry if the price could not be satisfied immediately.
+        Retryable.retryable(
+          tries: config[:spot_wait] / config[:retryable_sleep],
+          sleep: lambda { |_n| config[:retryable_sleep] },
+          on: ::Aws::EC2::Errors::SpotMaxPriceTooLow,
+        ) do |retries|
+          c = retries * config[:retryable_sleep]
+          t = config[:spot_wait]
+          info "Waited #{c}/#{t}s for spot request to become fulfilled."
+          ec2.create_instance(instance_data)
+        end
+      end
+
+      def determine_current_on_demand_price
+        "" # TODO @cwolfe this fails with create_instances()
       end
 
       def tag_server(server)
