@@ -22,17 +22,6 @@ require "support/fake_image"
 if ENV["CODECLIMATE_REPO_TOKEN"]
   require "codeclimate-test-reporter"
   CodeClimate::TestReporter.start
-elsif ENV["COVERAGE"]
-  require "simplecov"
-  SimpleCov.profiles.define "gem" do
-    command_name "Specs"
-
-    add_filter ".gem/"
-    add_filter "/spec/"
-
-    add_group "Libraries", "/lib/"
-  end
-  SimpleCov.start "gem"
 end
 
 RSpec.configure do |config|
