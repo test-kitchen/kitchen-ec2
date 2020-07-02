@@ -230,7 +230,7 @@ describe Kitchen::Driver::Ec2 do
 
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
-      expect(client).to receive(:create_instance).with(min_count: 1, max_count: 1)
+      expect(client).to receive(:create_instance)
       driver.submit_server
     end
   end
@@ -246,18 +246,13 @@ describe Kitchen::Driver::Ec2 do
         instance_initiated_shutdown_behavior: "terminate"
       )
       expect(client).to receive(:create_instance).with(
-        min_count: 1, max_count: 1, instance_initiated_shutdown_behavior: "terminate"
+        instance_initiated_shutdown_behavior: "terminate"
       )
       driver.submit_server
     end
   end
 
   describe "#submit_spot" do
-    let(:state) { {} }
-    let(:response) do
-      { spot_instance_requests: [{ spot_instance_request_id: "id" }] }
-    end
-
     before do
       expect(driver).to receive(:instance).at_least(:once).and_return(instance)
       allow(Time).to receive(:now).and_return(Time.now)
@@ -265,119 +260,18 @@ describe Kitchen::Driver::Ec2 do
 
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
-      expect(actual_client).to receive(:request_spot_instances).with(
-        spot_price: "",
-        launch_specification: {},
-        valid_until: Time.now + config[:spot_wait],
-        block_duration_minutes: 60
-      ).and_return(response)
-      expect(actual_client).to receive(:wait_until)
-      expect(client).to receive(:get_instance_from_spot_request).with("id")
-      driver.submit_spot(state)
-      expect(state).to eq(spot_request_id: "id")
-    end
-  end
-
-  describe "#tag_server" do
-    context "with no tags specified" do
-      it "does not raise" do
-        config[:tags] = nil
-        expect { driver.tag_server(server) }.not_to raise_error
-      end
-    end
-
-    context "with standard string tags" do
-      it "tags the server" do
-        config[:tags] = { key1: "value1", key2: "value2" }
-        expect(server).to receive(:create_tags).with(
-          tags: [
-            { key: "key1", value: "value1" },
-            { key: "key2", value: "value2" },
-          ]
-        )
-        driver.tag_server(server)
-      end
-      it "tags the server with String keys" do
-        config[:tags] = { key1: "value1", "key2" => "value2" }
-        expect(server).to receive(:create_tags).with(
-          tags: [
-            { key: "key1", value: "value1" },
-            { key: "key2", value: "value2" },
-          ]
-        )
-        driver.tag_server(server)
-      end
-    end
-
-    context "with a tag that includes a Integer value" do
-      it "tags the server" do
-        config[:tags] = { key1: "value1", key2: 1 }
-        expect(server).to receive(:create_tags).with(
-          tags: [
-            { key: "key1", value: "value1" },
-            { key: "key2", value: "1" },
-          ]
-        )
-        driver.tag_server(server)
-      end
-    end
-
-    context "with a tag that includes a Nil value" do
-      it "tags the server" do
-        config[:tags] = { key1: "value1", key2: nil }
-        expect(server).to receive(:create_tags).with(
-          tags: [
-            { key: "key1", value: "value1" },
-            { key: "key2", value: "" },
-          ]
-        )
-        driver.tag_server(server)
-      end
-    end
-  end
-
-  describe "#tag_volumes" do
-    let(:volume) { double("aws volume resource") }
-    before do
-      allow(server).to receive(:volumes).and_return([volume])
-    end
-    context "with standard string tags" do
-      it "tags the instance volumes" do
-        config[:tags] = { key1: "value1", key2: "value2" }
-        expect(volume).to receive(:create_tags).with(
-          tags: [
-            { key: "key1", value: "value1" },
-            { key: "key2", value: "value2" },
-          ]
-        )
-        driver.tag_volumes(server)
-      end
-    end
-
-    context "with a tag that includes a Integer value" do
-      it "tags the instance volumes" do
-        config[:tags] = { key1: "value1", key2: 2 }
-        expect(volume).to receive(:create_tags).with(
-          tags: [
-            { key: "key1", value: "value1" },
-            { key: "key2", value: "2" },
-          ]
-        )
-        driver.tag_volumes(server)
-      end
-    end
-
-    context "with a tag that includes a Nil value" do
-      it "tags the instance volumes" do
-        config[:tags] = { key1: "value1", key2: nil }
-        expect(volume).to receive(:create_tags).with(
-          tags: [
-            { key: "key1", value: "value1" },
-            { key: "key2", value: "" },
-          ]
-        )
-        driver.tag_volumes(server)
-      end
+      expect(client).to receive(:create_instance).with(
+        instance_market_options: {
+          market_type: "spot",
+          spot_options: {
+            spot_instance_type: "persistent",
+            instance_interruption_behavior: "stop",
+            valid_until: Time.now + config[:spot_wait],
+            block_duration_minutes: 60,
+          },
+        }
+      ).and_return(server)
+      driver.submit_spot
     end
   end
 
@@ -420,40 +314,6 @@ describe Kitchen::Driver::Ec2 do
         expect(aws_instance).to receive(:exists?).and_return(true)
         expect(aws_instance).to receive_message_chain("state.name").and_return("running")
         expect(driver.wait_until_ready(server, state)).to eq(true)
-      end
-    end
-  end
-
-  describe "#wait_until_volumes_ready" do
-    let(:aws_instance) { double("aws instance") }
-    let(:msg) { "volumes to be ready" }
-    let(:volume) { double("aws volume resource") }
-
-    before do
-      expect(driver).to receive(:wait_with_destroy).with(server, state, msg).and_yield(aws_instance)
-    end
-    it "first checks instance existence" do
-      expect(aws_instance).to receive(:exists?).and_return(false)
-      expect(driver.wait_until_volumes_ready(server, state)).to eq(false)
-    end
-    it "second, it checks for prescence of described volumes" do
-      expect(aws_instance).to receive(:exists?).and_return(true)
-      expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length).and_return(0)
-      expect(aws_instance).to receive(:volumes).and_return([])
-      expect(driver.wait_until_volumes_ready(server, state)).to eq(false)
-    end
-    it "third, it compares the described volumes and instance volumes" do
-      expect(aws_instance).to receive(:exists?).and_return(true)
-      expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length).and_return(2)
-      expect(aws_instance).to receive(:volumes).and_return([volume])
-      expect(driver.wait_until_volumes_ready(server, state)).to eq(false)
-    end
-    context "when it exists, and both client and instance agree on volumes" do
-      it "returns true" do
-        expect(aws_instance).to receive(:exists?).and_return(true)
-        expect(actual_client).to receive_message_chain(:describe_volumes, :volumes, :length).and_return(1)
-        expect(aws_instance).to receive(:volumes).and_return([volume])
-        expect(driver.wait_until_volumes_ready(server, state)).to eq(true)
       end
     end
   end
@@ -559,11 +419,7 @@ describe Kitchen::Driver::Ec2 do
       it "successfully creates and tags the instance" do
         expect(server).to receive(:wait_until_exists)
         expect(driver).to receive(:update_username)
-        expect(driver).to receive(:tag_server).with(server)
-        expect(driver).to receive(:tag_volumes).with(server)
-        expect(driver).to receive(:wait_until_volumes_ready).with(server, state)
         expect(driver).to receive(:wait_until_ready).with(server, state)
-        allow(actual_client).to receive(:describe_images).with({ image_ids: [server.image_id] }).and_return(ec2_stub)
         expect(transport).to receive_message_chain("connection.wait_until_ready")
         driver.create(state)
         expect(state[:server_id]).to eq(id)
@@ -596,7 +452,7 @@ describe Kitchen::Driver::Ec2 do
 
       context "price is numeric" do
         before do
-          expect(driver).to receive(:submit_spots).with(state).and_return(server)
+          expect(driver).to receive(:submit_spots).and_return(server)
         end
 
         include_examples "common create"
@@ -605,7 +461,7 @@ describe Kitchen::Driver::Ec2 do
       context "price is on-demand" do
         before do
           config[:spot_price] = "on-demand"
-          expect(driver).to receive(:submit_spots).with(state).and_return(server)
+          expect(driver).to receive(:submit_spots).and_return(server)
         end
 
         include_examples "common create"
@@ -614,7 +470,7 @@ describe Kitchen::Driver::Ec2 do
       context "instance_type is an array" do
         before do
           config[:instance_type] = %w{t1 t2}
-          expect(driver).to receive(:submit_spot).with(state).and_return(server)
+          expect(driver).to receive(:submit_spot).and_return(server)
         end
 
         include_examples "common create"
@@ -626,21 +482,6 @@ describe Kitchen::Driver::Ec2 do
 
           include_examples "common create"
         end
-      end
-    end
-
-    context "instance is not ebs-backed" do
-      before do
-        ec2_stub.images[0].root_device_type = "instance-store"
-      end
-
-      it "does not tag volumes or wait for volumes to be ready" do
-        expect(driver).to_not receive(:tag_volumes).with(server)
-        expect(driver).to_not receive(:wait_until_volumes_ready).with(server, state)
-      end
-
-      after do
-        ec2_stub.images[0].root_device_type = "ebs"
       end
     end
 
@@ -841,21 +682,6 @@ describe Kitchen::Driver::Ec2 do
         expect(client).to receive(:get_instance).with("id").and_return(server)
         expect(instance).to receive_message_chain("transport.connection.close")
         expect(server).to receive(:terminate)
-        driver.destroy(state)
-        expect(state).to eq({})
-      end
-    end
-
-    context "when state has a spot request" do
-      let(:state) { { server_id: "id", hostname: "name", spot_request_id: "spot" } }
-
-      it "destroys the server" do
-        expect(client).to receive(:get_instance).with("id").and_return(server)
-        expect(instance).to receive_message_chain("transport.connection.close")
-        expect(server).to receive(:terminate)
-        expect(actual_client).to receive(:cancel_spot_instance_requests).with(
-          spot_instance_request_ids: ["spot"]
-        )
         driver.destroy(state)
         expect(state).to eq({})
       end

@@ -99,7 +99,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         image_id: nil,
         key_name: nil,
         subnet_id: nil,
-        private_ip_address: nil
+        private_ip_address: nil,
+        max_count: 1,
+        min_count: 1
       )
     end
 
@@ -122,7 +124,42 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           image_id: "ami-123",
           key_name: nil,
           subnet_id: "s-456",
-          private_ip_address: "0.0.0.0"
+          private_ip_address: "0.0.0.0",
+          max_count: 1,
+          min_count: 1
+        )
+      end
+    end
+
+    context "when provided with tags" do
+      let(:config) do
+        {
+          region: "us-east-2",
+          tags: {
+            string_tag: "string",
+            integer_tag: 1,
+          },
+        }
+      end
+
+      it "includes tag specifications" do
+        expect(generator.ec2_instance_data).to include(
+          tag_specifications: [
+            {
+              resource_type: "instance",
+              tags: [
+                { key: :string_tag, value: "string" },
+                { key: :integer_tag, value: "1" },
+              ],
+            },
+            {
+              resource_type: "volume",
+              tags: [
+                { key: :string_tag, value: "string" },
+                { key: :integer_tag, value: "1" },
+              ],
+            },
+          ]
         )
       end
     end
@@ -147,7 +184,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           image_id: "ami-123",
           key_name: "key",
           subnet_id: "s-456",
-          private_ip_address: "0.0.0.0"
+          private_ip_address: "0.0.0.0",
+          max_count: 1,
+          min_count: 1
         )
       end
     end
@@ -288,7 +327,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           image_id: "ami-123",
           key_name: "key",
           subnet_id: "s-456",
-          private_ip_address: "0.0.0.0"
+          private_ip_address: "0.0.0.0",
+          max_count: 1,
+          min_count: 1
         )
       end
     end
@@ -308,7 +349,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           key_name: nil,
           subnet_id: nil,
           private_ip_address: nil,
-          placement: { availability_zone: "eu-west-1c" }
+          placement: { availability_zone: "eu-west-1c" },
+          max_count: 1,
+          min_count: 1
         )
       end
     end
@@ -328,7 +371,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           key_name: nil,
           subnet_id: nil,
           private_ip_address: nil,
-          placement: { availability_zone: "eu-east-1c" }
+          placement: { availability_zone: "eu-east-1c" },
+          max_count: 1,
+          min_count: 1
         )
       end
     end
@@ -346,7 +391,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           image_id: nil,
           key_name: nil,
           subnet_id: nil,
-          private_ip_address: nil
+          private_ip_address: nil,
+          max_count: 1,
+          min_count: 1
         )
       end
     end
@@ -367,6 +414,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           key_name: nil,
           subnet_id: nil,
           private_ip_address: nil,
+          max_count: 1,
+          min_count: 1,
           placement: { availability_zone: "eu-east-1c",
                        tenancy: "dedicated" }
         )
@@ -388,7 +437,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           key_name: nil,
           subnet_id: nil,
           private_ip_address: nil,
-          placement: { tenancy: "default" }
+          placement: { tenancy: "default" },
+          max_count: 1,
+          min_count: 1
         )
       end
     end
@@ -409,6 +460,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           key_name: nil,
           subnet_id: nil,
           private_ip_address: nil,
+          max_count: 1,
+          min_count: 1,
           placement: { availability_zone: "eu-east-1c",
                        tenancy: "dedicated" }
         )
@@ -430,7 +483,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           key_name: nil,
           subnet_id: nil,
           private_ip_address: nil,
-          placement: { tenancy: "default" }
+          placement: { tenancy: "default" },
+          max_count: 1,
+          min_count: 1
         )
       end
     end
@@ -450,7 +505,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           image_id: nil,
           key_name: nil,
           subnet_id: "s-456",
-          private_ip_address: nil
+          private_ip_address: nil,
+          max_count: 1,
+          min_count: 1
         )
       end
     end
@@ -475,7 +532,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
             device_index: 0,
             associate_public_ip_address: true,
             delete_on_termination: true,
-          }]
+          }],
+          max_count: 1,
+          min_count: 1
         )
       end
 
@@ -500,7 +559,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               associate_public_ip_address: true,
               delete_on_termination: true,
               subnet_id: "s-456",
-            }]
+            }],
+            max_count: 1,
+            min_count: 1
           )
         end
       end
@@ -527,7 +588,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               associate_public_ip_address: true,
               delete_on_termination: true,
               groups: ["sg-789"],
-            }]
+            }],
+            max_count: 1,
+            min_count: 1
           )
         end
 
@@ -566,7 +629,9 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               associate_public_ip_address: true,
               delete_on_termination: true,
               private_ip_address: "0.0.0.0",
-            }]
+            }],
+            max_count: 1,
+            min_count: 1
           )
         end
       end
@@ -599,6 +664,10 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           user_data: "foo",
           iam_profile_name: "iam-123",
           associate_public_ip: true,
+          tags: {
+            string_tag: "string",
+            integer_tag: 1,
+          },
         }
       end
 
@@ -630,7 +699,25 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
             private_ip_address: "0.0.0.0",
           }],
           placement: { availability_zone: "eu-west-1a" },
-          user_data: Base64.encode64("foo")
+          user_data: Base64.encode64("foo"),
+          max_count: 1,
+          min_count: 1,
+          tag_specifications: [
+            {
+              resource_type: "instance",
+              tags: [
+                { key: :string_tag, value: "string" },
+                { key: :integer_tag, value: "1" },
+              ],
+            },
+            {
+              resource_type: "volume",
+              tags: [
+                { key: :string_tag, value: "string" },
+                { key: :integer_tag, value: "1" },
+              ],
+            },
+          ]
         )
       end
     end

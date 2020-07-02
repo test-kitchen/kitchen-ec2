@@ -276,6 +276,7 @@ The Hash of EC tag name/value pairs which will be applied to the instance.
 
 The default is `{ "created-by" => "test-kitchen" }`.
 
+
 #### `user_data`
 
 The user_data script or the path to a script to feed the instance.
