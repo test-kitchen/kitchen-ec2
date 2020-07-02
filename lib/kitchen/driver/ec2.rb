@@ -424,7 +424,31 @@ module Kitchen
       def submit_spots
         configs = [config]
         expanded = []
-        keys = %i{instance_type subnet_id}
+        keys = %i{instance_type}
+
+        unless config[:subnet_filter]
+          # => Use explicitly specified subnets
+          keys << :subnet_id
+        else
+          # => Enable cascading through matching subnets
+          client = ::Aws::EC2::Client.new(region: config[:region])
+          subnets = client.describe_subnets(
+            filters: [
+              {
+                name: "tag:#{config[:subnet_filter][:tag]}",
+                values: [config[:subnet_filter][:value]],
+              },
+            ]
+          ).subnets
+          raise "A subnet matching '#{config[:subnet_filter][:tag]}:#{config[:subnet_filter][:value]}' does not exist!" unless subnets.any?
+
+          configs = subnets.map do |subnet|
+            new_config = config.clone
+            new_config[:subnet_id] = subnet.subnet_id
+            new_config[:subnet_filter] = nil
+            new_config
+          end
+        end
 
         keys.each do |key|
           configs.each do |conf|
