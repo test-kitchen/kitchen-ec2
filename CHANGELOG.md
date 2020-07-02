@@ -1,5 +1,10 @@
 # Change Log
 
+## [v3.7.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.7.0) (2020-07-02)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.6.0..v3.7.0)
+
+- Tag on-demand instances and volumes at creation time [#496](https://github.com/test-kitchen/kitchen-ec2/pull/496) ([clintoncwolfe](https://github.com/clintoncwolfe))
+
 ## [v3.6.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.6.0) (2020-05-17)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.5.0..v3.6.0)
 
