@@ -79,8 +79,12 @@ describe "Default images for various platforms" do
     ],
 
     "centos" => [
-      { name: "owner-alias", values: %w{aws-marketplace} },
-      { name: "name", values: ["CentOS Linux *", "CentOS-*-GA-*"] },
+      { name: "owner-id", values: %w{125523088429} },
+      { name: "name", values: ["CentOS *", "CentOS-*-GA-*"] },
+    ],
+    "centos-8" => [
+      { name: "owner-id", values: %w{125523088429} },
+      { name: "name", values: ["CentOS 8*", "CentOS-8*-GA-*"] },
     ],
     "centos-7" => [
       { name: "owner-alias", values: %w{aws-marketplace} },
@@ -98,8 +102,8 @@ describe "Default images for various platforms" do
       { name: "product-code", values: ["6x5jmcajty9edm3f211pqjfn2"] },
     ],
     "centos-x86_64" => [
-      { name: "owner-alias", values: %w{aws-marketplace} },
-      { name: "name", values: ["CentOS Linux *", "CentOS-*-GA-*"] },
+      { name: "owner-id", values: %w{125523088429} },
+      { name: "name", values: ["CentOS *", "CentOS-*-GA-*"] },
       { name: "architecture", values: %w{x86_64} },
     ],
     "centos-6.3-x86_64" => [
