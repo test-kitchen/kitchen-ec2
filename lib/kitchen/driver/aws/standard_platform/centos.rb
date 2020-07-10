@@ -23,6 +23,13 @@ module Kitchen
         class Centos < StandardPlatform
           StandardPlatform.platforms["centos"] = self
 
+          PRODUCT_CODES = {
+            "6" => "6x5jmcajty9edm3f211pqjfn2",
+            "7" => "aw0evgkw8e5c1q413zgy5pjce",
+            # It appears that v8 is not published to the
+            # AWS marketplace and hence does not have a product code
+          }.freeze
+
           # default username for this platform's ami
           # @return [String]
           def username
@@ -38,6 +45,14 @@ module Kitchen
               "owner-alias" => "aws-marketplace",
               "name" => ["CentOS Linux #{version}*", "CentOS-#{version}*-GA-*"],
             }
+            # Additionally filter on product code if known for major version to
+            # avoid non-official AMIs
+            # https://github.com/test-kitchen/kitchen-ec2/issues/456
+            if version
+              PRODUCT_CODES.keys.each do |major_version|
+                search["product-code"] = PRODUCT_CODES[major_version] if version.start_with?(major_version)
+              end
+            end
             search["architecture"] = architecture if architecture
             search
           end
