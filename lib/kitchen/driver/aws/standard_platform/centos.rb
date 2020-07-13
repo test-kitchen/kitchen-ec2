@@ -23,6 +23,14 @@ module Kitchen
         class Centos < StandardPlatform
           StandardPlatform.platforms["centos"] = self
 
+          CENTOS_OWNER_ID = "125523088429".freeze
+          PRODUCT_CODES = {
+            "6" => "6x5jmcajty9edm3f211pqjfn2",
+            "7" => "aw0evgkw8e5c1q413zgy5pjce",
+            # It appears that v8 is not published to the
+            # AWS marketplace and hence does not have a product code
+          }.freeze
+
           # default username for this platform's ami
           # @return [String]
           def username
@@ -34,10 +42,25 @@ module Kitchen
           end
 
           def image_search
+            # Version 8+ are published directly, not to the AWS marketplace. Use OWNER ID.
             search = {
-              "owner-alias" => "aws-marketplace",
-              "name" => ["CentOS Linux #{version}*", "CentOS-#{version}*-GA-*"],
+              "owner-id" => CENTOS_OWNER_ID,
+              "name" => ["CentOS #{version}*", "CentOS-#{version}*-GA-*"],
             }
+
+            if version && version.split(".").first.to_i < 8
+              # Versions <8 are published to the AWS marketplace and use a different naming convention
+              search = {
+                "owner-alias" => "aws-marketplace",
+                "name" => ["CentOS Linux #{version}*", "CentOS-#{version}*-GA-*"],
+              }
+              # For versions published to aws-marketplace, additionally filter on product code to
+              # avoid non-official AMIs. Can't use CentOS owner ID here, as the owner ID is that of aws marketplace.
+              # https://github.com/test-kitchen/kitchen-ec2/issues/456
+              PRODUCT_CODES.keys.each do |major_version|
+                search["product-code"] = PRODUCT_CODES[major_version] if version.start_with?(major_version)
+              end
+            end
             search["architecture"] = architecture if architecture
             search
           end
