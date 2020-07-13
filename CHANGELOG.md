@@ -1,5 +1,12 @@
 # Change Log
 
+## [v3.7.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.7.1) (2020-07-13)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.7.0..v3.7.1)
+
+- Improvements to CentOS Image search [#502](https://github.com/test-kitchen/kitchen-ec2/pull/502) ([clintoncwolfe](https://github.com/clintoncwolfe))
+- Spot Instances - Cascading Subnet Filter Support [#499](https://github.com/test-kitchen/kitchen-ec2/pull/499) ([bdwyertech](https://github.com/bdwyertech))
+- Remove excon and multi-json deps [#500](https://github.com/test-kitchen/kitchen-ec2/pull/500) ([tas50](https://github.com/tas50))
+
 ## [v3.7.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.7.0) (2020-07-02)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.6.0..v3.7.0)
 
