@@ -318,7 +318,6 @@ Hence, use a policy like below when using this option:
 
 See [AWS documentation](https://aws.amazon.com/de/blogs/security/granting-permission-to-launch-ec2-instances-with-iam-roles-passrole-permission/) for more details.
 
-
 #### `spot_price`
 
 The price you bid in order to submit a spot request. An additional step will be required during the spot request process submission. If no price is set, it will use an on-demand instance. It accepts `on-demand` string in which case the price is the current on-demand price.
@@ -349,6 +348,26 @@ The default is `ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]`.  If you have these env
 #### `ssl_verify_peer`
 
 If you need to turn off ssl certificate verification for HTTP calls made to AWS, set `ssl_verify_peer: false`.
+
+#### `retryable_tries`
+
+The `retryable_tries` propery allows you to set the number of retries to try when creating a new instance.
+Combines with `retryable_sleep`.
+
+The default is `60`.
+
+#### `retryable_sleep`
+
+The `retryable_sleep` propery sets how long to wait between tries when creating a new instance.
+Combines with `retryable_tries`.
+
+The default is `5`.
+
+#### `skip_cost_warning`
+
+The `skip_cost_warning` property allows for supressing the message that the instance will not be covered within the AWS free-tier.
+
+The default is `false`.
 
 ### Disk Configuration
 
