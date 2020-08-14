@@ -61,7 +61,7 @@
 ## [v3.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.0.0) (2019-05-01)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.4.0..v3.0.0)
 
-- Switch from the monolithic aws-sdk-v2 to the just aws-sdk-ec2 aka aws-sdk-v3. This greatly reduces the number of dependencies necessary for this plugin, but is a major change that makes it incompatible with older released of Chef-DK that require aws-sdk-v2.
+- Switch from the monolithic aws-sdk-v2 to the just aws-sdk-ec2 aka aws-sdk-v3. This greatly reduces the number of dependencies necessary for this plugin, but is a major change that makes it incompatible with older released of ChefDK that require aws-sdk-v2.
 - Require Ruby 2.3 or later as Ruby 2.2 is now EOL
 - Loosen the dependency on Test Kitchen to allow this plugin to work with Test Kitchen 2.0
 - Fix hostname detection to not fail when the system doesn't have a public IP. Thanks [@niekrasp](https://github.com/niekrasp)
@@ -297,7 +297,7 @@
 
 **Closed issues:**
 
-- Requesting to include this plug-in in Chefdk [\#218](https://github.com/test-kitchen/kitchen-ec2/issues/218)
+- Requesting to include this plug-in in ChefDK [\#218](https://github.com/test-kitchen/kitchen-ec2/issues/218)
 - Can't ssh to instance after it's created [\#217](https://github.com/test-kitchen/kitchen-ec2/issues/217)
 - No installation instructions [\#216](https://github.com/test-kitchen/kitchen-ec2/issues/216)
 - availability\_zone is always b [\#215](https://github.com/test-kitchen/kitchen-ec2/issues/215)

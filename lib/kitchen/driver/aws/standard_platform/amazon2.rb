@@ -39,7 +39,7 @@ module Kitchen
           end
 
           def self.from_image(driver, image)
-            if image.name =~ /amzn2-ami/i
+            if /amzn2-ami/i.match?(image.name)
               image.name =~ /\b(\d+(\.\d+[\.\d])?)/i
               new(driver, "amazon2", (Regexp.last_match || [])[1], image.architecture)
             end

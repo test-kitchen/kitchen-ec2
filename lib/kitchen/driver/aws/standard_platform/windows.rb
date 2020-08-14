@@ -70,7 +70,7 @@ module Kitchen
           end
 
           def self.from_image(driver, image)
-            if image.name =~ /Windows/i
+            if /Windows/i.match?(image.name)
               # 2008 R2 SP2
               if image.name =~ /(\b\d+)\W*(r\d+)?/i
                 major, revision = (Regexp.last_match || [])[1], (Regexp.last_match || [])[2]

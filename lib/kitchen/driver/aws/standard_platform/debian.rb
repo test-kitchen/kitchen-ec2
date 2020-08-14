@@ -60,7 +60,7 @@ module Kitchen
           end
 
           def self.from_image(driver, image)
-            if image.name =~ /debian/i
+            if /debian/i.match?(image.name)
               image.name =~ /\b(\d+|#{DEBIAN_CODENAMES.values.join("|")})\b/i
               version = (Regexp.last_match || [])[1]
               if version && version.to_i == 0

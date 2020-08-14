@@ -75,7 +75,7 @@ module Kitchen
           end
 
           def self.from_image(driver, image)
-            if image.name =~ /centos/i
+            if /centos/i.match?(image.name)
               image.name =~ /\b(\d+(\.\d+)?)\b/i
               new(driver, "centos", (Regexp.last_match || [])[1], image.architecture)
             end
