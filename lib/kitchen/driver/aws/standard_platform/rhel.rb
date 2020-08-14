@@ -50,6 +50,13 @@ module Kitchen
               new(driver, "rhel", (Regexp.last_match || [])[1], image.architecture)
             end
           end
+
+          def sort_by_version(images)
+            # First do a normal version sort
+            super(images)
+            # Now sort again, shunning Beta releases.
+            prefer(images) { |image| !image.name.match(/_Beta-/i) }
+          end
         end
       end
     end
