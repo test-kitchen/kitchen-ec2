@@ -132,7 +132,7 @@ module Kitchen
 
           availability_zone = config[:availability_zone]
           if availability_zone
-            if availability_zone =~ /^[a-z]$/i
+            if /^[a-z]$/i.match?(availability_zone)
               availability_zone = "#{config[:region]}#{availability_zone}"
             end
             i[:placement] = { availability_zone: availability_zone.downcase }
@@ -175,7 +175,7 @@ module Kitchen
           end
           availability_zone = config[:availability_zone]
           if availability_zone
-            if availability_zone =~ /^[a-z]$/i
+            if /^[a-z]$/i.match?(availability_zone)
               availability_zone = "#{config[:region]}#{availability_zone}"
             end
             i[:placement] = { availability_zone: availability_zone.downcase }

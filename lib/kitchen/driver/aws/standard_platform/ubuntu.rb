@@ -39,7 +39,7 @@ module Kitchen
           end
 
           def self.from_image(driver, image)
-            if image.name =~ /ubuntu/i
+            if /ubuntu/i.match?(image.name)
               image.name =~ /\b(\d+(\.\d+)?)\b/i
               new(driver, "ubuntu", (Regexp.last_match || [])[1], image.architecture)
             end

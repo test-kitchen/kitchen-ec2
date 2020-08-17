@@ -41,7 +41,7 @@ module Kitchen
           end
 
           def self.from_image(driver, image)
-            if image.name =~ /freebsd/i
+            if /freebsd/i.match?(image.name)
               image.name =~ /\b(\d+(\.\d+)?)\b/i
               new(driver, "freebsd", (Regexp.last_match || [])[1], image.architecture)
             end
