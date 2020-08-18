@@ -59,7 +59,7 @@ module Kitchen
       default_config :ebs_optimized,      false
       default_config :security_group_ids, nil
       default_config :security_group_filter, nil
-      default_config :security_group_cidr_ip, "0.0.0.0/0"
+      default_config :security_group_cidr_ips, ["0.0.0.0/0"]
       default_config :tags, "created-by" => "test-kitchen"
       default_config :user_data do |driver|
         if driver.windows_os?
@@ -785,7 +785,9 @@ module Kitchen
               ip_protocol: "tcp",
               from_port: port,
               to_port: port,
-              ip_ranges: [{ cidr_ip: config[:security_group_cidr_ip] }],
+              ip_ranges: config[:security_group_cidr_ips].map do |cidr_ip|
+                { cidr_ip: cidr_ip }
+              end
             }
           end
         )
