@@ -239,7 +239,7 @@ security_group_filter:
 
 #### `security_group_cidr_ips`
 
-The EC2 [security group][group_docs] ip(s), in CIDR block format, to use when creating the security group.
+An Array of EC2 [security group][group_docs] ip(s), in CIDR block format, to use when creating the security group.
 
 The default is ["0.0.0.0/0"].
 
