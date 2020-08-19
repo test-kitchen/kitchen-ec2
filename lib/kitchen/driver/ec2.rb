@@ -787,7 +787,7 @@ module Kitchen
               to_port: port,
               ip_ranges: config[:security_group_cidr_ips].map do |cidr_ip|
                 { cidr_ip: cidr_ip }
-              end
+              end,
             }
           end
         )
