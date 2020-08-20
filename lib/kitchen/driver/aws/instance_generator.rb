@@ -16,7 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "base64"
+require "base64" unless defined?(Base64)
 require "aws-sdk-ec2"
 
 module Kitchen

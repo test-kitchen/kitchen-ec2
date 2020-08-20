@@ -19,7 +19,7 @@ end
 desc "Run all quality tasks"
 task quality: %i{style stats}
 
-require "yard"
+require "yard" unless defined?(YARD)
 YARD::Rake::YardocTask.new
 
 task default: %i{test quality style}
