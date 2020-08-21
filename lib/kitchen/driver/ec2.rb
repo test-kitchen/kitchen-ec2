@@ -16,8 +16,8 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "benchmark"
-require "json"
+require "benchmark" unless defined?(Benchmark)
+require "json" unless defined?(JSON)
 require "kitchen"
 require_relative "ec2_version"
 require_relative "aws/client"
@@ -34,10 +34,10 @@ require_relative "aws/standard_platform/ubuntu"
 require_relative "aws/standard_platform/windows"
 require "aws-sdk-ec2"
 require "aws-sdk-core/waiters/errors"
-require "retryable"
-require "time"
-require "etc"
-require "socket"
+require "retryable" unless defined?(Retryable)
+require "time" unless defined?(Time)
+require "etc" unless defined?(Etc)
+require "socket" unless defined?(Socket)
 
 module Kitchen
 

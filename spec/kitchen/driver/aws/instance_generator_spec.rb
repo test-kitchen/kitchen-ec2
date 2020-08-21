@@ -18,8 +18,8 @@
 
 require "kitchen/driver/aws/instance_generator"
 require "kitchen/driver/aws/client"
-require "tempfile"
-require "base64"
+require "tempfile" unless defined?(Tempfile)
+require "base64" unless defined?(Base64)
 require "aws-sdk-ec2"
 
 describe Kitchen::Driver::Aws::InstanceGenerator do
