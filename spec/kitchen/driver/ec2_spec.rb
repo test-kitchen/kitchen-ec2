@@ -254,7 +254,6 @@ describe Kitchen::Driver::Ec2 do
   describe "#submit_spot" do
     before do
       expect(driver).to receive(:instance).at_least(:once).and_return(instance)
-      allow(Time).to receive(:now).and_return(Time.now)
     end
 
     it "submits the server request" do
@@ -263,9 +262,6 @@ describe Kitchen::Driver::Ec2 do
         instance_market_options: {
           market_type: "spot",
           spot_options: {
-            spot_instance_type: "persistent",
-            instance_interruption_behavior: "stop",
-            valid_until: Time.now + config[:spot_wait],
             block_duration_minutes: 60,
           },
         }
