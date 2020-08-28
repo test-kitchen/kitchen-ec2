@@ -550,9 +550,9 @@ describe Kitchen::Driver::Ec2 do
         include_examples "common create"
       end
 
-      context "with a ip address configured" do
+      context "with an ip address configured as a string" do
         before do
-          config[:security_group_cidr_ips] = ["1.2.3.4/32"]
+          config[:security_group_cidr_ip] = "1.2.3.4/32"
           expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "subnet-id", values: ["subnet-1234"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
           expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
           expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
@@ -566,9 +566,25 @@ describe Kitchen::Driver::Ec2 do
         include_examples "common create"
       end
 
-      context "with multiple ip addresses configured" do
+      context "with an ip address configured as an array" do
         before do
-          config[:security_group_cidr_ips] = ["10.0.0.0/22", "172.16.0.0/24"]
+          config[:security_group_cidr_ip] = ["10.0.0.0/22"]
+          expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "subnet-id", values: ["subnet-1234"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
+          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
+            { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "10.0.0.0/22" }] },
+            { ip_protocol: "tcp", from_port: 3389, to_port: 3389, ip_ranges: [{ cidr_ip: "10.0.0.0/22" }] },
+            { ip_protocol: "tcp", from_port: 5985, to_port: 5985, ip_ranges: [{ cidr_ip: "10.0.0.0/22" }] },
+            { ip_protocol: "tcp", from_port: 5986, to_port: 5986, ip_ranges: [{ cidr_ip: "10.0.0.0/22" }] },
+          ])
+        end
+
+        include_examples "common create"
+      end
+
+      context "with multiple ip addresses configured as an array" do
+        before do
+          config[:security_group_cidr_ip] = ["10.0.0.0/22", "172.16.0.0/24"]
           expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "subnet-id", values: ["subnet-1234"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
           expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
           expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [

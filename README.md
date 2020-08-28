@@ -237,11 +237,11 @@ security_group_filter:
     value: 'MyOtherSG'
 ```
 
-#### `security_group_cidr_ips`
+#### `security_group_cidr_ip`
 
-An Array of EC2 [security group][group_docs] ip(s), in CIDR block format, to use when creating the security group.
+The EC2 [security group][group_docs] ip address, in CIDR block format, to use when creating the security group. Optionally, you can provide an array of ip addresses instead when having multiple ip addresses for the security group is desirable.
 
-The default is ["0.0.0.0/0"].
+The default is "0.0.0.0/0".
 
 #### `region`
 
