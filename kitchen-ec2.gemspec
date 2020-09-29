@@ -1,6 +1,6 @@
-lib = File.expand_path("../lib", __FILE__)
+lib = File.expand_path("lib", __dir__)
 $LOAD_PATH.unshift(lib) unless $LOAD_PATH.include?(lib)
-require "kitchen/driver/ec2_version.rb"
+require "kitchen/driver/ec2_version"
 
 Gem::Specification.new do |gem|
   gem.name          = "kitchen-ec2"
@@ -29,6 +29,6 @@ Gem::Specification.new do |gem|
   # style and complexity libraries are tightly version pinned as newer releases
   # may introduce new and undesireable style choices which would be immediately
   # enforced in CI
-  gem.add_development_dependency "chefstyle", "= 1.2.1"
+  gem.add_development_dependency "chefstyle", "= 1.4.0"
   gem.add_development_dependency "climate_control"
 end
