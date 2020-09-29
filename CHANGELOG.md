@@ -1,5 +1,14 @@
 # Change Log
 
+## [v3.7.2](https://github.com/test-kitchen/kitchen-ec2/tree/v3.7.2) (2020-09-29)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.7.1..v3.7.2)
+
+- Prefer non-Beta RHEL AMIs in search [#506](https://github.com/test-kitchen/kitchen-ec2/pull/506) ([clintoncwolfe](https://github.com/clintoncwolfe))
+- Minor performance optimization to subnet determination [#514](https://github.com/test-kitchen/kitchen-ec2/pull/514) ([clintoncwolfe](https://github.com/clintoncwolfe))
+- Optimize our requires [#510](https://github.com/test-kitchen/kitchen-ec2/pull/510) ([tas50](https://github.com/tas50))
+- Use match? instead of =~ to reduce memory usage [#508](https://github.com/test-kitchen/kitchen-ec2/pull/508) ([tas50](https://github.com/tas50))
+- Document missing properties [#504](https://github.com/test-kitchen/kitchen-ec2/pull/504) ([mbaitelman](https://github.com/mbaitelman))
+
 ## [v3.7.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.7.1) (2020-07-13)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.7.0..v3.7.1)
 
