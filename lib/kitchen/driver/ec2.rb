@@ -785,7 +785,9 @@ module Kitchen
               ip_protocol: "tcp",
               from_port: port,
               to_port: port,
-              ip_ranges: [{ cidr_ip: config[:security_group_cidr_ip] }],
+              ip_ranges: Array(config[:security_group_cidr_ip]).map do |cidr_ip|
+                { cidr_ip: cidr_ip }
+              end,
             }
           end
         )
