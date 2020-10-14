@@ -1,5 +1,12 @@
 # Change Log
 
+## [v3.8.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.8.0) (2020-10-14)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.7.2..v3.8.0)
+
+- Allow multiple ip addresses to be specified when creating a security group [#509](https://github.com/test-kitchen/kitchen-ec2/pull/509) ([trainsushi](https://github.com/trainsushi))
+- Use defaults when creating spot instances - fixes block_duration_minutes [#512](https://github.com/test-kitchen/kitchen-ec2/pull/512) ([clintoncwolfe](https://github.com/clintoncwolfe))
+
+
 ## [v3.7.2](https://github.com/test-kitchen/kitchen-ec2/tree/v3.7.2) (2020-09-29)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.7.1..v3.7.2)
 
