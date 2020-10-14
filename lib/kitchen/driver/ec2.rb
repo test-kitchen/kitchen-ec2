@@ -473,7 +473,6 @@ module Kitchen
         debug("Creating EC2 Spot Instance..")
         instance_data = instance_generator.ec2_instance_data
 
-        request_duration = config[:spot_wait]
         config_spot_price = config[:spot_price].to_s
         if %w{ondemand on-demand}.include?(config_spot_price)
           spot_price = ""
@@ -481,9 +480,10 @@ module Kitchen
           spot_price = config_spot_price
         end
         spot_options = {
-          spot_instance_type: "persistent", # Cannot use one-time with valid_until
-          valid_until: Time.now + request_duration,
-          instance_interruption_behavior: "stop",
+          # Must use one-time in order to use instance_interruption_behavior=terminate
+          # spot_instance_type: "one-time", # default
+          # Must use instance_interruption_behavior=terminate in order to use block_duration_minutes
+          # instance_interruption_behavior: "terminate", # default
         }
         if config[:block_duration_minutes]
           spot_options[:block_duration_minutes] = config[:block_duration_minutes]
