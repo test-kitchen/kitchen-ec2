@@ -210,10 +210,10 @@ module Kitchen
           images = images.sort_by(&:creation_date).reverse
           # P5: We prefer x86_64 over i386 (if available)
           images = prefer(images) { |image| image.architecture == "x86_64" }
-          # P4: We prefer gp2 (SSD) (if available)
+          # P4: We prefer (SSD) (if available)
           images = prefer(images) do |image|
             image.block_device_mappings.any? do |b|
-              b.device_name == image.root_device_name && b.ebs && b.ebs.volume_type == "gp2"
+              b.device_name == image.root_device_name && b.ebs && %w{gp3 gp2}.any? { |t| b.ebs.volume_type == t }
             end
           end
           # P3: We prefer ebs over instance_store (if available)
