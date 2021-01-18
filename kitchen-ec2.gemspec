@@ -20,6 +20,4 @@ Gem::Specification.new do |gem|
   gem.add_dependency "test-kitchen", ">= 1.4.1", "< 3"
   gem.add_dependency "aws-sdk-ec2", "~> 1.0"
   gem.add_dependency "retryable", ">= 2.0", "< 4.0" # 4.0 will need to be validated
-
-  gem.add_development_dependency "rspec",     "~> 3.2"
 end
