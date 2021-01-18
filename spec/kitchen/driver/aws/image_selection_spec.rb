@@ -139,22 +139,9 @@ describe "Default images for various platforms" do
       { name: "owner-id", values: %w{379101102735} },
       { name: "name", values: %w{debian-jessie-*} },
     ],
-    "debian-7" => [
-      { name: "owner-id", values: %w{379101102735} },
-      { name: "name", values: %w{debian-wheezy-*} },
-    ],
-    "debian-6" => [
-      { name: "owner-id", values: %w{379101102735} },
-      { name: "name", values: %w{debian-squeeze-*} },
-    ],
     "debian-x86_64" => [
       { name: "owner-id", values: %w{379101102735} },
       { name: "name", values: %w{debian-buster-*} },
-      { name: "architecture", values: %w{x86_64} },
-    ],
-    "debian-6-x86_64" => [
-      { name: "owner-id", values: %w{379101102735} },
-      { name: "name", values: %w{debian-squeeze-*} },
       { name: "architecture", values: %w{x86_64} },
     ],
 
