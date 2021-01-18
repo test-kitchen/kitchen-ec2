@@ -7,3 +7,7 @@ group :test do
   gem "rake"
   gem "pry"
 end
+
+group :chefstyle do
+  gem "chefstyle", "=1.5.9"
+end
