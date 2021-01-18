@@ -17,7 +17,6 @@
 # limitations under the License.
 
 require "kitchen/driver/aws/client"
-require "climate_control"
 
 describe Kitchen::Driver::Aws::Client do
 

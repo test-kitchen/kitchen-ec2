@@ -459,12 +459,10 @@ module Kitchen
 
         errs = []
         configs.each do |conf|
-          begin
-            @config = conf
-            return submit_spot
-          rescue => e
-            errs.append(e)
-          end
+          @config = conf
+          return submit_spot
+        rescue => e
+          errs.append(e)
         end
         raise ["Could not create a spot instance:", errs].flatten.join("\n")
       end
