@@ -15,7 +15,7 @@ Gem::Specification.new do |gem|
   gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR).grep(/LICENSE|^lib/)
   gem.require_paths = ["lib"]
 
-  gem.required_ruby_version = ">= 2.4"
+  gem.required_ruby_version = ">= 2.5"
 
   gem.add_dependency "test-kitchen", ">= 1.4.1", "< 3"
   gem.add_dependency "aws-sdk-ec2", "~> 1.0"
