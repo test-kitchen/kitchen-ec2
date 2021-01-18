@@ -12,6 +12,4 @@ rescue LoadError
   puts "chefstyle is not available. (sudo) gem install chefstyle to do style checking."
 end
 
-desc "Run all quality tasks"
-
 task default: %i{test style}
