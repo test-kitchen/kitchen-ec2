@@ -22,5 +22,4 @@ Gem::Specification.new do |gem|
   gem.add_dependency "retryable", ">= 2.0", "< 4.0" # 4.0 will need to be validated
 
   gem.add_development_dependency "rspec",     "~> 3.2"
-  gem.add_development_dependency "maruku",    "~> 0.6"
 end
