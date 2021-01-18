@@ -22,13 +22,6 @@ Gem::Specification.new do |gem|
   gem.add_dependency "retryable", ">= 2.0", "< 4.0" # 4.0 will need to be validated
 
   gem.add_development_dependency "rspec",     "~> 3.2"
-  gem.add_development_dependency "countloc",  "~> 0.4"
   gem.add_development_dependency "maruku",    "~> 0.6"
-  gem.add_development_dependency "yard",      ">= 0.9.11"
-
-  # style and complexity libraries are tightly version pinned as newer releases
-  # may introduce new and undesireable style choices which would be immediately
-  # enforced in CI
-  gem.add_development_dependency "chefstyle", "= 1.5.9"
   gem.add_development_dependency "climate_control"
 end
