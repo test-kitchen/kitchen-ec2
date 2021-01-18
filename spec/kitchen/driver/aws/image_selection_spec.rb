@@ -24,6 +24,7 @@ describe "Default images for various platforms" do
     Kitchen::Driver::Ec2.new(region: "us-west-2", aws_ssh_key_id: "foo", **config)
   end
   let(:config) { {} }
+  let(:state_file) { {} }
   def new_instance(platform_name: "blarghle")
     Kitchen::Instance.new(
       driver: driver,
@@ -33,7 +34,7 @@ describe "Default images for various platforms" do
       transport: Kitchen::Transport::Dummy.new,
       verifier: Kitchen::Verifier::Dummy.new,
       state_file: Kitchen::StateFile.new("/nonexistent", "suite-name-#{platform_name}"),
-      lifecycle_hooks: Kitchen::LifecycleHooks.new({})
+      lifecycle_hooks: Kitchen::LifecycleHooks.new(config, state_file)
     )
   end
 
