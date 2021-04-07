@@ -56,8 +56,8 @@ module Kitchen
       default_config :shared_credentials_profile, ENV["AWS_PROFILE"]
       default_config :availability_zone, nil
       default_config :instance_type, &:default_instance_type
-      default_config :ebs_optimized,      false
-      default_config :delete_on_termination,      true
+      default_config :ebs_optimized, false
+      default_config :delete_on_termination, true
       default_config :security_group_ids, nil
       default_config :security_group_filter, nil
       default_config :security_group_cidr_ip, "0.0.0.0/0"
