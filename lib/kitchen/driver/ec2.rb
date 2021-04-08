@@ -88,7 +88,6 @@ module Kitchen
       default_config :instance_initiated_shutdown_behavior, nil
       default_config :ssl_verify_peer, true
       default_config :skip_cost_warning, false
-      # default_config :elastic_network_interface_id, nil
 
       def initialize(*args, &block)
         super
@@ -195,7 +194,6 @@ module Kitchen
       end
 
       def create(state)
-
         return if state[:server_id]
 
         update_username(state)
