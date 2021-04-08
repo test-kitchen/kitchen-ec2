@@ -830,14 +830,6 @@ module Kitchen
       def attach_network_interface(state)
         info("Attaching Network interface <#{config[:elastic_network_interface_id]}> with the instance <#{state[:server_id]}> .")
         client = ::Aws::EC2::Client.new(region: config[:region])
-        # if check_eni.attachment.nil?
-        # unless state[:server_id].nil?
-        #   resp = client.attach_network_interface({
-        #     device_index: 1,
-        #     instance_id: state[:server_id],
-        #     network_interface_id: config[:elastic_network_interface_id],
-        #   })
-        # end
         begin
           check_eni = client.describe_network_interface_attribute({
             attribute: "attachment",
