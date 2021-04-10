@@ -1,5 +1,12 @@
 # Change Log
 
+## [v3.9.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.9.0) (2021-04-09)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.8.0..v3.9.0)
+
+- Require Ruby 2.5 + misc test cleanup [#533](https://github.com/test-kitchen/kitchen-ec2/pull/533) ([tas50](https://github.com/tas50))
+- Update `delete_on_termination` to be true by default so we properly cleanup EBS volumes on RHEL systems [#539](https://github.com/test-kitchen/kitchen-ec2/pull/539) ([i5pranay93](https://github.com/i5pranay93))
+- Add support for GP3 EBS volume types [#525](https://github.com/test-kitchen/kitchen-ec2/pull/525) ([bdwyertech](https://github.com/bdwyertech))
+
 ## [v3.8.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.8.0) (2020-10-14)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.7.2..v3.8.0)
 
