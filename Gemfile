@@ -1,6 +1,6 @@
 source "https://rubygems.org"
 
-# Specify your gem"s dependencies in kitchen-ec2.gemspec
+# Specify your gem's dependencies in kitchen-ec2.gemspec
 gemspec
 
 group :test do
@@ -13,5 +13,5 @@ group :debug do
 end
 
 group :chefstyle do
-  gem "chefstyle", "1.7.2"
+  gem "chefstyle", "1.7.4"
 end
