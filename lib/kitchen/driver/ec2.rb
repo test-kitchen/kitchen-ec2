@@ -319,17 +319,14 @@ module Kitchen
       end
 
       def default_instance_type
-        @instance_type ||= begin
-          # We default to the free tier (t2.micro for hvm, t1.micro for paravirtual)
-          if image && image.virtualization_type == "hvm"
-            info("instance_type not specified. Using free tier t2.micro instance ...")
-            "t2.micro"
-          else
-            info("instance_type not specified. Using free tier t1.micro instance since" \
-                 " image is paravirtual (pick an hvm image to use the superior t2.micro!) ...")
-            "t1.micro"
-          end
-        end
+        @instance_type ||= if image && image.virtualization_type == "hvm"
+                             info("instance_type not specified. Using free tier t2.micro instance ...")
+                             "t2.micro"
+                           else
+                             info("instance_type not specified. Using free tier t1.micro instance since" \
+                                  " image is paravirtual (pick an hvm image to use the superior t2.micro!) ...")
+                             "t1.micro"
+                           end
       end
 
       # The actual platform is the platform detected from the image
