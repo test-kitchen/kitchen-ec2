@@ -365,6 +365,18 @@ The `skip_cost_warning` property allows for supressing the message that the inst
 
 The default is `false`.
 
+#### `elastic_network_interface_id`
+
+The `elastic_network_interface_id` property allows specifying the Elastic Network Interface ID which gets attached to the new instance created.
+
+```yaml
+driver:
+  name: ec2
+  elastic_network_interface_id: eni-0545666738adeed14
+```
+
+elastic_network_interface_id's have a format like eni-0545666738adeed14. You can only attach the network interface to instances in the same Availability Zone.
+
 ### Disk Configuration
 
 #### <a name="config-block_device_mappings"></a> `block_device_mappings`
