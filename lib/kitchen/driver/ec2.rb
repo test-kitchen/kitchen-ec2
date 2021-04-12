@@ -261,6 +261,7 @@ module Kitchen
 
         info("EC2 instance <#{state[:server_id]}> ready (hostname: #{state[:hostname]}).")
         instance.transport.connection(state).wait_until_ready
+        attach_network_interface(state) unless config[:elastic_network_interface_id].nil?
         create_ec2_json(state) if /chef/i.match?(instance.provisioner.name)
         debug("ec2:create '#{state[:hostname]}'")
       rescue Exception
@@ -822,6 +823,31 @@ module Kitchen
         # Inject the key into the state to be used by the SSH transport, or for
         # the Windows password decrypt above in {#fetch_windows_admin_password}.
         state[:ssh_key] = key_path
+      end
+
+      def attach_network_interface(state)
+        info("Attaching Network interface <#{config[:elastic_network_interface_id]}> with the instance <#{state[:server_id]}> .")
+        client = ::Aws::EC2::Client.new(region: config[:region])
+        begin
+          check_eni = client.describe_network_interface_attribute({
+            attribute: "attachment",
+            network_interface_id: config[:elastic_network_interface_id],
+          })
+          if check_eni.attachment.nil?
+            unless state[:server_id].nil?
+              client.attach_network_interface({
+              device_index: 1,
+              instance_id: state[:server_id],
+              network_interface_id: config[:elastic_network_interface_id],
+              })
+              info("Attached Network interface <#{config[:elastic_network_interface_id]}> with the instance <#{state[:server_id]}> .")
+            end
+          else
+            puts "ENI #{config[:elastic_network_interface_id]} already attached."
+          end
+        rescue ::Aws::EC2::Errors::InvalidNetworkInterfaceIDNotFound => e
+          warn("#{e}")
+        end
       end
 
       # Clean up a temporary security group for this instance.
