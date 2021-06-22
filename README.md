@@ -13,7 +13,7 @@ instances. Use Amazon's cloud for your infrastructure testing!
 1. Install [Chef Workstation](https://downloads.chef.io/products/workstation). If testing things other than Chef Infra cookbooks, please consult your driver's documentation for information on what to install.
 2. Install the [AWS command line tools](https://docs.aws.amazon.com/cli/latest/userguide/installing.html).
 3. Run `aws configure`. This will set up your AWS credentials for both the AWS CLI tools and kitchen-ec2.
-4. Add or exit the `driver` section of your `kitchen.yml`:
+4. Add or edit the `driver` section of your `kitchen.yml`:
 
    ```yaml
    driver:
