@@ -262,11 +262,11 @@ module Kitchen
         instance.transport.connection(state).wait_until_ready
         create_ec2_json(state) if /chef/i.match?(instance.provisioner.name)
         debug("ec2:create '#{state[:hostname]}'")
-      rescue Exception
+      rescue Exception => e
         # Clean up any auto-created security groups or keys on the way out.
         delete_security_group(state)
         delete_key(state)
-        raise
+        raise "#{e.message} in the specified region #{config[:region]}. Please check this AMI is available in this region."
       end
 
       def destroy(state)
