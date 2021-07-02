@@ -1,5 +1,12 @@
 # Change Log
 
+## [v3.10.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.10.0) (2021-07-02)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.9.0..v3.10.0)
+
+- Allow specifying Elastic Network Interface ID with a new `elastic_network_interface_id` configuration option. See the readme for additional details
+- Support Test Kitchen 3.0
+- Improved the error message when an AMI ID cannot be found
+
 ## [v3.9.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.9.0) (2021-04-09)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.8.0..v3.9.0)
 
