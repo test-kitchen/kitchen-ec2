@@ -1,5 +1,10 @@
 # Change Log
 
+## [v3.10.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.10.0) (2021-10-28)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.10.0..v3.10.1)
+
+- Don't wait the full 300 seconds during `kitchen destroy` if the instance was deleted outside of Test Kitchen.
+
 ## [v3.10.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.10.0) (2021-07-02)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.9.0..v3.10.0)
 
