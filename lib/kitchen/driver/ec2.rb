@@ -285,7 +285,7 @@ module Kitchen
           # If we are going to clean up an automatic security group, we need
           # to wait for the instance to shut down. This slightly breaks the
           # subsystem encapsulation, sorry not sorry.
-          if state[:auto_security_group_id] && server
+          if state[:auto_security_group_id] && server && ec2.instance_exists?(state[:server_id])
             server.wait_until_terminated do |waiter|
               waiter.max_attempts = config[:retryable_tries]
               waiter.delay = config[:retryable_sleep]

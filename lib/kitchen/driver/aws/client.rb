@@ -75,6 +75,13 @@ module Kitchen
           ).to_a[0]
         end
 
+        # check if instance exists, given an id
+        # @param id [String] aws instance id
+        # @return boolean
+        def instance_exists?(id)
+          resource.instance(id).exists?
+        end
+
         def client
           @client ||= ::Aws::EC2::Client.new
         end
