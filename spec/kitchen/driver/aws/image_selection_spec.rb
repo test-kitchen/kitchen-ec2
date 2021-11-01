@@ -121,37 +121,37 @@ describe "Default images for various platforms" do
     ],
 
     "debian" => [
-      { name: "name", values: %w{debian-bullseye-*} },
       { name: "owner-id", values: %w{136693071363} },
+      { name: "name", values: %w{debian-11-*} },
     ],
     "debian-13" => [
-      { name: "name", values: %w{debian-trixie-*} },
       { name: "owner-id", values: %w{136693071363} },
+      { name: "name", values: %w{debian-13-*} },
     ],
     "debian-12" => [
-      { name: "name", values: %w{debian-bookworm-*} },
       { name: "owner-id", values: %w{136693071363} },
+      { name: "name", values: %w{debian-12-*} },
     ],
     "debian-11" => [
-      { name: "name", values: %w{debian-bullseye-*} },
       { name: "owner-id", values: %w{136693071363} },
+      { name: "name", values: %w{debian-11-*} },
     ],
     "debian-10" => [
-      { name: "name", values: %w{debian-buster-*} },
       { name: "owner-id", values: %w{136693071363} },
+      { name: "name", values: %w{debian-10-*} },
     ],
     "debian-9" => [
-      { name: "name", values: %w{debian-stretch-*} },
       { name: "owner-id", values: %w{379101102735} },
+      { name: "name", values: %w{debian-stretch-*} },
     ],
     "debian-9.6" => [
-      { name: "name", values: %w{debian-stretch-*} },
       { name: "owner-id", values: %w{379101102735} },
+      { name: "name", values: %w{debian-stretch-*} },
     ],
     "debian-x86_64" => [
-      { name: "name", values: %w{debian-bullseye-*} },
-      { name: "architecture", values: %w{x86_64} },
       { name: "owner-id", values: %w{136693071363} },
+      { name: "name", values: %w{debian-11-*} },
+      { name: "architecture", values: %w{x86_64} },
     ],
 
     "rhel" => [
