@@ -23,8 +23,8 @@ module Kitchen
         class Debian < StandardPlatform
           StandardPlatform.platforms["debian"] = self
 
-          # 11/12 are listed last since we default to the first item in the hash
-          # and 11/12 are not released yet. When they're released move them up
+          # 12/13 are listed last since we default to the first item in the hash
+          # and 12/13 are not released yet. When they're released move them up
           DEBIAN_CODENAMES = {
             11 => "bullseye",
             10 => "buster",
@@ -33,6 +33,7 @@ module Kitchen
             7 => "wheezy",
             6 => "squeeze",
             12 => "bookworm",
+            13 => "trixie",
           }.freeze
 
           # default username for this platform's ami
