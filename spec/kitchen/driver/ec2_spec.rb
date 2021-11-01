@@ -89,7 +89,7 @@ describe Kitchen::Driver::Ec2 do
         end
         it "sets :user_data to something" do
           expect(driver[:user_data]).to include
-          '$logfile=C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
+          "$logfile=C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log"
         end
       end
       context "Windows 2019" do
@@ -98,7 +98,7 @@ describe Kitchen::Driver::Ec2 do
         end
         it "sets :user_data to something" do
           expect(driver[:user_data]).to include
-          '$logfile=C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
+          "$logfile=C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log"
         end
       end
       context "Windows 2012R2" do
@@ -107,7 +107,7 @@ describe Kitchen::Driver::Ec2 do
         end
         it "sets :user_data to something" do
           expect(driver[:user_data]).to include
-          '$logfile=C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
+          "$logfile=C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log"
         end
       end
     end
