@@ -59,10 +59,10 @@ module Kitchen
 
             # The Debian AWS owner ID changed for released 10 and onwards
             # See https://wiki.debian.org/Amazon/EC2/HowTo/awscli
-            if version.to_i < 10
-              search["owner-id"] = "379101102735"
-            else
+            if version.nil? || version.to_i >= 10
               search["owner-id"] = "136693071363"
+            else
+              search["owner-id"] = "379101102735"
             end
 
             search

@@ -121,29 +121,37 @@ describe "Default images for various platforms" do
     ],
 
     "debian" => [
-      { name: "owner-id", values: %w{379101102735} },
-      { name: "name", values: %w{debian-buster-*} },
+      { name: "name", values: %w{debian-bullseye-*} },
+      { name: "owner-id", values: %w{136693071363} },
+    ],
+    "debian-13" => [
+      { name: "name", values: %w{debian-trixie-*} },
+      { name: "owner-id", values: %w{136693071363} },
+    ],
+    "debian-12" => [
+      { name: "name", values: %w{debian-bookworm-*} },
+      { name: "owner-id", values: %w{136693071363} },
+    ],
+    "debian-11" => [
+      { name: "name", values: %w{debian-bullseye-*} },
+      { name: "owner-id", values: %w{136693071363} },
     ],
     "debian-10" => [
-      { name: "owner-id", values: %w{379101102735} },
       { name: "name", values: %w{debian-buster-*} },
+      { name: "owner-id", values: %w{136693071363} },
     ],
     "debian-9" => [
-      { name: "owner-id", values: %w{379101102735} },
       { name: "name", values: %w{debian-stretch-*} },
+      { name: "owner-id", values: %w{379101102735} },
     ],
     "debian-9.6" => [
-      { name: "owner-id", values: %w{379101102735} },
       { name: "name", values: %w{debian-stretch-*} },
-    ],
-    "debian-8" => [
       { name: "owner-id", values: %w{379101102735} },
-      { name: "name", values: %w{debian-jessie-*} },
     ],
     "debian-x86_64" => [
-      { name: "owner-id", values: %w{379101102735} },
-      { name: "name", values: %w{debian-buster-*} },
+      { name: "name", values: %w{debian-bullseye-*} },
       { name: "architecture", values: %w{x86_64} },
+      { name: "owner-id", values: %w{136693071363} },
     ],
 
     "rhel" => [
