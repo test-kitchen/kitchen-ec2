@@ -54,7 +54,7 @@ module Kitchen
           def image_search
             search = {}
 
-            # The Debian AWS owner ID changed for released 10 and onwards
+            # The Debian AWS owner ID changed for releases 10 and onwards
             # See https://wiki.debian.org/Amazon/EC2/HowTo/awscli
             if version.nil?
               search["owner-id"] = "136693071363"
