@@ -1,6 +1,12 @@
 # Change Log
 
-## [v3.10.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.10.0) (2021-10-28)
+## [v3.11.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.11.0) (2021-11-02)
+
+- Added support for Windows 2022 [#557](https://github.com/test-kitchen/kitchen-ec2/pull/557) ([bdwyertech](https://github.com/bdwyertech))
+- Added support for finding vendor images on Debian 10 and later ([tas50](https://github.com/tas50))
+- Removed support for EOL Ruby 2.5 ([tas50](https://github.com/tas50))
+
+## [v3.10.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.10.1) (2021-10-28)
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.10.0..v3.10.1)
 
 - Don't wait the full 300 seconds during `kitchen destroy` if the instance was deleted outside of Test Kitchen.
