@@ -52,11 +52,23 @@ module Kitchen
           end
 
           def image_search
-            search = {
-              "owner-id" => "379101102735",
-              "name" => "debian-#{codename}-*",
-            }
+            search = {}
+
+            # The Debian AWS owner ID changed for releases 10 and onwards
+            # See https://wiki.debian.org/Amazon/EC2/HowTo/awscli
+            if version.nil?
+              search["owner-id"] = "136693071363"
+              search["name"] = "debian-#{DEBIAN_CODENAMES.keys.first}-*"
+            elsif version.to_i >= 10
+              search["owner-id"] = "136693071363"
+              search["name"] = "debian-#{version.to_i}-*"
+            else
+              search["owner-id"] = "379101102735"
+              search["name"] = "debian-#{codename}-*"
+            end
+
             search["architecture"] = architecture if architecture
+
             search
           end
 
