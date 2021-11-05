@@ -286,13 +286,16 @@ module Kitchen
           # to wait for the instance to shut down. This slightly breaks the
           # subsystem encapsulation, sorry not sorry.
           if state[:auto_security_group_id] && server && ec2.instance_exists?(state[:server_id])
-            server.wait_until_terminated do |waiter|
-              waiter.max_attempts = config[:retryable_tries]
-              waiter.delay = config[:retryable_sleep]
-              waiter.before_attempt do |attempts|
-                info "Waited #{attempts * waiter.delay}/#{waiter.delay * waiter.max_attempts}s for instance <#{server.id}> to terminate."
-              end
+            wait_log = proc do |attempts|
+              c = attempts * config[:retryable_sleep]
+              t = config[:retryable_tries] * config[:retryable_sleep]
+              info "Waited #{c}/#{t}s for instance <#{server.id}> to terminate."
             end
+            server.wait_until_terminated(
+              max_attempts: config[:retryable_tries],
+              delay: config[:retryable_sleep],
+              before_attempt: wait_log
+            )
           end
           info("EC2 instance <#{state[:server_id]}> destroyed.")
           state.delete(:server_id)
