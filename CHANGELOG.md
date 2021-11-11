@@ -1,5 +1,9 @@
 # Change Log
 
+## [v3.11.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.11.1) (2021-11-11)
+
+- Resolve deprecation warnings from the AWS SDK during execution [#567](https://github.com/test-kitchen/kitchen-ec2/pull/567) ([kasif-adnan](https://github.com/kasif-adnan))
+
 ## [v3.11.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.11.0) (2021-11-02)
 
 - Added support for Windows 2022 [#557](https://github.com/test-kitchen/kitchen-ec2/pull/557) ([bdwyertech](https://github.com/bdwyertech))
