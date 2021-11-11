@@ -368,7 +368,7 @@ module Kitchen
         if actual_platform &&
             instance.transport[:username] == instance.transport.class.defaults[:username]
           debug("No SSH username specified: using default username #{actual_platform.username} " \
-                " for image #{config[:image_id]}, which we detected as #{actual_platform}.")
+                "for image #{config[:image_id]}, which we detected as #{actual_platform}.")
           state[:username] = actual_platform.username
         end
       end
