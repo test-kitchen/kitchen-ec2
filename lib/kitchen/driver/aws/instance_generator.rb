@@ -47,15 +47,19 @@ module Kitchen
           vpc_id = nil
           client = ::Aws::EC2::Client.new(region: config[:region])
           if config[:subnet_id].nil? && config[:subnet_filter]
-            subnets = client.describe_subnets(
-              filters: [
+            filters = [config[:subnet_filter]].flatten
+
+            r = { filters: [] }
+            filters.each do |subnet_filter|
+              r[:filters] <<
                 {
-                  name: "tag:#{config[:subnet_filter][:tag]}",
-                  values: [config[:subnet_filter][:value]],
-                },
-              ]
-            ).subnets
-            raise "The subnet tagged '#{config[:subnet_filter][:tag]}:#{config[:subnet_filter][:value]}' does not exist!" unless subnets.any?
+                  name: "tag:#{subnet_filter[:tag]}",
+                  values: [subnet_filter[:value]],
+                }
+            end
+
+            subnets = client.describe_subnets(r).subnets
+	          raise "Subnets with tags '#{filters}' not found during security group creation" if subnets.empty?
 
             # => Select the least-populated subnet if we have multiple matches
             subnet = subnets.max_by { |s| s[:available_ip_address_count] }
