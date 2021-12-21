@@ -1,5 +1,10 @@
 # Change Log
 
+## [v3.12.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.12.0) (2021-12-20)
+
+- Adds support for defining multiple tags for subnet_filter [#570](https://github.com/test-kitchen/kitchen-ec2/pull/570) ([@jakauppila](https://github.com/jakauppila))
+- Ensure instance is terminated if a failure occurs during creation [#570](https://github.com/test-kitchen/kitchen-ec2/pull/570) ([@jakauppila](https://github.com/jakauppila))
+
 ## [v3.11.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.11.1) (2021-11-11)
 
 - Resolve deprecation warnings from the AWS SDK during execution [#567](https://github.com/test-kitchen/kitchen-ec2/pull/567) ([kasif-adnan](https://github.com/kasif-adnan))
