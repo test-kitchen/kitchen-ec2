@@ -255,15 +255,22 @@ The default is unset, or `nil`.
 
 #### `subnet_filter`
 
-The EC2 [subnet][subnet_docs] to use, specified by tag.
-
+The EC2 [subnet][subnet_docs] to use, specified by tag(s).
 The default is unset, or `nil`.
 
 An example of usage:
 ```yaml
+# By Tag
 subnet_filter:
   tag:   'Name'
   value: 'example-subnet-name'
+
+# Multiple Tags
+subnet_filter:
+  - tag:   'Type'
+    value: 'application'
+  - tag:   'Environment'
+    value: 'dev'
 ```
 
 #### `tags`
@@ -272,6 +279,17 @@ The Hash of EC tag name/value pairs which will be applied to the instance.
 
 The default is `{ "created-by" => "test-kitchen" }`.
 
+An example of usage:
+```yaml
+# Single tag
+tags:
+  created-by: 'test-kitchen'
+
+# Multiple Tags
+tags:
+  created-by: 'test-kitchen'
+  reason: 'Only used for testing can be deleted'
+```
 
 #### `user_data`
 

@@ -265,9 +265,8 @@ module Kitchen
         create_ec2_json(state) if /chef/i.match?(instance.provisioner.name)
         debug("ec2:create '#{state[:hostname]}'")
       rescue Exception => e
-        # Clean up any auto-created security groups or keys on the way out.
-        delete_security_group(state)
-        delete_key(state)
+        # Clean up the instance and any auto-created security groups or keys on the way out.
+        destroy(state)
         raise "#{e.message} in the specified region #{config[:region]}. Please check this AMI is available in this region."
       end
 
@@ -433,15 +432,21 @@ module Kitchen
         else
           # => Enable cascading through matching subnets
           client = ::Aws::EC2::Client.new(region: config[:region])
-          subnets = client.describe_subnets(
-            filters: [
+
+          filters = [config[:subnet_filter]].flatten
+
+          r = { filters: [] }
+          filters.each do |subnet_filter|
+            r[:filters] <<
               {
-                name: "tag:#{config[:subnet_filter][:tag]}",
-                values: [config[:subnet_filter][:value]],
-              },
-            ]
-          ).subnets
-          raise "A subnet matching '#{config[:subnet_filter][:tag]}:#{config[:subnet_filter][:value]}' does not exist!" unless subnets.any?
+                name: "tag:#{subnet_filter[:tag]}",
+                values: [subnet_filter[:value]],
+              }
+          end
+
+          subnets = client.describe_subnets(r).subnets
+
+          raise "Subnets with tags '#{filters}' not found!" if subnets.empty?
 
           configs = subnets.map do |subnet|
             new_config = config.clone
@@ -751,8 +756,19 @@ module Kitchen
 
                    subnets.first.vpc_id
                  elsif config[:subnet_filter]
-                   subnets = ec2.client.describe_subnets(filters: [{ name: "tag:#{config[:subnet_filter][:tag]}", values: [config[:subnet_filter][:value]] }]).subnets
-                   raise "Subnets with tag '#{config[:subnet_filter][:tag]}=#{config[:subnet_filter][:value]}' not found during security group creation" if subnets.empty?
+                   filters = [config[:subnet_filter]].flatten
+
+                   r = { filters: [] }
+                   filters.each do |subnet_filter|
+                     r[:filters] << {
+                       name: "tag:#{subnet_filter[:tag]}",
+                       values: [subnet_filter[:value]],
+                     }
+                   end
+
+                   subnets = ec2.client.describe_subnets(r).subnets
+
+                   raise "Subnets with tags '#{filters}' not found during security group creation" if subnets.empty?
 
                    subnets.first.vpc_id
                  else
