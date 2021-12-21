@@ -444,7 +444,7 @@ module Kitchen
               }
           end
 
-          subnets = ec2.client.describe_subnets(r).subnets
+          subnets = client.describe_subnets(r).subnets
 
           raise "Subnets with tags '#{filters}' not found!" if subnets.empty?
 

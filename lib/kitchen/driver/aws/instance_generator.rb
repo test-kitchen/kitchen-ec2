@@ -59,7 +59,7 @@ module Kitchen
             end
 
             subnets = client.describe_subnets(r).subnets
-	          raise "Subnets with tags '#{filters}' not found during security group creation" if subnets.empty?
+            raise "Subnets with tags '#{filters}' not found during security group creation" if subnets.empty?
 
             # => Select the least-populated subnet if we have multiple matches
             subnet = subnets.max_by { |s| s[:available_ip_address_count] }
