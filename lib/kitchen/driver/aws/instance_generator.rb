@@ -196,6 +196,13 @@ module Kitchen
               config[:instance_initiated_shutdown_behavior].empty?
             i[:instance_initiated_shutdown_behavior] = config[:instance_initiated_shutdown_behavior]
           end
+          if config[:enforce_imdsv2]
+            i[:metadata_options] = {
+              http_endpoint: "enabled",
+              http_tokens: "required",
+              http_put_response_hop_limit: 1,
+            }
+          end
           i
         end
 

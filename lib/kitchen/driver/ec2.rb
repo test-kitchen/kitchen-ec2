@@ -89,6 +89,7 @@ module Kitchen
       default_config :instance_initiated_shutdown_behavior, nil
       default_config :ssl_verify_peer, true
       default_config :skip_cost_warning, false
+      default_config :enforce_imdsv2, false
 
       def initialize(*args, &block)
         super

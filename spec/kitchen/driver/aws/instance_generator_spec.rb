@@ -720,5 +720,37 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         )
       end
     end
+
+    context "when enforcing IMDSv2" do
+      let(:config) do
+        {
+          region: "us-east-1",
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          subnet_id: "s-456",
+          private_ip_address: "0.0.0.0",
+          enforce_imdsv2: true,
+        }
+      end
+
+      it "returns the correct metadata" do
+        expect(generator.ec2_instance_data).to eq(
+          instance_type: "micro",
+          ebs_optimized: true,
+          image_id: "ami-123",
+          key_name: nil,
+          subnet_id: "s-456",
+          private_ip_address: "0.0.0.0",
+          metadata_options: {
+            http_endpoint: "enabled",
+            http_tokens: "required",
+            http_put_response_hop_limit: 1,
+          },
+          max_count: 1,
+          min_count: 1
+        )
+      end
+    end
   end
 end
