@@ -242,10 +242,10 @@ describe Kitchen::Driver::Ec2 do
 
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return(
-        instance_initiated_shutdown_behavior: "terminate"
+        { instance_initiated_shutdown_behavior: "terminate" }
       )
       expect(client).to receive(:create_instance).with(
-        instance_initiated_shutdown_behavior: "terminate"
+        { instance_initiated_shutdown_behavior: "terminate" }
       )
       driver.submit_server
     end
@@ -258,14 +258,14 @@ describe Kitchen::Driver::Ec2 do
 
     it "submits the server request" do
       expect(generator).to receive(:ec2_instance_data).and_return({})
-      expect(client).to receive(:create_instance).with(
+      expect(client).to receive(:create_instance).with({
         instance_market_options: {
           market_type: "spot",
           spot_options: {
             block_duration_minutes: 60,
           },
-        }
-      ).and_return(server)
+        },
+      }).and_return(server)
       driver.submit_spot
     end
   end
@@ -514,7 +514,7 @@ describe Kitchen::Driver::Ec2 do
       context "with a subnet configured" do
         before do
           expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "subnet-id", values: ["subnet-1234"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
-          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:create_security_group).with({ group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1" }).and_return(double(group_id: "sg-9876"))
           expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
             { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
             { ip_protocol: "tcp", from_port: 3389, to_port: 3389, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
@@ -533,8 +533,8 @@ describe Kitchen::Driver::Ec2 do
             tag: "foo",
             value: "bar",
           }
-          expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "tag:foo", values: ["bar"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
-          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:describe_subnets).with({ filters: [{ name: "tag:foo", values: ["bar"] }] }).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
+          expect(actual_client).to receive(:create_security_group).with({ group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1" }).and_return(double(group_id: "sg-9876"))
           expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
             { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
             { ip_protocol: "tcp", from_port: 3389, to_port: 3389, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
@@ -557,8 +557,8 @@ describe Kitchen::Driver::Ec2 do
             tag: "hello",
             value: "world",
           }]
-          expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "tag:foo", values: ["bar"] }, { name: "tag:hello", values: ["world"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
-          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:describe_subnets).with({ filters: [{ name: "tag:foo", values: ["bar"] }, { name: "tag:hello", values: ["world"] }] }).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
+          expect(actual_client).to receive(:create_security_group).with({ group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1" }).and_return(double(group_id: "sg-9876"))
           expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
             { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
             { ip_protocol: "tcp", from_port: 3389, to_port: 3389, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
@@ -574,7 +574,7 @@ describe Kitchen::Driver::Ec2 do
         before do
           config[:security_group_cidr_ip] = "1.2.3.4/32"
           expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "subnet-id", values: ["subnet-1234"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
-          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:create_security_group).with({ group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1" }).and_return(double(group_id: "sg-9876"))
           expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
             { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "1.2.3.4/32" }] },
             { ip_protocol: "tcp", from_port: 3389, to_port: 3389, ip_ranges: [{ cidr_ip: "1.2.3.4/32" }] },
@@ -590,7 +590,7 @@ describe Kitchen::Driver::Ec2 do
         before do
           config[:security_group_cidr_ip] = ["10.0.0.0/22"]
           expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "subnet-id", values: ["subnet-1234"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
-          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:create_security_group).with({ group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1" }).and_return(double(group_id: "sg-9876"))
           expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
             { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "10.0.0.0/22" }] },
             { ip_protocol: "tcp", from_port: 3389, to_port: 3389, ip_ranges: [{ cidr_ip: "10.0.0.0/22" }] },
@@ -606,7 +606,7 @@ describe Kitchen::Driver::Ec2 do
         before do
           config[:security_group_cidr_ip] = ["10.0.0.0/22", "172.16.0.0/24"]
           expect(actual_client).to receive(:describe_subnets).with(filters: [{ name: "subnet-id", values: ["subnet-1234"] }]).and_return(double(subnets: [double(vpc_id: "vpc-1")]))
-          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:create_security_group).with({ group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1" }).and_return(double(group_id: "sg-9876"))
           expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
             { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "10.0.0.0/22" }, { cidr_ip: "172.16.0.0/24" }] },
             { ip_protocol: "tcp", from_port: 3389, to_port: 3389, ip_ranges: [{ cidr_ip: "10.0.0.0/22" }, { cidr_ip: "172.16.0.0/24" }] },
@@ -622,7 +622,7 @@ describe Kitchen::Driver::Ec2 do
         before do
           config.delete(:subnet_id)
           expect(actual_client).to receive(:describe_vpcs).with(filters: [{ name: "isDefault", values: ["true"] }]).and_return(double(vpcs: [double(vpc_id: "vpc-1")]))
-          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1").and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:create_security_group).with({ group_name: /kitchen-/, description: /Test Kitchen for/, vpc_id: "vpc-1" }).and_return(double(group_id: "sg-9876"))
           expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
             { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
             { ip_protocol: "tcp", from_port: 3389, to_port: 3389, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
@@ -638,7 +638,7 @@ describe Kitchen::Driver::Ec2 do
         before do
           config.delete(:subnet_id)
           expect(actual_client).to receive(:describe_vpcs).with(filters: [{ name: "isDefault", values: ["true"] }]).and_return(double(vpcs: []))
-          expect(actual_client).to receive(:create_security_group).with(group_name: /kitchen-/, description: /Test Kitchen for/).and_return(double(group_id: "sg-9876"))
+          expect(actual_client).to receive(:create_security_group).with({ group_name: /kitchen-/, description: /Test Kitchen for/ }).and_return(double(group_id: "sg-9876"))
           expect(actual_client).to receive(:authorize_security_group_ingress).with(group_id: "sg-9876", ip_permissions: [
             { ip_protocol: "tcp", from_port: 22, to_port: 22, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
             { ip_protocol: "tcp", from_port: 3389, to_port: 3389, ip_ranges: [{ cidr_ip: "0.0.0.0/0" }] },
