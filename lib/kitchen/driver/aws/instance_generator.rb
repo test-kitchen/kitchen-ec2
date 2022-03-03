@@ -153,6 +153,7 @@ module Kitchen
             i[:block_device_mappings] = config[:block_device_mappings]
           end
           i[:security_group_ids] = Array(config[:security_group_ids]) if config[:security_group_ids]
+          i[:metadata_options] = config[:metadata_options] if config[:metadata_options]
           i[:user_data] = prepared_user_data if prepared_user_data
           if config[:iam_profile_name]
             i[:iam_instance_profile] = { name: config[:iam_profile_name] }
