@@ -536,12 +536,20 @@ module Kitchen
             state[:hostname] = hostname(aws_instance, nil)
           end
           if ready && windows_os?
-            output = server.console_output.output
-            unless output.nil?
-              output = Base64.decode64(output)
-              debug "Console output: --- \n#{output}"
+            if windows_os? &&
+              instance.transport[:username] =~ /administrator/i &&
+              instance.transport[:password].nil?
+              # If we're logging into the administrator user and a password isn't
+              # supplied, try to fetch it from the AWS instance
+              fetch_windows_admin_password(server, state)
+            else
+              output = server.console_output.output
+              unless output.nil?
+                output = Base64.decode64(output)
+                debug "Console output: --- \n#{output}"
+              end
+              ready = !!(output =~ /Windows is Ready to use/)
             end
-            ready = !!(output =~ /Windows is Ready to use/)
           end
           ready
         end
@@ -750,38 +758,38 @@ module Kitchen
 
         # Work out which VPC, if any, we are creating in.
         vpc_id = if config[:subnet_id]
-                   # Get the VPC ID for the subnet.
-                   subnets = ec2.client.describe_subnets(filters: [{ name: "subnet-id", values: [config[:subnet_id]] }]).subnets
-                   raise "Subnet #{config[:subnet_id]} not found during security group creation" if subnets.empty?
+          # Get the VPC ID for the subnet.
+          subnets = ec2.client.describe_subnets(filters: [{ name: "subnet-id", values: [config[:subnet_id]] }]).subnets
+          raise "Subnet #{config[:subnet_id]} not found during security group creation" if subnets.empty?
 
-                   subnets.first.vpc_id
-                 elsif config[:subnet_filter]
-                   filters = [config[:subnet_filter]].flatten
+          subnets.first.vpc_id
+        elsif config[:subnet_filter]
+          filters = [config[:subnet_filter]].flatten
 
-                   r = { filters: [] }
-                   filters.each do |subnet_filter|
-                     r[:filters] << {
-                       name: "tag:#{subnet_filter[:tag]}",
-                       values: [subnet_filter[:value]],
-                     }
-                   end
+          r = { filters: [] }
+          filters.each do |subnet_filter|
+            r[:filters] << {
+              name: "tag:#{subnet_filter[:tag]}",
+              values: [subnet_filter[:value]],
+            }
+          end
 
-                   subnets = ec2.client.describe_subnets(r).subnets
+          subnets = ec2.client.describe_subnets(r).subnets
 
-                   raise "Subnets with tags '#{filters}' not found during security group creation" if subnets.empty?
+          raise "Subnets with tags '#{filters}' not found during security group creation" if subnets.empty?
 
-                   subnets.first.vpc_id
-                 else
-                   # Try to check for a default VPC.
-                   vpcs = ec2.client.describe_vpcs(filters: [{ name: "isDefault", values: ["true"] }]).vpcs
-                   if vpcs.empty?
-                     # No default VPC so assume EC2-Classic ¯\_(ツ)_/¯
-                     nil
-                   else
-                     # I don't actually know if you can have more than one default VPC?
-                     vpcs.first.vpc_id
-                   end
-                 end
+          subnets.first.vpc_id
+        else
+          # Try to check for a default VPC.
+          vpcs = ec2.client.describe_vpcs(filters: [{ name: "isDefault", values: ["true"] }]).vpcs
+          if vpcs.empty?
+            # No default VPC so assume EC2-Classic ¯\_(ツ)_/¯
+            nil
+          else
+            # I don't actually know if you can have more than one default VPC?
+            vpcs.first.vpc_id
+          end
+        end
         # Create the SG.
         params = {
           group_name: "kitchen-#{Array.new(8) { rand(36).to_s(36) }.join}",
