@@ -251,14 +251,6 @@ module Kitchen
           wait_until_ready(server, state)
         end
 
-        if windows_os? &&
-            instance.transport[:username] =~ /administrator/i &&
-            instance.transport[:password].nil?
-          # If we're logging into the administrator user and a password isn't
-          # supplied, try to fetch it from the AWS instance
-          fetch_windows_admin_password(server, state)
-        end
-
         info("EC2 instance <#{state[:server_id]}> ready (hostname: #{state[:hostname]}).")
         instance.transport.connection(state).wait_until_ready
         attach_network_interface(state) unless config[:elastic_network_interface_id].nil?
@@ -536,8 +528,7 @@ module Kitchen
             state[:hostname] = hostname(aws_instance, nil)
           end
           if ready && windows_os?
-            if windows_os? &&
-                instance.transport[:username] =~ /administrator/i &&
+            if instance.transport[:username] =~ /administrator/i &&
                 instance.transport[:password].nil?
               # If we're logging into the administrator user and a password isn't
               # supplied, try to fetch it from the AWS instance
