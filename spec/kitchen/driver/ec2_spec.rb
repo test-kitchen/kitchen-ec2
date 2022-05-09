@@ -311,6 +311,46 @@ describe Kitchen::Driver::Ec2 do
         expect(driver.wait_until_ready(server, state)).to eq(true)
       end
     end
+
+    context "when windows instance" do
+      let(:hostname) { "windows" }
+
+      before do
+        expect(aws_instance).to receive(:exists?).and_return(true)
+        expect(aws_instance).to receive_message_chain("state.name").and_return("running")
+        expect(driver).to receive(:windows_os?).and_return(true)
+      end
+
+      context "does define a username/password" do
+        before do
+          expect(transport).to receive(:[]).with(:username).and_return("foo")
+        end
+
+        context "console output is ready" do
+          it "returns true" do
+            # base64 encoded `Windows is Ready to use`
+            expect(server).to receive_message_chain("console_output.output").and_return("V2luZG93cyBpcyBSZWFkeSB0byB1c2U=")
+            expect(driver.wait_until_ready(server, state)).to eq(true)
+          end
+        end
+
+        context "console output is not ready" do
+          it "returns false" do
+            expect(server).to receive_message_chain("console_output.output").and_return("")
+            expect(driver.wait_until_ready(server, state)).to eq(false)
+          end
+        end
+      end
+
+      context "does not define a username/password" do
+        it "returns true" do
+          expect(transport).to receive(:[]).with(:username).and_return("administrator")
+          expect(transport).to receive(:[]).with(:password).and_return(nil)
+          expect(driver).to receive(:fetch_windows_admin_password).with(server, state)
+          expect(driver.wait_until_ready(server, state)).to eq(true)
+        end
+      end
+    end
   end
 
   describe "#fetch_windows_admin_password" do
@@ -482,11 +522,7 @@ describe Kitchen::Driver::Ec2 do
 
     context "instance is a windows machine" do
       before do
-        expect(driver).to receive(:windows_os?).and_return(true)
-        expect(transport).to receive(:[]).with(:username).and_return("administrator")
-        expect(transport).to receive(:[]).with(:password).and_return(nil)
         expect(driver).to receive(:submit_server).and_return(server)
-        expect(driver).to receive(:fetch_windows_admin_password).with(server, state)
       end
 
       include_examples "common create"
