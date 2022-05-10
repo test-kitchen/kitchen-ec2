@@ -16,11 +16,13 @@
 - Removed support for EOL Ruby 2.5 ([tas50](https://github.com/tas50))
 
 ## [v3.10.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.10.1) (2021-10-28)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.10.0..v3.10.1)
 
 - Don't wait the full 300 seconds during `kitchen destroy` if the instance was deleted outside of Test Kitchen.
 
 ## [v3.10.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.10.0) (2021-07-02)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.9.0..v3.10.0)
 
 - Allow specifying Elastic Network Interface ID with a new `elastic_network_interface_id` configuration option. See the readme for additional details
@@ -28,6 +30,7 @@
 - Improved the error message when an AMI ID cannot be found
 
 ## [v3.9.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.9.0) (2021-04-09)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.8.0..v3.9.0)
 
 - Require Ruby 2.5 + misc test cleanup [#533](https://github.com/test-kitchen/kitchen-ec2/pull/533) ([tas50](https://github.com/tas50))
@@ -35,6 +38,7 @@
 - Add support for GP3 EBS volume types [#525](https://github.com/test-kitchen/kitchen-ec2/pull/525) ([bdwyertech](https://github.com/bdwyertech))
 
 ## [v3.8.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.8.0) (2020-10-14)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.7.2..v3.8.0)
 
 - Allow multiple ip addresses to be specified when creating a security group [#509](https://github.com/test-kitchen/kitchen-ec2/pull/509) ([trainsushi](https://github.com/trainsushi))
@@ -42,6 +46,7 @@
 
 
 ## [v3.7.2](https://github.com/test-kitchen/kitchen-ec2/tree/v3.7.2) (2020-09-29)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.7.1..v3.7.2)
 
 - Prefer non-Beta RHEL AMIs in search [#506](https://github.com/test-kitchen/kitchen-ec2/pull/506) ([clintoncwolfe](https://github.com/clintoncwolfe))
@@ -51,6 +56,7 @@
 - Document missing properties [#504](https://github.com/test-kitchen/kitchen-ec2/pull/504) ([mbaitelman](https://github.com/mbaitelman))
 
 ## [v3.7.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.7.1) (2020-07-13)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.7.0..v3.7.1)
 
 - Improvements to CentOS Image search [#502](https://github.com/test-kitchen/kitchen-ec2/pull/502) ([clintoncwolfe](https://github.com/clintoncwolfe))
@@ -58,28 +64,33 @@
 - Remove excon and multi-json deps [#500](https://github.com/test-kitchen/kitchen-ec2/pull/500) ([tas50](https://github.com/tas50))
 
 ## [v3.7.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.7.0) (2020-07-02)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.6.0..v3.7.0)
 
 - Tag on-demand instances and volumes at creation time [#496](https://github.com/test-kitchen/kitchen-ec2/pull/496) ([clintoncwolfe](https://github.com/clintoncwolfe))
 
 ## [v3.6.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.6.0) (2020-05-17)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.5.0..v3.6.0)
 
 - Remove support for EOL Ruby 2.3 [#491](https://github.com/test-kitchen/kitchen-ec2/pull/491) ([tas50](https://github.com/tas50))
 - Make Debian 10 the Debian default [#492](https://github.com/test-kitchen/kitchen-ec2/pull/492) ([tas50](https://github.com/tas50))
 
 ## [v3.5.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.5.0) (2020-05-06)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.4.0..v3.5.0)
 
 - Select the least-populated subnet if we have multiple matches. This should help to distribute the test-kitchen load more evenly across multi-az VPC's while maintaining full backward compatibility. [\#489](https://github.com/test-kitchen/kitchen-ec2/pull/489) ([bdwyertech](https://github.com/bdwyertech))
 - Readme example cleanup [\#484](https://github.com/test-kitchen/kitchen-ec2/pull/484) ([arothian](https://github.com/arothian))
 
 ## [v3.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.4.0) (2020-03-18)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.3.0..v3.4.0)
 
 - Don't crash upon destroy if instance is already dead [\#482](https://github.com/test-kitchen/kitchen-ec2/pull/482) ([kamaradclimber](https://github.com/kamaradclimber))
 
 ## [v3.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.3.0) (2020-01-20)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.2.0..v3.3.0)
 
 - Ignore case when checking if the instance provisioner is Chef [\#474](https://github.com/test-kitchen/kitchen-ec2/pull/474) ([slapvanilla](https://github.com/slapvanilla))
@@ -88,6 +99,7 @@
 - Use require_relative instead of require [\#478](https://github.com/test-kitchen/kitchen-ec2/pull/478) ([tas50](https://github.com/tas50))
 
 ## [v3.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.2.0) (2019-09-17)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.1.0..v3.2.0)
 
 - Allow for retryable 3.0 [\#466](https://github.com/test-kitchen/kitchen-ec2/pull/466) ([tas50](https://github.com/tas50))
@@ -96,6 +108,7 @@
 - \#394: Check subnet\_filter as well when creating security group [\#413](https://github.com/test-kitchen/kitchen-ec2/pull/413) ([llibicpep](https://github.com/llibicpep))
 
 ## [v3.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.1.0) (2019-08-07)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.0.1..v3.1.0)
 
 - Resolve additional deprecation warnings from the new aws-sdk-v3 dependency. Thanks [@Annih](https://github.com/Annih)
@@ -104,11 +117,13 @@
 - Allow asking for multiple instance types and subnets for spot pricing. Thanks [@vmiszczak-teads](https://github.com/vmiszczak-teads)
 
 ## [v3.0.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.0.1) (2019-05-08)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.0.0..v3.0.1)
 
 - Resolve deprecation warnings from the new aws-sdk-v3 dependency
 
 ## [v3.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.0.0) (2019-05-01)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.4.0..v3.0.0)
 
 - Switch from the monolithic aws-sdk-v2 to the just aws-sdk-ec2 aka aws-sdk-v3. This greatly reduces the number of dependencies necessary for this plugin, but is a major change that makes it incompatible with older released of ChefDK that require aws-sdk-v2.
@@ -122,6 +137,7 @@
 - Honor AWS_PROFILE if present. Thanks [@bdwyertech](https://github.com/bdwyertech)
 
 ## [v2.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.4.0) (2018-12-20)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.4..v2.4.0)
 
 - Don't ship spec files in the gem artifact
@@ -129,11 +145,13 @@
 - Support Windows Server 1709 and 1803 image searching
 
 ## [v2.3.4](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.4) (2018-12-04)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.3...v2.3.4)
 
 - Don't ship the changelog in the gem
 
 ## [v2.3.3](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.3) (2018-11-28)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.2...v2.3.3)
 
 **Merged pull requests:**
@@ -141,6 +159,7 @@
 - Adding support for arm64 architecture [\#433]
 
 ## [v2.3.2](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.2) (2018-11-28)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.1...v2.3.2)
 
 **Fixed Bugs:**
@@ -148,6 +167,7 @@
 - fix x86_64 architecture default for image search (fixes new arm64 arch appearing instead) [\#432]
 
 ## [v2.3.1](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.1) (2018-10-19)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.3.0...v2.3.1)
 
 **Fixed Bugs:**
@@ -155,6 +175,7 @@
 - windows2012-r2 hanging on userdata.ps1 in kitchen-ec2 2.3.0 [\#424]
 
 ## [v2.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.3.0) (2018-10-05)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.2.2...v2.3.0)
 
 - Add port 3389 (RDP) to the automatically generated security group
@@ -162,6 +183,7 @@
 - The gem no longer ships with test deps so we can slim the install size
 
 ## [v2.2.2](https://github.com/test-kitchen/kitchen-ec2/tree/v2.2.2) (2018-06-11)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.2.1...v2.2.2)
 
 **Fixed bugs:**
@@ -181,6 +203,7 @@
 - allow AWS-managed ssh key pairs to be disabled [\#392](https://github.com/test-kitchen/kitchen-ec2/pull/392) ([cheeseplus](https://github.com/cheeseplus))
 
 ## [v2.2.1](https://github.com/test-kitchen/kitchen-ec2/tree/v2.2.1) (2018-02-12)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v2.2.0...v2.2.1)
 
 **Fixed bugs:**
@@ -215,6 +238,7 @@
 - Automatically create a security group and key pair if needed. [\#362](https://github.com/test-kitchen/kitchen-ec2/pull/362) ([coderanger](https://github.com/coderanger))
 
 ## [v2.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v2.0.0) (2017-12-08)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.4.0...v2.0.0)
 
 **Improvements**
@@ -223,6 +247,7 @@
 - Use quadratic backoff when encountering RequestLimit errors [\#320](https://github.com/test-kitchen/kitchen-ec2/pull/320) ([kamaradclimber](https://github.com/kamaradclimber))
 
 ## [v1.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.4.0) (2017-11-29)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.3.2...v1.4.0)
 
 **Improvements**
@@ -241,6 +266,7 @@
 - Use Chefstyle and require Ruby 2.2.2 [\#301](https://github.com/test-kitchen/kitchen-ec2/pull/301) ([tas50](https://github.com/tas50))
 
 ## [v1.3.2](https://github.com/test-kitchen/kitchen-ec2/tree/v1.3.2) (2017-02-24)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.3.1...v1.3.2)
 
 **Improvements:**
@@ -248,6 +274,7 @@
 - Don't try to set tags if there aren't any. [\#298](https://github.com/test-kitchen/kitchen-ec2/pull/298) ([coderanger](https://github.com/coderanger))
 
 ## [v1.3.1](https://github.com/test-kitchen/kitchen-ec2/tree/v1.3.1) (2017-02-16)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.3.0...v1.3.1)
 
 **Closed issues:**
@@ -261,6 +288,7 @@
 - reinstate default shared creds option [\#296](https://github.com/test-kitchen/kitchen-ec2/pull/296) ([davidcpell](https://github.com/davidcpell))
 
 ## [v1.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.3.0) (2017-02-11)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.2.0...v1.3.0)
 
 **Implemented Enhancements:**
@@ -276,6 +304,7 @@
 - Lookup ID from tag [\#232](https://github.com/test-kitchen/kitchen-ec2/pull/232) ([dlukman](https://github.com/dlukman))
 
 ## [v1.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.2.0) (2016-09-12)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.1.0...v1.2.0)
 
 **Fixed bugs:**
@@ -290,6 +319,7 @@
 - Allow PowerShell script execution [\#234](https://github.com/test-kitchen/kitchen-ec2/pull/234) ([dlukman](https://github.com/dlukman))
 
 ## [v1.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.1.0) (2016-08-09)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.1...v1.1.0)
 
 **Implemented enhancements:**
@@ -308,6 +338,7 @@
 - Retrieve AMI IDs from the EC2 API [\#147](https://github.com/test-kitchen/kitchen-ec2/issues/147)
 
 ## [v1.0.1](https://github.com/test-kitchen/kitchen-ec2/tree/v1.0.1) (2016-07-20)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0...v1.0.1)
 
 **Fixed bugs:**
@@ -316,6 +347,7 @@
 - Fix autoload race in Aws::EC2::\* [\#264](https://github.com/test-kitchen/kitchen-ec2/pull/264) ([jkeiser](https://github.com/jkeiser))
 
 ## [v1.0.0](https://github.com/test-kitchen/kitchen-ec2/tree/v1.0.0) (2016-03-03)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.0.0.beta.1...v1.0.0)
 
 **Merged pull requests:**
@@ -326,6 +358,7 @@
 - Add support for looking up Private DNS Name for hostname [\#197](https://github.com/test-kitchen/kitchen-ec2/pull/197) ([mekf](https://github.com/mekf))
 
 ## [v1.0.0.beta.1](https://github.com/test-kitchen/kitchen-ec2/tree/v1.0.0.beta.1) (2016-02-13)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.10.0...v1.0.0.beta.1)
 
 **Implemented enhancements:**
@@ -378,6 +411,7 @@
 - Update CHANGELOG.md [\#183](https://github.com/test-kitchen/kitchen-ec2/pull/183) ([failshell](https://github.com/failshell))
 
 ## [v0.10.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.10.0) (2015-06-24)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.10.0.rc.1...v0.10.0)
 
 **Fixed bugs:**
@@ -402,9 +436,11 @@
 - reference to required IAM settings [\#160](https://github.com/test-kitchen/kitchen-ec2/pull/160) ([gmiranda23](https://github.com/gmiranda23))
 
 ## [v0.10.0.rc.1](https://github.com/test-kitchen/kitchen-ec2/tree/v0.10.0.rc.1) (2015-06-19)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.10.0.rc.0...v0.10.0.rc.1)
 
 ## [v0.10.0.rc.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.10.0.rc.0) (2015-06-18)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.5...v0.10.0.rc.0)
 
 **Fixed bugs:**
@@ -422,6 +458,7 @@
 - Pulling together existing PRs for windows support [\#150](https://github.com/test-kitchen/kitchen-ec2/pull/150) ([tyler-ball](https://github.com/tyler-ball))
 
 ## [v0.9.5](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.5) (2015-06-08)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.4...v0.9.5)
 
 **Fixed bugs:**
@@ -437,6 +474,7 @@
 - Query correct instance object for hostname fixes \#148 [\#151](https://github.com/test-kitchen/kitchen-ec2/pull/151) ([tyler-ball](https://github.com/tyler-ball))
 
 ## [v0.9.4](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.4) (2015-06-03)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.3...v0.9.4)
 
 **Fixed bugs:**
@@ -456,6 +494,7 @@
 - \#66: changed \[driver\_usage\] link to point to GitHub [\#141](https://github.com/test-kitchen/kitchen-ec2/pull/141) ([dsavinkov](https://github.com/dsavinkov))
 
 ## [v0.9.3](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.3) (2015-05-29)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.2...v0.9.3)
 
 **Fixed bugs:**
@@ -473,6 +512,7 @@
 - Adding an existence check before tagging server [\#140](https://github.com/test-kitchen/kitchen-ec2/pull/140) ([tyler-ball](https://github.com/tyler-ball))
 
 ## [v0.9.2](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.2) (2015-05-27)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.1...v0.9.2)
 
 **Fixed bugs:**
@@ -491,6 +531,7 @@
 - Fixing 2 regressions in 0.9.1 [\#128](https://github.com/test-kitchen/kitchen-ec2/pull/128) ([tyler-ball](https://github.com/tyler-ball))
 
 ## [v0.9.1](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.1) (2015-05-21)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.9.0...v0.9.1)
 
 **Fixed bugs:**
@@ -516,6 +557,7 @@
 - Fixing :subnet\_id payload placement if :associate\_public\_ip is set [\#125](https://github.com/test-kitchen/kitchen-ec2/pull/125) ([tyler-ball](https://github.com/tyler-ball))
 
 ## [v0.9.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.9.0) (2015-05-19)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.8.0...v0.9.0)
 
 **Implemented enhancements:**
@@ -572,6 +614,7 @@
 - IAM Profile Support for Created instance [\#35](https://github.com/test-kitchen/kitchen-ec2/pull/35) ([nicgrayson](https://github.com/nicgrayson))
 
 ## [v0.8.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.8.0) (2014-02-12)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.7.0...v0.8.0)
 
 **Fixed bugs:**
@@ -593,6 +636,7 @@
 - Support selection of private ip [\#21](https://github.com/test-kitchen/kitchen-ec2/pull/21) ([Atalanta](https://github.com/Atalanta))
 
 ## [v0.7.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.7.0) (2013-08-29)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.6.0...v0.7.0)
 
 **Closed issues:**
@@ -605,6 +649,7 @@
 - wait\_for\_ssh takes 2 arguments [\#13](https://github.com/test-kitchen/kitchen-ec2/pull/13) ([dysinger](https://github.com/dysinger))
 
 ## [v0.6.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.6.0) (2013-07-23)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.5.1...v0.6.0)
 
 **Closed issues:**
@@ -617,6 +662,7 @@
 - Use private ip if the public ip is nil [\#8](https://github.com/test-kitchen/kitchen-ec2/pull/8) ([dissonanz](https://github.com/dissonanz))
 
 ## [v0.5.1](https://github.com/test-kitchen/kitchen-ec2/tree/v0.5.1) (2013-05-23)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.5.0...v0.5.1)
 
 **Merged pull requests:**
@@ -624,6 +670,7 @@
 - Adding subnet\_id option for use with VPCs [\#7](https://github.com/test-kitchen/kitchen-ec2/pull/7) ([dissonanz](https://github.com/dissonanz))
 
 ## [v0.5.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.5.0) (2013-05-23)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.4.0...v0.5.0)
 
 **Closed issues:**
@@ -637,12 +684,15 @@
 - additional ec2 debugging [\#2](https://github.com/test-kitchen/kitchen-ec2/pull/2) ([mattray](https://github.com/mattray))
 
 ## [v0.4.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.4.0) (2013-03-02)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.3.0...v0.4.0)
 
 ## [v0.3.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.3.0) (2013-01-09)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.2.0...v0.3.0)
 
 ## [v0.2.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.2.0) (2013-01-03)
+
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v0.1.0...v0.2.0)
 
 ## [v0.1.0](https://github.com/test-kitchen/kitchen-ec2/tree/v0.1.0) (2012-12-27)

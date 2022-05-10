@@ -1,4 +1,4 @@
-# <a name="title"></a> Kitchen::Ec2: A Test Kitchen Driver for Amazon EC2
+# kitchen-ec2
 
 [![Gem Version](https://badge.fury.io/rb/kitchen-ec2.svg)](https://badge.fury.io/rb/kitchen-ec2)
 ![CI](https://github.com/test-kitchen/kitchen-ec2/workflows/CI/badge.svg?branch=master)
@@ -19,6 +19,7 @@ instances. Use Amazon's cloud for your infrastructure testing!
    driver:
      name: ec2
    ```
+
 5. Run `kitchen test`.
 
 ## Requirements
@@ -31,7 +32,7 @@ will need access to an [AWS][aws_site] account.  [IAM][iam_site] users should ha
 By automatically applying reasonable defaults wherever possible, kitchen-ec2 does a lot of work to make your life easier.
 See the [kitchen.ci kitchen-ec2 docs](https://kitchen.ci/docs/drivers/aws/) for a complete list of configuration options.
 
-## <a name="development"></a> Development
+## Development
 
 * Source hosted at [GitHub][repo]
 * Report issues/questions/feature requests on [GitHub Issues][issues]
@@ -46,7 +47,7 @@ example:
 4. Push to the branch (`git push origin my-new-feature`)
 5. Create new Pull Request
 
-## <a name="license"></a> License
+## License
 
 Apache 2.0 (see [LICENSE][license])
 
