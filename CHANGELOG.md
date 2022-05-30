@@ -1,6 +1,6 @@
 # Change Log
 
-## [v3.12.1](https://github.com/test-kitchen/kitchen-ec2/tree/v3.12.1) (2022-05-30)
+## [v3.13.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.13.0) (2022-05-30)
 
 - Added support for metadata_options [#573](https://github.com/test-kitchen/kitchen-ec2/pull/573) ([@bdwyertech](https://github.com/bdwyertech))
 - Improve speed of readiness detection for Windows instances [#582](https://github.com/test-kitchen/kitchen-ec2/pull/582) ([@jakauppila](https://github.com/jakauppila))
@@ -9,7 +9,7 @@
   ([@kasif-adnan](https://github.com/kasif-adnan))
 - Chefsyle linting and version updates
 
-[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.12.0..v3.12.1)
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.12.0..v3.13.0)
 
 ## [v3.12.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.12.0) (2021-12-20)
 
