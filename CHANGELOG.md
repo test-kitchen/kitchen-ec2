@@ -1,5 +1,16 @@
 # Change Log
 
+## [v3.13.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.13.0) (2022-05-30)
+
+- Added support for metadata_options [#573](https://github.com/test-kitchen/kitchen-ec2/pull/573) ([@bdwyertech](https://github.com/bdwyertech))
+- Improve speed of readiness detection for Windows instances [#582](https://github.com/test-kitchen/kitchen-ec2/pull/582) ([@jakauppila](https://github.com/jakauppila))
+- Updated the README to point to kitchen.ci [#577](https://github.com/test-kitchen/kitchen-ec2/pull/577) ([@kasif-adnan](https://github.com/kasif-adnan))
+- Github workflow updates [#579](https://github.com/test-kitchen/kitchen-ec2/pull/579), [#584](https://github.com/test-kitchen/kitchen-ec2/pull/584)
+  ([@kasif-adnan](https://github.com/kasif-adnan))
+- Chefsyle linting and version updates
+
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.12.0..v3.13.0)
+
 ## [v3.12.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.12.0) (2021-12-20)
 
 - Adds support for defining multiple tags for subnet_filter [#570](https://github.com/test-kitchen/kitchen-ec2/pull/570) ([@jakauppila](https://github.com/jakauppila))
