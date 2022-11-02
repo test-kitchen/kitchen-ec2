@@ -31,6 +31,7 @@ require_relative "aws/standard_platform/debian"
 require_relative "aws/standard_platform/rhel"
 require_relative "aws/standard_platform/fedora"
 require_relative "aws/standard_platform/freebsd"
+require_relative "aws/standard_platform/macos"
 require_relative "aws/standard_platform/ubuntu"
 require_relative "aws/standard_platform/windows"
 require "aws-sdk-ec2"
@@ -92,8 +93,6 @@ module Kitchen
       default_config :skip_cost_warning, false
       default_config :allocate_dedicated_host, false
       default_config :deallocate_dedicated_host, false
-
-      include Kitchen::Driver::Mixins::DedicatedHosts
 
       include Kitchen::Driver::Mixins::DedicatedHosts
 
@@ -319,7 +318,7 @@ module Kitchen
         # Clean up dedicated hosts matching instance_type and unused (if allowed)
         if config[:tenancy] == "host" && allow_deallocate_host?
           empty_hosts = hosts_with_capacity.select { |host| host_unused?(host) }
-          empty_hosts.each { |host| deallocate_host(host.host_id) if host_empty? }
+          empty_hosts.each { |host| deallocate_host(host.host_id) }
         end
       end
 

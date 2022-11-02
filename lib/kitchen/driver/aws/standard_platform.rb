@@ -27,6 +27,7 @@ module Kitchen
       # rhel
       # fedora
       # freebsd
+      # macos
       # ubuntu
       # windows
       #
