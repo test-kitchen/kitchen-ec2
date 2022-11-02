@@ -95,6 +95,8 @@ module Kitchen
 
       include Kitchen::Driver::Mixins::DedicatedHosts
 
+      include Kitchen::Driver::Mixins::DedicatedHosts
+
       def initialize(*args, &block)
         super
       end
@@ -317,7 +319,7 @@ module Kitchen
         # Clean up dedicated hosts matching instance_type and unused (if allowed)
         if config[:tenancy] == "host" && allow_deallocate_host?
           empty_hosts = hosts_with_capacity.select { |host| host_unused?(host) }
-          empty_hosts.each { |host| deallocate_host(host.host_id) }
+          empty_hosts.each { |host| deallocate_host(host.host_id) if host_empty? }
         end
       end
 
