@@ -21,6 +21,7 @@ require "json" unless defined?(JSON)
 require "kitchen"
 require_relative "ec2_version"
 require_relative "aws/client"
+require_relative "aws/dedicated_hosts"
 require_relative "aws/instance_generator"
 require_relative "aws/standard_platform"
 require_relative "aws/standard_platform/amazon"
@@ -89,6 +90,10 @@ module Kitchen
       default_config :instance_initiated_shutdown_behavior, nil
       default_config :ssl_verify_peer, true
       default_config :skip_cost_warning, false
+      default_config :allocate_dedicated_host, false
+      default_config :deallocate_dedicated_host, false
+
+      include Kitchen::Driver::Mixins::DedicatedHosts
 
       def initialize(*args, &block)
         super
@@ -225,6 +230,18 @@ module Kitchen
           config[:aws_ssh_key_id] = nil
         end
 
+        # Allocate new dedicated hosts if needed and allowed
+        if config[:tenancy] == "host"
+          unless host_available? || allow_allocate_host?
+            warn "ERROR: tenancy `host` requested but no suitable host and allocation not allowed (set `allocate_dedicated_host` setting)"
+            exit!
+          end
+
+          allocate_host unless host_available?
+
+          info("Auto placement on one dedicated host out of: #{hosts_with_capacity.map(&:host_id).join(', ')}")
+        end
+
         if config[:spot_price]
           # Spot instance when a price is set
           server = with_request_limit_backoff(state) { submit_spots }
@@ -296,6 +313,12 @@ module Kitchen
         # Clean up any auto-created security groups or keys.
         delete_security_group(state)
         delete_key(state)
+
+        # Clean up dedicated hosts matching instance_type and unused (if allowed)
+        if config[:tenancy] == "host" && allow_deallocate_host?
+          empty_hosts = hosts_with_capacity.select { |host| host_unused?(host) }
+          empty_hosts.each { |host| deallocate_host(host.host_id) }
+        end
       end
 
       def image
