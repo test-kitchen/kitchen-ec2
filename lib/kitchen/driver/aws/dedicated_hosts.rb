@@ -77,7 +77,7 @@ module Kitchen
                   { key: "ManagedBy", value: "Test Kitchen" },
                 ],
               },
-            ]
+            ],
           }
 
           # ".metal" is a 1:1 association, everything else has multi-instance capability

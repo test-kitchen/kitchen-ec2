@@ -239,7 +239,7 @@ module Kitchen
 
           allocate_host unless host_available?
 
-          info("Auto placement on one dedicated host out of: #{hosts_with_capacity.map(&:host_id).join(', ')}")
+          info("Auto placement on one dedicated host out of: #{hosts_with_capacity.map(&:host_id).join(", ")}")
         end
 
         if config[:spot_price]
