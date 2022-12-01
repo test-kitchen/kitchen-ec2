@@ -1,5 +1,12 @@
 # Change Log
 
+## [v3.14.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.14.0) (2022-12-01)
+
+- Support for dedicated hosts [#592](https://github.com/test-kitchen/kitchen-ec2/pull/592) ([@tecracer-theinen](https://github.com/tecracer-theinen))
+
+[Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.13.0..v3.14.0)
+
+
 ## [v3.13.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.13.0) (2022-05-30)
 
 - Added support for metadata_options [#573](https://github.com/test-kitchen/kitchen-ec2/pull/573) ([@bdwyertech](https://github.com/bdwyertech))
