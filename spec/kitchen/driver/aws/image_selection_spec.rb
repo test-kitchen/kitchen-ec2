@@ -228,6 +228,16 @@ describe "Default images for various platforms" do
       { name: "architecture", values: %w{x86_64} },
     ],
 
+    "macos-12.5" => [
+      { name: "owner-id", values: %w{100343932686} },
+      { name: "name", values: %w{amzn-ec2-macos-12.5*} },
+    ],
+    "macos-12.6-arm64" => [
+      { name: "owner-id", values: %w{100343932686} },
+      { name: "name", values: %w{amzn-ec2-macos-12.6*} },
+      { name: "architecture", values: %w{arm64_mac} },
+    ],
+
     "ubuntu" => [
       { name: "owner-id", values: %w{099720109477} },
       { name: "name", values: %w{ubuntu/images/*/ubuntu-*-*} },
