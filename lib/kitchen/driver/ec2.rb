@@ -80,6 +80,7 @@ module Kitchen
       default_config :aws_secret_access_key, nil
       default_config :aws_session_token,  nil
       default_config :aws_ssh_key_id,     ENV["AWS_SSH_KEY_ID"]
+      default_config :aws_ssh_key_type,   "rsa"
       default_config :image_id, &:default_ami
       default_config :image_search,       nil
       default_config :username,           nil
@@ -854,7 +855,7 @@ module Kitchen
         # to rapidly exhaust local entropy by creating a lot of keys. So this is
         # probably fine. If you want very high security, probably don't use this
         # feature anyway.
-        resp = ec2.client.create_key_pair(key_name: "kitchen-#{name_parts.join("-")}")
+        resp = ec2.client.create_key_pair(key_name: "kitchen-#{name_parts.join("-")}", key_type: config[:aws_ssh_key_type])
         state[:auto_key_id] = resp.key_name
         info("Created automatic key pair #{state[:auto_key_id]}")
         # Write the key out with safe permissions
