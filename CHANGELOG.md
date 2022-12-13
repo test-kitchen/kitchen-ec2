@@ -1,5 +1,7 @@
 # Change Log
 
+## [v3.15.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.15.0) (2022-12-13)
+
 ## [v3.14.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.14.0) (2022-12-01)
 
 - Support for dedicated hosts [#592](https://github.com/test-kitchen/kitchen-ec2/pull/592) ([@tecracer-theinen](https://github.com/tecracer-theinen))
