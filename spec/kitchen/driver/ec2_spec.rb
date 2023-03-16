@@ -22,7 +22,6 @@ require "kitchen/transport/dummy"
 require "kitchen/verifier/dummy"
 
 describe Kitchen::Driver::Ec2 do
-
   let(:logged_output) { StringIO.new }
   let(:logger)        { Logger.new(logged_output) }
   let(:config) do
@@ -380,7 +379,6 @@ describe Kitchen::Driver::Ec2 do
         .and_return(password)
       driver.fetch_windows_admin_password(server, state)
     end
-
   end
 
   describe "#wait_with_destroy" do
@@ -797,5 +795,4 @@ describe Kitchen::Driver::Ec2 do
       end
     end
   end
-
 end

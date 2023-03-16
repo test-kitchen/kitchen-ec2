@@ -20,7 +20,6 @@ require "kitchen/driver/aws/standard_platform"
 require "kitchen/driver/ec2"
 
 describe Kitchen::Driver::Aws::StandardPlatform do
-
   let(:klass) { Kitchen::Driver::Aws::StandardPlatform }
 
   describe "parse_platform_string" do
@@ -109,5 +108,4 @@ describe Kitchen::Driver::Aws::StandardPlatform do
       expect(standard_platform.send(:sort_images, images)).to eq(sorted_images)
     end
   end
-
 end

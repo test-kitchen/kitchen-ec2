@@ -2,7 +2,7 @@ class FakeImage
   def self.next_ami
     @n ||= 0
     @n += 1
-    [sprintf("ami-%08x", @n), Time.now + @n]
+    [format("ami-%08x", @n), Time.now + @n]
   end
 
   def initialize(name: "foo")
@@ -16,15 +16,7 @@ class FakeImage
     @root_device_name = "root"
     @device_name = "root"
   end
-  attr_reader :id
-  attr_reader :name
-  attr_reader :creation_date
-  attr_reader :architecture
-  attr_reader :volume_type
-  attr_reader :root_device_type
-  attr_reader :virtualization_type
-  attr_reader :root_device_name
-  attr_reader :device_name
+  attr_reader :id, :name, :creation_date, :architecture, :volume_type, :root_device_type, :virtualization_type, :root_device_name, :device_name
 
   def block_device_mappings
     [self]

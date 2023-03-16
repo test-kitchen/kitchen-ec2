@@ -23,7 +23,6 @@ require "base64" unless defined?(Base64)
 require "aws-sdk-ec2"
 
 describe Kitchen::Driver::Aws::InstanceGenerator do
-
   let(:config) { { region: "us-east-1" } }
   let(:resource) { instance_double(Aws::EC2::Resource) }
   let(:ec2) { instance_double(Kitchen::Driver::Aws::Client, resource: resource) }

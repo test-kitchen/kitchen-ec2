@@ -134,9 +134,9 @@ module Kitchen
 
           def windows_name_filter # rubocop:disable Metrics/MethodLength
             major, revision, service_pack = windows_version_parts
-            if major == 2022 || major == 2019 || major == 2016
+            if [2022, 2019, 2016].include?(major)
               "Windows_Server-#{major}-English-Full-Base-*"
-            elsif major == 1709 || major == 1803
+            elsif [1709, 1803].include?(major)
               "Windows_Server-#{major}-English-Core-ContainersLatest-*"
             else
               case revision

@@ -20,9 +20,7 @@ require "base64" unless defined?(Base64)
 require "aws-sdk-ec2"
 
 module Kitchen
-
   module Driver
-
     class Aws
 
       # A class for encapsulating the instance payload logic
@@ -216,7 +214,5 @@ module Kitchen
       end
 
     end
-
   end
-
 end
