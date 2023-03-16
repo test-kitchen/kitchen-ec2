@@ -69,7 +69,6 @@ describe "Default images for various platforms" do
       { name: "name", values: %w{amzn-ami-*-2017.03*} },
       { name: "architecture", values: ["x86_64"] },
     ],
-
     "amazon2" => [
       { name: "owner-id", values: %w{137112412989} },
       { name: "name", values: %w{amzn2-ami-hvm-2.0.*} },
@@ -78,7 +77,24 @@ describe "Default images for various platforms" do
       { name: "owner-id", values: %w{137112412989} },
       { name: "name", values: %w{amzn2-ami-hvm-2.0.2018*} },
     ],
-
+    "amazon2023" => [
+      { name: "owner-id", values: %w{137112412989} },
+      { name: "name", values: %w{al2023-ami-2023.0.*} },
+    ],
+    "amazon2023-x86_64" => [
+      { name: "owner-id", values: %w{137112412989} },
+      { name: "name", values: %w{al2023-ami-2023.0.*} },
+      { name: "architecture", values: %w{x86_64} },
+    ],
+    "amazon2023-arm64" => [
+      { name: "owner-id", values: %w{137112412989} },
+      { name: "name", values: %w{al2023-ami-2023.0.*} },
+      { name: "architecture", values: %w{arm64} },
+    ],
+    "amazon2023-20230222" => [
+      { name: "owner-id", values: %w{137112412989} },
+      { name: "name", values: %w{al2023-ami-2023.0.20230222*} },
+    ],
     "centos" => [
       { name: "owner-id", values: %w{125523088429} },
       { name: "name", values: ["CentOS *", "CentOS-*-GA-*", "CentOS Linux *", "CentOS Stream *"] },
