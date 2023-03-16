@@ -2,7 +2,7 @@
 
 ## [v3.15.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.15.0) (2022-12-13)
 
--  Add support for specifying the SSH key type to be automatically generated [#583](https://github.com/test-kitchen/kitchen-ec2/pull/583) ([@bdwyertech](https://github.com/bdwyertech))
+- Add support for specifying the SSH key type to be automatically generated [#583](https://github.com/test-kitchen/kitchen-ec2/pull/583) ([@bdwyertech](https://github.com/bdwyertech))
 
 ## [v3.14.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.14.0) (2022-12-01)
 
