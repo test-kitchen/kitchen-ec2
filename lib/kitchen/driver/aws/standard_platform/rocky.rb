@@ -1,5 +1,5 @@
 #
-# Copyright:: 2016-2018, Chef Software, Inc.
+# Copyright:: 2023, Jared Kauppila
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -19,7 +19,6 @@ module Kitchen
   module Driver
     class Aws
       class StandardPlatform
-        # https://docs.aws.amazon.com/linux/al2023/release-notes/relnotes.html
         class Rocky < StandardPlatform
           StandardPlatform.platforms["rocky"] = self
           StandardPlatform.platforms["rockylinux"] = self
