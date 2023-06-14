@@ -215,7 +215,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
                 name: "tag:foo",
                 values: ["bar"],
               },
-            ]
+            ],
           }
         ).and_return(ec2_stub.describe_subnets)
         expect(generator.ec2_instance_data[:subnet_id]).to eq("s-123")
@@ -252,7 +252,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
                 name: "vpc-id",
                 values: ["vpc-456"],
               },
-            ]
+            ],
           }
         ).and_return(ec2_stub.describe_security_groups)
         expect(generator.ec2_instance_data[:security_group_ids]).to eq(["sg-123"])
@@ -301,7 +301,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
                 name: "vpc-id",
                 values: ["vpc-456"],
               },
-            ]
+            ],
           }
         ).and_return(ec2_stub_whithout_security_group.describe_security_groups)
 
