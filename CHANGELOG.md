@@ -1,5 +1,10 @@
 # Change Log
 
+## [v3.16.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.16.0) (2022-03-16)
+
+- Add support for Amazon Linux 2023 [#600](https://github.com/test-kitchen/kitchen-ec2/pull/600) ([@bjakauppila](https://github.com/jakauppila))
+- Remove support for EOL Ruby 2.6 ([@tas50](https://github.com/tas50))
+
 ## [v3.15.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.15.0) (2022-12-13)
 
 - Add support for specifying the SSH key type to be automatically generated [#583](https://github.com/test-kitchen/kitchen-ec2/pull/583) ([@bdwyertech](https://github.com/bdwyertech))
