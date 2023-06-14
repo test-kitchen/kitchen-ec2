@@ -1,6 +1,11 @@
 # Change Log
 
-## [v3.16.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.16.0) (2022-03-16)
+## [v3.17.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.17.0) (2023-06-14)
+
+- Add support for Rocky and AlmaLinux [#602](https://github.com/test-kitchen/kitchen-ec2/pull/602) ([@bjakauppila](https://github.com/jakauppila))
+- Ruby 3 compatibility for RSpec suite [#603](https://github.com/test-kitchen/kitchen-ec2/pull/603) ([@RulerOf](https://github.com/RulerOf))
+
+## [v3.16.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.16.0) (2023-03-16)
 
 - Add support for Amazon Linux 2023 [#600](https://github.com/test-kitchen/kitchen-ec2/pull/600) ([@bjakauppila](https://github.com/jakauppila))
 - Remove support for EOL Ruby 2.6 ([@tas50](https://github.com/tas50))
