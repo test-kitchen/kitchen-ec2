@@ -39,6 +39,38 @@ describe "Default images for various platforms" do
   end
 
   PLATFORM_SEARCHES = {
+    "alma" => [
+      { name: "owner-id", values: %w{764336703387} },
+      { name: "name", values: ["AlmaLinux OS *"] },
+    ],
+    "alma-8" => [
+      { name: "owner-id", values: %w{764336703387} },
+      { name: "name", values: ["AlmaLinux OS 8*"] },
+    ],
+    "alma-9" => [
+      { name: "owner-id", values: %w{764336703387} },
+      { name: "name", values: ["AlmaLinux OS 9*"] },
+    ],
+    "alma-arm64" => [
+      { name: "owner-id", values: %w{764336703387} },
+      { name: "name", values: ["AlmaLinux OS *"] },
+      { name: "architecture", values: %w{arm64} },
+    ],
+    "alma-x86_64" => [
+      { name: "owner-id", values: %w{764336703387} },
+      { name: "name", values: ["AlmaLinux OS *"] },
+      { name: "architecture", values: %w{x86_64} },
+    ],
+    "alma-8-arm64" => [
+      { name: "owner-id", values: %w{764336703387} },
+      { name: "name", values: ["AlmaLinux OS 8*"] },
+      { name: "architecture", values: %w{arm64} },
+    ],
+    "alma-8-x86_64" => [
+      { name: "owner-id", values: %w{764336703387} },
+      { name: "name", values: ["AlmaLinux OS 8*"] },
+      { name: "architecture", values: %w{x86_64} },
+    ],
     "amazon" => [
       { name: "owner-id", values: %w{137112412989} },
       { name: "name", values: %w{amzn-ami-*} },
@@ -172,6 +204,38 @@ describe "Default images for various platforms" do
     "rhel-6-x86_64" => [
       { name: "owner-id", values: %w{309956199498} },
       { name: "name", values: %w{RHEL-6*} },
+      { name: "architecture", values: %w{x86_64} },
+    ],
+    "rocky" => [
+      { name: "owner-id", values: %w{792107900819} },
+      { name: "name", values: ["Rocky-*"] },
+    ],
+    "rocky-8" => [
+      { name: "owner-id", values: %w{792107900819} },
+      { name: "name", values: ["Rocky-8-*"] },
+    ],
+    "rocky-9" => [
+      { name: "owner-id", values: %w{792107900819} },
+      { name: "name", values: ["Rocky-9-*"] },
+    ],
+    "rocky-arm64" => [
+      { name: "owner-id", values: %w{792107900819} },
+      { name: "name", values: ["Rocky-*"] },
+      { name: "architecture", values: %w{arm64} },
+    ],
+    "rocky-x86_64" => [
+      { name: "owner-id", values: %w{792107900819} },
+      { name: "name", values: ["Rocky-*"] },
+      { name: "architecture", values: %w{x86_64} },
+    ],
+    "rocky-8-arm64" => [
+      { name: "owner-id", values: %w{792107900819} },
+      { name: "name", values: ["Rocky-8-*"] },
+      { name: "architecture", values: %w{arm64} },
+    ],
+    "rocky-8-x86_64" => [
+      { name: "owner-id", values: %w{792107900819} },
+      { name: "name", values: ["Rocky-8-*"] },
       { name: "architecture", values: %w{x86_64} },
     ],
     "el" => [
