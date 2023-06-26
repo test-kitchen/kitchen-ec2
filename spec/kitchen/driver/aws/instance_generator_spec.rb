@@ -206,7 +206,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
 
       it "generates id from the provided tag" do
-        allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
+        allow(Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
         expect(ec2_stub).to receive(:describe_subnets).with(
           {
             filters: [
@@ -239,7 +239,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
 
       it "generates id from the provided tag" do
-        allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
+        allow(Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
         expect(ec2_stub).to receive(:describe_security_groups).with(
           {
             filters: [
@@ -288,7 +288,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
 
       it "generates id from the provided tag" do
-        allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_stub_whithout_security_group)
+        allow(Aws::EC2::Client).to receive(:new).and_return(ec2_stub_whithout_security_group)
         expect(ec2_stub_whithout_security_group).to receive(:describe_security_groups).with(
           {
             filters: [

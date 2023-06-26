@@ -141,9 +141,9 @@ module Kitchen
         #
         def self.from_platform_string(driver, platform_string)
           platform, version, architecture = parse_platform_string(platform_string)
-          if platform && platforms[platform]
-            platforms[platform].new(driver, platform, version, architecture)
-          end
+          return unless platform && platforms[platform]
+
+          platforms[platform].new(driver, platform, version, architecture)
         end
 
         #

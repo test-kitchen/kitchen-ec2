@@ -50,7 +50,6 @@ module Kitchen
     #
     # @author Fletcher Nichol <fnichol@nichol.ca>
     class Ec2 < Kitchen::Driver::Base
-
       kitchen_driver_api_version 2
 
       plugin_version Kitchen::Driver::EC2_VERSION
@@ -192,7 +191,7 @@ module Kitchen
       end
 
       # empty keys cause failures when tagging and they make no sense
-      validations[:tags] = lambda do |attr, val, _driver|
+      validations[:tags] = lambda do |_attr, val, _driver|
         # if someone puts the tags each on their own line it's an array not a hash
         # @todo we should probably just do the right thing and support this format
         if val.instance_of?(Array)
@@ -245,13 +244,13 @@ module Kitchen
           info("Auto placement on one dedicated host out of: #{hosts_with_capacity.map(&:host_id).join(", ")}")
         end
 
-        if config[:spot_price]
-          # Spot instance when a price is set
-          server = with_request_limit_backoff(state) { submit_spots }
-        else
-          # On-demand instance
-          server = with_request_limit_backoff(state) { submit_server }
-        end
+        server = if config[:spot_price]
+                   # Spot instance when a price is set
+                   with_request_limit_backoff(state) { submit_spots }
+                 else
+                   # On-demand instance
+                   with_request_limit_backoff(state) { submit_server }
+                 end
         info("Instance <#{server.id}> requested.")
         with_request_limit_backoff(state) do
           logging_proc = ->(attempts) { info("Polling AWS for existence, attempt #{attempts}...") }
@@ -267,7 +266,7 @@ module Kitchen
           tries: 10,
           sleep: lambda { |n| [2**n, 30].min },
           on: ::Aws::EC2::Errors::InvalidInstanceIDNotFound
-        ) do |r, _|
+        ) do |_r, _|
           wait_until_ready(server, state)
         end
 
@@ -318,10 +317,10 @@ module Kitchen
         delete_key(state)
 
         # Clean up dedicated hosts matching instance_type and unused (if allowed)
-        if config[:tenancy] == "host" && allow_deallocate_host?
-          empty_hosts = hosts_with_capacity.select { |host| host_unused?(host) }
-          empty_hosts.each { |host| deallocate_host(host.host_id) }
-        end
+        return unless config[:tenancy] == "host" && allow_deallocate_host?
+
+        empty_hosts = hosts_with_capacity.select { |host| host_unused?(host) }
+        empty_hosts.each { |host| deallocate_host(host.host_id) }
       end
 
       def image
@@ -497,11 +496,11 @@ module Kitchen
         instance_data = instance_generator.ec2_instance_data
 
         config_spot_price = config[:spot_price].to_s
-        if %w{ondemand on-demand}.include?(config_spot_price)
-          spot_price = ""
-        else
-          spot_price = config_spot_price
-        end
+        spot_price = if %w{ondemand on-demand}.include?(config_spot_price)
+                       ""
+                     else
+                       config_spot_price
+                     end
         spot_options = {
           # Must use one-time in order to use instance_interruption_behavior=terminate
           # spot_instance_type: "one-time", # default
@@ -565,7 +564,7 @@ module Kitchen
                 output = Base64.decode64(output)
                 debug "Console output: --- \n#{output}"
               end
-              ready = !!(output.include?('Windows is Ready to use'))
+              ready = !!(output.include?("Windows is Ready to use"))
             end
           end
           ready
@@ -598,7 +597,7 @@ module Kitchen
       end
 
       def fetch_windows_admin_password(server, state)
-        wait_with_destroy(server, state, "to fetch windows admin password") do |aws_instance|
+        wait_with_destroy(server, state, "to fetch windows admin password") do |_aws_instance|
           enc = server.client.get_password_data(
             instance_id: state[:server_id]
           ).password_data
@@ -715,7 +714,7 @@ module Kitchen
 
         # Preparing custom static admin user if we defined something other than Administrator
         custom_admin_script = ""
-        if !(instance.transport[:username] =~ /administrator/i) && instance.transport[:password]
+        if instance.transport[:username] !~ /administrator/i && instance.transport[:password]
           custom_admin_script = Kitchen::Util.outdent!(<<-EOH)
           "Disabling Complex Passwords" >> $logfile
           $seccfg = [IO.Path]::GetTempFileName()
@@ -849,7 +848,7 @@ module Kitchen
           (Etc.getlogin || "nologin").gsub(/\W/, ""),
           Socket.gethostname.gsub(/\W/, "")[0..20],
           Time.now.utc.iso8601,
-          Array.new(8) { rand(36).to_s(36) }.join(""),
+          Array.new(8) { rand(36).to_s(36) }.join,
         ]
         # In a perfect world this would generate the key locally and use ImportKey
         # instead for better security, but given the use case that is very likely
@@ -920,7 +919,6 @@ module Kitchen
         state.delete(:auto_key_id)
         File.unlink("#{config[:kitchen_root]}/.kitchen/#{instance.name}.pem")
       end
-
     end
   end
 end

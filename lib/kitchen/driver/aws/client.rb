@@ -24,12 +24,10 @@ require "aws-sdk-core/instance_profile_credentials"
 module Kitchen
   module Driver
     class Aws
-
       # A class for creating and managing the EC2 client connection
       #
       # @author Tyler Ball <tball@chef.io>
       class Client
-
         def initialize(
           region,
           profile_name = "default",
@@ -87,9 +85,7 @@ module Kitchen
         def resource
           @resource ||= ::Aws::EC2::Resource.new
         end
-
       end
-
     end
   end
 end

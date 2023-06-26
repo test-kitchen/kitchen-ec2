@@ -73,16 +73,16 @@ module Kitchen
           end
 
           def self.from_image(driver, image)
-            if /debian/i.match?(image.name)
-              image.name =~ /\b(\d+|#{DEBIAN_CODENAMES.values.join("|")})\b/i
-              version = (Regexp.last_match || [])[1]
-              if version && version.to_i == 0
-                version = DEBIAN_CODENAMES.find do |_v, codename|
-                  codename == version.downcase
-                end.first
-              end
-              new(driver, "debian", version, image.architecture)
+            return unless /debian/i.match?(image.name)
+
+            image.name =~ /\b(\d+|#{DEBIAN_CODENAMES.values.join("|")})\b/i
+            version = (Regexp.last_match || [])[1]
+            if version&.to_i&.zero?
+              version = DEBIAN_CODENAMES.find do |_v, codename|
+                codename == version.downcase
+              end.first
             end
+            new(driver, "debian", version, image.architecture)
           end
         end
       end

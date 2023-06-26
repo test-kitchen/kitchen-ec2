@@ -65,7 +65,7 @@ describe Kitchen::Driver::Aws::StandardPlatform do
 
   describe "#sort_images" do
     let(:img1) do
-      instance_double(::Aws::EC2::Image,
+      instance_double(Aws::EC2::Image,
         creation_date: "1543439623",
         architecture: "amd64",
         block_device_mappings: [],
@@ -74,7 +74,7 @@ describe Kitchen::Driver::Aws::StandardPlatform do
         name: "ubuntu")
     end
     let(:img2) do
-      instance_double(::Aws::EC2::Image,
+      instance_double(Aws::EC2::Image,
         creation_date: "1543439623",
         architecture: "x86_64",
         block_device_mappings: [],
@@ -83,7 +83,7 @@ describe Kitchen::Driver::Aws::StandardPlatform do
         name: "ubuntu")
     end
     let(:img3) do
-      instance_double(::Aws::EC2::Image,
+      instance_double(Aws::EC2::Image,
         creation_date: "1543439623",
         architecture: "x86_64",
         block_device_mappings: [],
@@ -92,7 +92,7 @@ describe Kitchen::Driver::Aws::StandardPlatform do
         name: "ubuntu")
     end
     let(:img4) do
-      instance_double(::Aws::EC2::Image,
+      instance_double(Aws::EC2::Image,
         creation_date: "1543439623",
         architecture: "x86_64",
         block_device_mappings: [],

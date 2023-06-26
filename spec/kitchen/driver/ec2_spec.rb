@@ -76,7 +76,7 @@ describe Kitchen::Driver::Ec2 do
 
   describe "default_config" do
     context "Windows" do
-      let(:resource) { instance_double(::Aws::EC2::Resource, image: image) }
+      let(:resource) { instance_double(Aws::EC2::Resource, image: image) }
       before do
         allow(driver).to receive(:windows_os?).and_return(true)
         allow(client).to receive(:resource).and_return(resource)
@@ -404,12 +404,12 @@ describe Kitchen::Driver::Ec2 do
     end
 
     it "attempts to destroy the instance if the waiter fails" do
-      expect(server).to receive(:wait_until).and_raise(::Aws::Waiters::Errors::WaiterFailed)
+      expect(server).to receive(:wait_until).and_raise(Aws::Waiters::Errors::WaiterFailed)
       expect(driver).to receive(:destroy).with(state)
       expect(driver).to receive(:error).with(/#{msg}/)
       expect do
         driver.wait_with_destroy(server, state, msg, &given_block)
-      end.to raise_error(::Aws::Waiters::Errors::WaiterFailed)
+      end.to raise_error(Aws::Waiters::Errors::WaiterFailed)
     end
   end
 
