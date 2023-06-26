@@ -92,6 +92,11 @@ module Kitchen
         SUPPORTED_ARCHITECTURES = %w{x86_64 i386 arm64}.freeze
 
         #
+        # The list of supported ebs volume types
+        #
+        EBS_VOLUME_TYPES = %w{gp3 gp2}.freeze
+
+        #
         # Find the best matching image for the given image search.
         #
         # @return [String] The image ID (e.g. ami-213984723)
@@ -214,7 +219,7 @@ module Kitchen
           # P4: We prefer (SSD) (if available)
           images = prefer(images) do |image|
             image.block_device_mappings.any? do |b|
-              b.device_name == image.root_device_name && b.ebs && %w{gp3 gp2}.any? { |t| b.ebs.volume_type == t }
+              b.device_name == image.root_device_name && b.ebs && EBS_VOLUME_TYPES.any?(b.ebs.volume_type)
             end
           end
           # P3: We prefer ebs over instance_store (if available)

@@ -565,7 +565,7 @@ module Kitchen
                 output = Base64.decode64(output)
                 debug "Console output: --- \n#{output}"
               end
-              ready = !!(output =~ /Windows is Ready to use/)
+              ready = !!(output.include?('Windows is Ready to use'))
             end
           end
           ready
