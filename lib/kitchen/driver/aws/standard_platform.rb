@@ -108,7 +108,7 @@ module Kitchen
           show_returned_images(images)
 
           # Grab the best match
-          images.first && images.first.id
+          images.first&.id
         end
 
         #

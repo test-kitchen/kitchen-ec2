@@ -45,9 +45,7 @@ require "etc" unless defined?(Etc)
 require "socket" unless defined?(Socket)
 
 module Kitchen
-
   module Driver
-
     # Amazon EC2 driver for Test Kitchen.
     #
     # @author Fletcher Nichol <fnichol@nichol.ca>
@@ -58,7 +56,7 @@ module Kitchen
       plugin_version Kitchen::Driver::EC2_VERSION
 
       default_config :region, ENV["AWS_REGION"] || "us-east-1"
-      default_config :shared_credentials_profile, ENV["AWS_PROFILE"]
+      default_config :shared_credentials_profile, ENV.fetch("AWS_PROFILE", nil)
       default_config :availability_zone, nil
       default_config :instance_type, &:default_instance_type
       default_config :ebs_optimized, false
@@ -82,14 +80,14 @@ module Kitchen
       default_config :aws_access_key_id,  nil
       default_config :aws_secret_access_key, nil
       default_config :aws_session_token,  nil
-      default_config :aws_ssh_key_id,     ENV["AWS_SSH_KEY_ID"]
+      default_config :aws_ssh_key_id,     ENV.fetch("AWS_SSH_KEY_ID", nil)
       default_config :aws_ssh_key_type,   "rsa"
       default_config :image_id, &:default_ami
       default_config :image_search,       nil
       default_config :username,           nil
       default_config :associate_public_ip, nil
       default_config :interface,           nil
-      default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV["HTTP_PROXY"]
+      default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV.fetch("HTTP_PROXY", nil)
       default_config :retry_limit,         3
       default_config :tenancy,             "default"
       default_config :instance_initiated_shutdown_behavior, nil
@@ -197,7 +195,7 @@ module Kitchen
       validations[:tags] = lambda do |attr, val, _driver|
         # if someone puts the tags each on their own line it's an array not a hash
         # @todo we should probably just do the right thing and support this format
-        if val.class == Array
+        if val.instance_of?(Array)
           warn "AWS instance tags must be specified as a single hash, not a tag " \
             "on each line. Example: {:foo => 'bar', :bar => 'foo'}"
           exit!
@@ -427,7 +425,7 @@ module Kitchen
       def expand_config(conf, key)
         configs = []
 
-        if conf[key] && conf[key].is_a?(Array)
+        if conf[key].is_a?(Array)
           values = conf[key]
           values.each do |value|
             new_config = conf.clone
@@ -551,7 +549,7 @@ module Kitchen
             aws_instance.state.name == "running" &&
             hostname != "0.0.0.0"
 
-          if ready && ( hostname.nil? || hostname == "" )
+          if ready && (hostname.nil? || hostname == "")
             debug("Unable to detect hostname using interface_type #{config[:interface]}. Fallback to ordered mapping")
             state[:hostname] = hostname(aws_instance, nil)
           end
@@ -655,7 +653,7 @@ module Kitchen
           server.send(interface_type)
         else
           potential_hostname = nil
-          INTERFACE_TYPES.values.each do |type|
+          INTERFACE_TYPES.each_value do |type|
             potential_hostname ||= server.send(type)
             # AWS returns an empty string if the dns name isn't populated yet
             potential_hostname = nil if potential_hostname == ""
@@ -759,7 +757,7 @@ module Kitchen
       def image_info(image)
         root_device = image.block_device_mappings
           .find { |b| b.device_name == image.root_device_name }
-        volume_type = " #{root_device.ebs.volume_type}" if root_device && root_device.ebs
+        volume_type = " #{root_device.ebs.volume_type}" if root_device&.ebs
 
         " Architecture: #{image.architecture}," \
         " Virtualization: #{image.virtualization_type}," \
@@ -892,7 +890,7 @@ module Kitchen
             puts "ENI #{config[:elastic_network_interface_id]} already attached."
           end
         rescue ::Aws::EC2::Errors::InvalidNetworkInterfaceIDNotFound => e
-          warn("#{e}")
+          warn(e.to_s)
         end
       end
 
