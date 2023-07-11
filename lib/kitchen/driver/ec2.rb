@@ -810,6 +810,17 @@ module Kitchen
         params = {
           group_name: "kitchen-#{Array.new(8) { rand(36).to_s(36) }.join}",
           description: "Test Kitchen for #{instance.name} by #{Etc.getlogin || "nologin"} on #{Socket.gethostname}",
+          tag_specifications: [
+            {
+              resource_type: "security-group",
+              tags: [
+                {
+                  key: "created-by",
+                  value: "test-kitchen",
+                },
+              ],
+            },
+          ],
         }
         params[:vpc_id] = vpc_id if vpc_id
         resp = ec2.client.create_security_group(params)
@@ -855,7 +866,21 @@ module Kitchen
         # to rapidly exhaust local entropy by creating a lot of keys. So this is
         # probably fine. If you want very high security, probably don't use this
         # feature anyway.
-        resp = ec2.client.create_key_pair(key_name: "kitchen-#{name_parts.join("-")}", key_type: config[:aws_ssh_key_type])
+        resp = ec2.client.create_key_pair(
+          key_name: "kitchen-#{name_parts.join("-")}",
+          key_type: config[:aws_ssh_key_type],
+          tag_specifications: [
+            {
+              resource_type: "key-pair",
+              tags: [
+                {
+                  key: "created-by",
+                  value: "test-kitchen",
+                },
+              ],
+            },
+          ]
+        )
         state[:auto_key_id] = resp.key_name
         info("Created automatic key pair #{state[:auto_key_id]}")
         # Write the key out with safe permissions
