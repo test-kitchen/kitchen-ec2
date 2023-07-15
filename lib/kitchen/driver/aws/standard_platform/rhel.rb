@@ -32,7 +32,7 @@ module Kitchen
           # default username for this platform's ami
           # @return [String]
           def username
-            (version && version.to_f < 6.4) ? "root" : "ec2-user"
+            version && version.to_f < 6.4 ? "root" : "ec2-user"
           end
 
           def image_search
@@ -45,10 +45,10 @@ module Kitchen
           end
 
           def self.from_image(driver, image)
-            if /rhel/i.match?(image.name)
-              image.name =~ /\b(\d+(\.\d+)?)/i
-              new(driver, "rhel", (Regexp.last_match || [])[1], image.architecture)
-            end
+            return unless /rhel/i.match?(image.name)
+
+            image.name =~ /\b(\d+(\.\d+)?)/i
+            new(driver, "rhel", (Regexp.last_match || [])[1], image.architecture)
           end
 
           def sort_by_version(images)

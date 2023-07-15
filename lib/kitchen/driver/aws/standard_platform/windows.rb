@@ -70,21 +70,20 @@ module Kitchen
           end
 
           def self.from_image(driver, image)
-            if /Windows/i.match?(image.name)
-              # 2008 R2 SP2
-              if image.name =~ /(\b\d+)\W*(r\d+)?/i
-                major, revision = (Regexp.last_match || [])[1], (Regexp.last_match || [])[2]
-                if image.name =~ /(sp\d+|rtm)/i
-                  service_pack = (Regexp.last_match || [])[1]
-                end
-                revision = revision.downcase if revision
-                service_pack ||= "rtm"
-                service_pack = service_pack.downcase
-                version = "#{major}#{revision}#{service_pack}"
-              end
+            return unless /Windows/i.match?(image.name)
 
-              new(driver, "windows", version, image.architecture)
+            # 2008 R2 SP2
+            if image.name =~ /(\b\d+)\W*(r\d+)?/i
+              major = (Regexp.last_match || [])[1]
+              revision = (Regexp.last_match || [])[2]
+              service_pack = (Regexp.last_match || [])[1] if image.name =~ /(sp\d+|rtm)/i
+              revision = revision.downcase if revision
+              service_pack ||= "rtm"
+              service_pack = service_pack.downcase
+              version = "#{major}#{revision}#{service_pack}"
             end
+
+            new(driver, "windows", version, image.architecture)
           end
 
           protected
@@ -132,30 +131,30 @@ module Kitchen
 
           private
 
-          def windows_name_filter # rubocop:disable Metrics/MethodLength
+          def windows_name_filter
             major, revision, service_pack = windows_version_parts
             if [2022, 2019, 2016].include?(major)
               "Windows_Server-#{major}-English-Full-Base-*"
             elsif [1709, 1803].include?(major)
               "Windows_Server-#{major}-English-Core-ContainersLatest-*"
             else
-              case revision
-              when nil
-                revision_strings = ["", "R*_"]
-              when 0
-                revision_strings = [""]
-              else
-                revision_strings = ["R#{revision}_"]
-              end
+              revision_strings = case revision
+                                 when nil
+                                   ["", "R*_"]
+                                 when 0
+                                   [""]
+                                 else
+                                   ["R#{revision}_"]
+                                 end
 
-              case service_pack
-              when nil
-                revision_strings = revision_strings.flat_map { |r| ["#{r}RTM", "#{r}SP*"] }
-              when 0
-                revision_strings = revision_strings.map { |r| "#{r}RTM" }
-              else
-                revision_strings = revision_strings.map { |r| "#{r}SP#{service_pack}" }
-              end
+              revision_strings = case service_pack
+                                 when nil
+                                   revision_strings.flat_map { |r| ["#{r}RTM", "#{r}SP*"] }
+                                 when 0
+                                   revision_strings.map { |r| "#{r}RTM" }
+                                 else
+                                   revision_strings.map { |r| "#{r}SP#{service_pack}" }
+                                 end
 
               name_filter = revision_strings.map do |r|
                 "Windows_Server-#{major || "*"}-#{r}-English-*-Base-*"

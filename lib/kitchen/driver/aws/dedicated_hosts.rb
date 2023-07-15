@@ -98,10 +98,10 @@ module Kitchen
           info("Deallocating dedicated host #{host_id}")
 
           response = ec2.client.release_hosts({ host_ids: [host_id] })
-          unless response.unsuccessful.empty?
-            warn "ERROR: Could not release dedicated host #{host_id}. Host may remain allocated and incur cost"
-            exit!
-          end
+          return if response.unsuccessful.empty?
+
+          warn "ERROR: Could not release dedicated host #{host_id}. Host may remain allocated and incur cost"
+          exit!
         end
 
         # return instance family from type

@@ -22,12 +22,10 @@ require "aws-sdk-ec2"
 module Kitchen
   module Driver
     class Aws
-
       # A class for encapsulating the instance payload logic
       #
       # @author Tyler Ball <tball@chef.io>
       class InstanceGenerator
-
         attr_reader :config, :ec2, :logger
 
         def initialize(config, ec2, logger)
@@ -40,7 +38,7 @@ module Kitchen
         # can be passed in null, others need to be ommitted if they are null
         # Some fields can be passed in null, others need to be ommitted if they are null
         # @return [Hash]
-        def ec2_instance_data # rubocop:disable Metrics/MethodLength, Metrics/AbcSize
+        def ec2_instance_data
           # Support for looking up security group id and subnet id using tags.
           vpc_id = nil
           client = ::Aws::EC2::Client.new(region: config[:region])
@@ -210,9 +208,7 @@ module Kitchen
 
           @user_data = Base64.encode64(raw_user_data)
         end
-
       end
-
     end
   end
 end
