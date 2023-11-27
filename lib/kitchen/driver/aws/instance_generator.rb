@@ -125,8 +125,8 @@ module Kitchen
               # and Integers need to be represented as Strings
               { key: k, value: v.to_s }
             end
-            instance_tag_spec = { resource_type: "instance", tags: tags }
-            volume_tag_spec = { resource_type: "volume", tags: tags }
+            instance_tag_spec = { resource_type: "instance", tags: }
+            volume_tag_spec = { resource_type: "volume", tags: }
             i[:tag_specifications] = [instance_tag_spec, volume_tag_spec]
           end
 
@@ -142,7 +142,7 @@ module Kitchen
             if i.key?(:placement)
               i[:placement][:tenancy] = tenancy
             else
-              i[:placement] = { tenancy: tenancy }
+              i[:placement] = { tenancy: }
             end
           end
           unless config[:block_device_mappings].nil? || config[:block_device_mappings].empty?
@@ -186,7 +186,7 @@ module Kitchen
             if i.key?(:placement)
               i[:placement][:tenancy] = tenancy
             else
-              i[:placement] = { tenancy: tenancy }
+              i[:placement] = { tenancy: }
             end
           end
           unless config[:instance_initiated_shutdown_behavior].nil? ||

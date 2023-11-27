@@ -36,12 +36,12 @@ module Kitchen
           ssl_verify_peer = true
         )
           ::Aws.config.update(
-            region: region,
+            region:,
             profile: profile_name,
-            http_proxy: http_proxy,
-            ssl_verify_peer: ssl_verify_peer
+            http_proxy:,
+            ssl_verify_peer:
           )
-          ::Aws.config.update(retry_limit: retry_limit) unless retry_limit.nil?
+          ::Aws.config.update(retry_limit:) unless retry_limit.nil?
         end
 
         # create a new AWS EC2 instance

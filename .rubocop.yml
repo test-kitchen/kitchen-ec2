@@ -1,7 +1,11 @@
 ---
-AllCops:
-  TargetRubyVersion: 2.7
+require:
+  - chefstyle
 
-Lint/IneffectiveAccessModifier:
+AllCops:
+  TargetRubyVersion: 3.1
+  Include:
+    - "**/*.rb"
   Exclude:
-    - lib/kitchen/driver/aws/standard_platform.rb
+    - "vendor/**/*"
+    - "spec/**/*"
