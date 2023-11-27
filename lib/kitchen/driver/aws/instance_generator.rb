@@ -192,7 +192,7 @@ module Kitchen
           placement = config[:placement]
           if placement
             unless i.key?(:placement)
-              i[:placement] = { }
+              i[:placement] = {}
             end
             if placement[:affinity]
               i[:placement][:affinity] = placement[:affinity]
@@ -221,7 +221,7 @@ module Kitchen
           end
           license_specifications = config[:licenses]
           if license_specifications
-            i[:licenses] = { }
+            i[:licenses] = {}
             license_specifications.each do |license_configuration_arn|
               i[:licenses].append({ license_configuration_arn: license_configuration_arn[:license_configuration_arn] })
             end
