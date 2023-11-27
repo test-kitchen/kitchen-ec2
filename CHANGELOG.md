@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.17.1](https://github.com/test-kitchen/kitchen-ec2/compare/v3.17.0...v3.17.1) (2023-11-27)
+
+
+### Bug Fixes
+
+* Release ([b58158f](https://github.com/test-kitchen/kitchen-ec2/commit/b58158fa2693e581a9f1f5dbdbe7badb12536129))
+
 ## [v3.17.0](https://github.com/test-kitchen/kitchen-ec2/tree/v3.17.0) (2023-06-14)
 
 - Add support for Rocky and AlmaLinux [#602](https://github.com/test-kitchen/kitchen-ec2/pull/602) ([@bjakauppila](https://github.com/jakauppila))
