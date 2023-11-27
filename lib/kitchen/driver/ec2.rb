@@ -516,7 +516,7 @@ module Kitchen
 
         instance_data[:instance_market_options] = {
           market_type: "spot",
-          spot_options: spot_options,
+          spot_options:,
         }
 
         # The preferred way to create a spot instance is via request_spot_instances()
@@ -837,7 +837,7 @@ module Kitchen
               from_port: port,
               to_port: port,
               ip_ranges: Array(config[:security_group_cidr_ip]).map do |cidr_ip|
-                { cidr_ip: cidr_ip }
+                { cidr_ip: }
               end,
             }
           end

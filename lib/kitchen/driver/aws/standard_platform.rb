@@ -108,7 +108,7 @@ module Kitchen
           end
 
           # We prefer most recent first
-          images = driver.ec2.resource.images(filters: filters)
+          images = driver.ec2.resource.images(filters:)
           images = sort_images(images)
           show_returned_images(images)
 
@@ -162,6 +162,20 @@ module Kitchen
           nil
         end
 
+        def self.parse_platform_string(platform_string)
+          platform, version = platform_string.split("-", 2)
+
+          # If the right side is a valid architecture, use it as such
+          # i.e. debian-i386 or windows-server-2012r2-i386
+          if version && SUPPORTED_ARCHITECTURES.include?(version.split("-")[-1])
+            # server-2012r2-i386 -> server-2012r2, -, i386
+            version, _dash, architecture = version.rpartition("-")
+            version = nil if version == ""
+          end
+
+          [platform, version, architecture]
+        end
+
         protected
 
         #
@@ -196,20 +210,6 @@ module Kitchen
         end
 
         private
-
-        def self.parse_platform_string(platform_string)
-          platform, version = platform_string.split("-", 2)
-
-          # If the right side is a valid architecture, use it as such
-          # i.e. debian-i386 or windows-server-2012r2-i386
-          if version && SUPPORTED_ARCHITECTURES.include?(version.split("-")[-1])
-            # server-2012r2-i386 -> server-2012r2, -, i386
-            version, _dash, architecture = version.rpartition("-")
-            version = nil if version == ""
-          end
-
-          [platform, version, architecture]
-        end
 
         def sort_images(images)
           # P6: We prefer more recent images over older ones
