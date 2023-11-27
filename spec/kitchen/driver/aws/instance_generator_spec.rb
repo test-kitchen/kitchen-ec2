@@ -641,6 +641,37 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
     end
 
+    context "when placement host resource group arn and licenses are provided" do
+      let(:config) do
+        {
+          region: "eu-east-1",
+          placement: {
+            host_resource_group_arn: "arn:aws:ec2:us-east-1:123456789012:resource-group/my-group",
+          },
+          licenses: [
+            {
+              license_configuration_arn: "arn:aws:ec2:us-east-1:123456789012:license-configuration/my-license",
+            }
+          ],
+        }
+      end
+
+      it "adds the region to it in the instance data" do
+        expect(generator.ec2_instance_data).to eq(
+          instance_type: nil,
+          ebs_optimized: nil,
+          image_id: nil,
+          key_name: nil,
+          subnet_id: nil,
+          private_ip_address: nil,
+          max_count: 1,
+          min_count: 1,
+          placement: { host_resource_group_arn: "arn:aws:ec2:us-east-1:123456789012:resource-group/my-group"},
+          licenses: [{license_configuration_arn: "arn:aws:ec2:us-east-1:123456789012:license-configuration/my-license"}]
+        )
+      end
+    end
+
     context "when provided the maximum config" do
       let(:config) do
         {
@@ -672,40 +703,15 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
             string_tag: "string",
             integer_tag: 1,
           },
+          licenses: [{
+            license_configuration_arn: "arn:aws:ec2:us-east-1:123456789012:license-configuration/my-license",
+          }],
+          placement: {
+            availability_zone: "eu-west-1a",
+            tenancy: "dedicated"
+          },
         }
       end
-
-      context "when placement host resource group arn and licenses are provided" do
-        let(:config) do
-          {
-            region: "eu-east-1",
-            placement: {
-              host_resource_group_arn: "arn:aws:ec2:us-east-1:123456789012:resource-group/my-group",
-            },
-            licenses: [
-              {
-                license_configuration_arn: "arn:aws:ec2:us-east-1:123456789012:license-configuration/my-license",
-              }
-            ],
-          }
-        end
-
-        it "adds the region to it in the instance data" do
-          expect(generator.ec2_instance_data).to eq(
-            instance_type: nil,
-            ebs_optimized: nil,
-            image_id: nil,
-            key_name: nil,
-            subnet_id: nil,
-            private_ip_address: nil,
-            max_count: 1,
-            min_count: 1,
-            placement: { availability_zone: "eu-east-1c",
-                         tenancy: "dedicated" }
-          )
-        end
-      end
-
       it "returns the maximum data" do
         expect(generator.ec2_instance_data).to eq(
           instance_type: "micro",
@@ -738,7 +744,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
           }],
           placement: {
             availability_zone: "eu-west-1a",
-            host_resource_group_arn: "arn:aws:ec2:us-east-1:123456789012:resource-group/my-group"
+            tenancy: "dedicated"
           },
           user_data: Base64.encode64("foo"),
           max_count: 1,
