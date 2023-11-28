@@ -1,5 +1,13 @@
 # Change Log
 
+## [3.18.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.17.1...v3.18.0) (2023-11-28)
+
+
+### Features
+
+* Implements placement options and license specifications ([#607](https://github.com/test-kitchen/kitchen-ec2/issues/607)) ([9a269b4](https://github.com/test-kitchen/kitchen-ec2/commit/9a269b45d3886be77df47fec146d6cdcb9f28d1c))
+* Implements placement options and license specifications ([#615](https://github.com/test-kitchen/kitchen-ec2/issues/615)) ([10f0232](https://github.com/test-kitchen/kitchen-ec2/commit/10f02328571ef520bca8311efa2f54561ccb6b34))
+
 ## [3.17.1](https://github.com/test-kitchen/kitchen-ec2/compare/v3.17.0...v3.17.1) (2023-11-27)
 
 
