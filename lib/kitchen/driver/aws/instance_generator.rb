@@ -189,6 +189,43 @@ module Kitchen
               i[:placement] = { tenancy: }
             end
           end
+          placement = config[:placement]
+          if placement
+            unless i.key?(:placement)
+              i[:placement] = {}
+            end
+            if placement[:affinity]
+              i[:placement][:affinity] = placement[:affinity]
+            end
+            if placement[:availability_zone]
+              i[:placement][:availability_zone] = placement[:availability_zone]
+            end
+            if placement[:group_id] && !placement[:group_name]
+              i[:placement][:group_id] = placement[:group_id]
+            end
+            if placement[:group_name] && !placement[:group_id]
+              i[:placement][:group_name] = placement[:group_name]
+            end
+            if placement[:host_id]
+              i[:placement][:host_id] = placement[:host_id]
+            end
+            if placement[:host_resource_group_arn]
+              i[:placement][:host_resource_group_arn] = placement[:host_resource_group_arn]
+            end
+            if placement[:partition_number]
+              i[:placement][:partition_number] = placement[:partition_number]
+            end
+            if placement[:tenancy]
+              i[:placement][:tenancy] = placement[:tenancy]
+            end
+          end
+          license_specifications = config[:licenses]
+          if license_specifications
+            i[:licenses] = []
+            license_specifications.each do |license_configuration_arn|
+              i[:licenses].append({ license_configuration_arn: license_configuration_arn[:license_configuration_arn] })
+            end
+          end
           unless config[:instance_initiated_shutdown_behavior].nil? ||
               config[:instance_initiated_shutdown_behavior].empty?
             i[:instance_initiated_shutdown_behavior] = config[:instance_initiated_shutdown_behavior]
