@@ -15,7 +15,7 @@ Gem::Specification.new do |gem|
   gem.files         = `git ls-files`.split($INPUT_RECORD_SEPARATOR).grep(/LICENSE|^lib/)
   gem.require_paths = ["lib"]
 
-  gem.required_ruby_version = ">= 3.3"
+  gem.required_ruby_version = ">= 3.1"
 
   gem.add_dependency "aws-sdk-ec2", "~> 1.0"
   gem.add_dependency "retryable", ">= 2.0", "< 4.0" # 4.0 will need to be validated
