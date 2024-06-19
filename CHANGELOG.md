@@ -288,7 +288,7 @@
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.4.0...v2.0.0)
 
-**Improvements**
+### Improvements
 
 - Clean up original Authentication; Rely on SDK for Chain. [\#353](https://github.com/test-kitchen/kitchen-ec2/pull/353) ([rhyas](https://github.com/rhyas))
 - Use quadratic backoff when encountering RequestLimit errors [\#320](https://github.com/test-kitchen/kitchen-ec2/pull/320) ([kamaradclimber](https://github.com/kamaradclimber))
@@ -297,7 +297,7 @@
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v1.3.2...v1.4.0)
 
-**Improvements**
+### Improvements
 
 - Explicitly initialise secondary disks on windows 2016 [\#352](https://github.com/test-kitchen/kitchen-ec2/pull/352) ([rlaveycal](https://github.com/rlaveycal))
 - Fix windows user\_data log file [\#350](https://github.com/test-kitchen/kitchen-ec2/pull/350) ([rlaveycal](https://github.com/rlaveycal))
