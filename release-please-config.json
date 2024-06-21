@@ -1,0 +1,12 @@
+{
+  "packages": {
+    ".": {
+      "package-name": "kitchen-ec2",
+      "changelog-path": "CHANGELOG.md",
+      "release-type": "ruby",
+      "include-component-in-tag": false,
+      "version-file": "lib/kitchen/driver/ec2_version.rb"
+    }
+  },
+  "$schema": "https://raw.githubusercontent.com/googleapis/release-please/main/schemas/config.json"
+}
