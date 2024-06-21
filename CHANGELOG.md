@@ -1,5 +1,17 @@
 # Change Log
 
+## [3.19.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.18.0...v3.19.0) (2024-06-21)
+
+
+### Features
+
+* Bump Ruby version to 3.1 ([#618](https://github.com/test-kitchen/kitchen-ec2/issues/618)) ([9645154](https://github.com/test-kitchen/kitchen-ec2/commit/9645154606fb23430879d5bb01f748a6ca45546b))
+
+
+### Bug Fixes
+
+* release please configs ([#627](https://github.com/test-kitchen/kitchen-ec2/issues/627)) ([3fdc119](https://github.com/test-kitchen/kitchen-ec2/commit/3fdc1194114803d730e1998ae3ba6ef74ebbedba))
+
 ## [3.18.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.17.1...v3.18.0) (2023-11-28)
 
 
