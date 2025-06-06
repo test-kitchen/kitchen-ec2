@@ -131,6 +131,14 @@ describe "Default images for various platforms" do
       { name: "owner-id", values: %w{125523088429} },
       { name: "name", values: ["CentOS *", "CentOS-*-GA-*", "CentOS Linux *", "CentOS Stream *"] },
     ],
+    "centos-10" => [
+      { name: "owner-id", values: %w{125523088429} },
+      { name: "name", values: ["CentOS 10*", "CentOS-10*-GA-*", "CentOS Linux 10*", "CentOS Stream 10*"] },
+    ],
+    "centos-9" => [
+      { name: "owner-id", values: %w{125523088429} },
+      { name: "name", values: ["CentOS 9*", "CentOS-9*-GA-*", "CentOS Linux 9*", "CentOS Stream 9*"] },
+    ],
     "centos-8" => [
       { name: "owner-id", values: %w{125523088429} },
       { name: "name", values: ["CentOS 8*", "CentOS-8*-GA-*", "CentOS Linux 8*", "CentOS Stream 8*"] },
