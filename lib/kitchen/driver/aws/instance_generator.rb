@@ -8,7 +8,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#    https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -35,8 +35,8 @@ module Kitchen
         end
 
         # Transform the provided kitchen config into the hash we'll use to create the aws instance
-        # can be passed in null, others need to be ommitted if they are null
-        # Some fields can be passed in null, others need to be ommitted if they are null
+        # can be passed in null, others need to be omitted if they are null
+        # Some fields can be passed in null, others need to be omitted if they are null
         # @return [Hash]
         def ec2_instance_data
           # Support for looking up security group id and subnet id using tags.
