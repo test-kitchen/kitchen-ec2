@@ -914,7 +914,7 @@ module Kitchen
             puts "ENI #{config[:elastic_network_interface_id]} already attached."
           end
         rescue ::Aws::EC2::Errors::InvalidNetworkInterfaceIDNotFound => e
-          warn(e.to_s)
+          warn(e)
         end
       end
 
