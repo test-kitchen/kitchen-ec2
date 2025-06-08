@@ -28,7 +28,7 @@ module Kitchen
           # default username for this platform's ami
           # @return [String]
           def username
-            "centos"
+            version && version.to_f < 9.0 ? "centos" : "ec2-user"
           end
 
           def image_search
