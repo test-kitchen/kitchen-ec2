@@ -173,6 +173,9 @@ module Kitchen
             if config[:security_group_ids]
               i[:network_interfaces][0][:groups] = i.delete(:security_group_ids)
             end
+            if config[:associate_ipv6]
+              i[:network_interfaces][0][:ipv_6_address_count] = 1
+            end
           end
           availability_zone = config[:availability_zone]
           if availability_zone
