@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.19.2](https://github.com/test-kitchen/kitchen-ec2/compare/v3.19.1...v3.19.2) (2025-06-15)
+
+
+### Bug Fixes
+
+* Fix tests on Ruby 3.3 ([#634](https://github.com/test-kitchen/kitchen-ec2/issues/634)) ([4b3b524](https://github.com/test-kitchen/kitchen-ec2/commit/4b3b524f2d0f1080f629e88dde5d48309d392d40))
+
 ## [3.19.1](https://github.com/test-kitchen/kitchen-ec2/compare/v3.19.0...v3.19.1) (2025-06-08)
 
 
