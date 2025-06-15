@@ -85,6 +85,7 @@ module Kitchen
       default_config :image_search,       nil
       default_config :username,           nil
       default_config :associate_public_ip, nil
+      default_config :associate_ipv6,      nil
       default_config :interface,           nil
       default_config :http_proxy,          ENV["HTTPS_PROXY"] || ENV.fetch("HTTP_PROXY", nil)
       default_config :retry_limit,         3

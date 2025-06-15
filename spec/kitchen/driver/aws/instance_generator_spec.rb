@@ -542,6 +542,35 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
         )
       end
 
+      context "and associate_ipv6 is provided" do
+        let(:config) do
+          {
+            region: "us-east-1",
+            associate_public_ip: true,
+            associate_ipv6: true,
+          }
+        end
+
+        it "adds a network_interfaces block" do
+          expect(generator.ec2_instance_data).to eq(
+            instance_type: nil,
+            ebs_optimized: nil,
+            image_id: nil,
+            key_name: nil,
+            subnet_id: nil,
+            private_ip_address: nil,
+            network_interfaces: [{
+              device_index: 0,
+              associate_public_ip_address: true,
+              ipv_6_address_count: 1,
+              delete_on_termination: true,
+            }],
+            max_count: 1,
+            min_count: 1
+          )
+        end
+      end
+
       context "and subnet is provided" do
         let(:config) do
           {
