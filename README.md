@@ -1,7 +1,7 @@
 # kitchen-ec2
 
 [![Gem Version](https://badge.fury.io/rb/kitchen-ec2.svg)](https://badge.fury.io/rb/kitchen-ec2)
-![CI](https://github.com/test-kitchen/kitchen-ec2/workflows/CI/badge.svg?branch=master)
+![CI](https://github.com/test-kitchen/kitchen-ec2/workflows/Test/badge.svg?branch=main)
 
 A [Test Kitchen][kitchenci] Driver for Amazon EC2.
 
@@ -10,7 +10,7 @@ instances. Use Amazon's cloud for your infrastructure testing!
 
 ## Quick Start
 
-1. Install [Chef Workstation](https://downloads.chef.io/products/workstation). If testing things other than Chef Infra cookbooks, please consult your driver's documentation for information on what to install.
+1. Install [Chef Workstation](https://www.chef.io/downloads). If testing things other than Chef Infra cookbooks, please consult your driver's documentation for information on what to install.
 2. Install the [AWS command line tools](https://docs.aws.amazon.com/cli/latest/userguide/installing.html).
 3. Run `aws configure`. This will set up your AWS credentials for both the AWS CLI tools and kitchen-ec2.
 4. Add or edit the `driver` section of your `kitchen.yml`:
@@ -55,7 +55,7 @@ Apache 2.0 (see [LICENSE][license])
 [issues]:           https://github.com/test-kitchen/kitchen-ec2/issues
 [license]:          https://github.com/test-kitchen/kitchen-ec2/blob/master/LICENSE
 [repo]:             https://github.com/test-kitchen/kitchen-ec2
-[aws_site]:         http://aws.amazon.com/
-[iam_site]:         http://aws.amazon.com/iam
-[aws_sdk_gem]:      https://docs.aws.amazon.com/sdkforruby/api/index.html
+[aws_site]:         https://aws.amazon.com/
+[iam_site]:         https://aws.amazon.com/iam
+[aws_sdk_gem]:      https://docs.aws.amazon.com/sdk-for-ruby/v3/api/
 [kitchenci]:        https://kitchen.ci/

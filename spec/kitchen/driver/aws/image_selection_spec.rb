@@ -6,7 +6,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#    https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -130,6 +130,14 @@ describe "Default images for various platforms" do
     "centos" => [
       { name: "owner-id", values: %w{125523088429} },
       { name: "name", values: ["CentOS *", "CentOS-*-GA-*", "CentOS Linux *", "CentOS Stream *"] },
+    ],
+    "centos-10" => [
+      { name: "owner-id", values: %w{125523088429} },
+      { name: "name", values: ["CentOS 10*", "CentOS-10*-GA-*", "CentOS Linux 10*", "CentOS Stream 10*"] },
+    ],
+    "centos-9" => [
+      { name: "owner-id", values: %w{125523088429} },
+      { name: "name", values: ["CentOS 9*", "CentOS-9*-GA-*", "CentOS Linux 9*", "CentOS Stream 9*"] },
     ],
     "centos-8" => [
       { name: "owner-id", values: %w{125523088429} },

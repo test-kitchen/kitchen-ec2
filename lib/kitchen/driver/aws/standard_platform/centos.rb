@@ -5,7 +5,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#    https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -28,7 +28,7 @@ module Kitchen
           # default username for this platform's ami
           # @return [String]
           def username
-            "centos"
+            version && version.to_f < 9.0 ? "centos" : "ec2-user"
           end
 
           def image_search

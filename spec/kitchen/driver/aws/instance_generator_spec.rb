@@ -8,7 +8,7 @@
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
 #
-#    http://www.apache.org/licenses/LICENSE-2.0
+#    https://www.apache.org/licenses/LICENSE-2.0
 #
 # Unless required by applicable law or agreed to in writing, software
 # distributed under the License is distributed on an "AS IS" BASIS,
@@ -259,8 +259,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
     end
 
     context "when provided a non existing security_group tag filter" do
-      ec2_stub_whithout_security_group = Aws::EC2::Client.new(stub_responses: true)
-      ec2_stub_whithout_security_group.stub_responses(
+      ec2_stub_without_security_group = Aws::EC2::Client.new(stub_responses: true)
+      ec2_stub_without_security_group.stub_responses(
         :describe_subnets,
         subnets: [
           {
@@ -288,8 +288,8 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
       end
 
       it "generates id from the provided tag" do
-        allow(Aws::EC2::Client).to receive(:new).and_return(ec2_stub_whithout_security_group)
-        expect(ec2_stub_whithout_security_group).to receive(:describe_security_groups).with(
+        allow(Aws::EC2::Client).to receive(:new).and_return(ec2_stub_without_security_group)
+        expect(ec2_stub_without_security_group).to receive(:describe_security_groups).with(
           {
             filters: [
               {
@@ -302,7 +302,7 @@ describe Kitchen::Driver::Aws::InstanceGenerator do
               },
             ],
           }
-        ).and_return(ec2_stub_whithout_security_group.describe_security_groups)
+        ).and_return(ec2_stub_without_security_group.describe_security_groups)
 
         expect { generator.ec2_instance_data }.to raise_error(
           "A Security Group matching the following filter could not be found:\n#{config[:security_group_filter]}"
