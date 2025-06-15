@@ -62,7 +62,7 @@
 - Updated the README to point to kitchen.ci [#577](https://github.com/test-kitchen/kitchen-ec2/pull/577) ([@kasif-adnan](https://github.com/kasif-adnan))
 - Github workflow updates [#579](https://github.com/test-kitchen/kitchen-ec2/pull/579), [#584](https://github.com/test-kitchen/kitchen-ec2/pull/584)
   ([@kasif-adnan](https://github.com/kasif-adnan))
-- Chefsyle linting and version updates
+- Chefstyle linting and version updates
 
 [Full Changelog](https://github.com/test-kitchen/kitchen-ec2/compare/v3.12.0..v3.13.0)
 
