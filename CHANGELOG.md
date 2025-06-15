@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.19.1](https://github.com/test-kitchen/kitchen-ec2/compare/v3.19.0...v3.19.1) (2025-06-08)
+
+
+### Bug Fixes
+
+* Update CentOS for username change on 9+ ([#631](https://github.com/test-kitchen/kitchen-ec2/issues/631)) ([471e027](https://github.com/test-kitchen/kitchen-ec2/commit/471e027b052a20400e6142aa74c907902d76c0d8)), closes [#630](https://github.com/test-kitchen/kitchen-ec2/issues/630)
+
 ## [3.19.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.18.0...v3.19.0) (2024-06-21)
 
 
