@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.21.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.20.0...v3.21.0) (2025-09-09)
+
+
+### Features
+
+* Added AWS EC2 Instance Connect support ([#640](https://github.com/test-kitchen/kitchen-ec2/issues/640)) ([241ce70](https://github.com/test-kitchen/kitchen-ec2/commit/241ce70fd4998db3fe9245e8c5f2b06fb40e2d09))
+
 ## [3.20.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.19.1...v3.20.0) (2025-06-15)
 
 
