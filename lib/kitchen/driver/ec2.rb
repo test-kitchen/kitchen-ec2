@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "sshkey" unless defined?(SSHKey)
 require "benchmark" unless defined?(Benchmark)
 require "json" unless defined?(JSON)
 require "kitchen"
@@ -37,12 +38,14 @@ require_relative "aws/standard_platform/freebsd"
 require_relative "aws/standard_platform/macos"
 require_relative "aws/standard_platform/ubuntu"
 require_relative "aws/standard_platform/windows"
+require_relative "aws/instance_connect"
 require "aws-sdk-ec2"
 require "aws-sdk-core/waiters/errors"
 require "retryable" unless defined?(Retryable)
 require "time" unless defined?(Time)
 require "etc" unless defined?(Etc)
 require "socket" unless defined?(Socket)
+require "shellwords" unless defined?(Shellwords)
 
 module Kitchen
   module Driver
@@ -95,6 +98,9 @@ module Kitchen
       default_config :skip_cost_warning, false
       default_config :allocate_dedicated_host, false
       default_config :deallocate_dedicated_host, false
+      default_config :use_instance_connect, false
+      default_config :instance_connect_endpoint_id, nil
+      default_config :instance_connect_max_tunnel_duration, 3600
 
       include Kitchen::Driver::Mixins::DedicatedHosts
 
@@ -226,7 +232,8 @@ module Kitchen
         case config[:aws_ssh_key_id]
         when nil
           create_key(state)
-          config[:aws_ssh_key_id] = state[:auto_key_id]
+          # Don't set aws_ssh_key_id if using Instance Connect
+          config[:aws_ssh_key_id] = state[:auto_key_id] unless config[:use_instance_connect]
         when "_disable"
           info("Disabling AWS-managed SSH key pairs for this EC2 instance.")
           info("The key pairs for the kitchen transport config and the AMI must match.")
@@ -272,6 +279,11 @@ module Kitchen
         end
 
         info("EC2 instance <#{state[:server_id]}> ready (hostname: #{state[:hostname]}).")
+
+        if config[:use_instance_connect]
+          instance_connect_setup_ready(state)
+        end
+
         instance.transport.connection(state).wait_until_ready
         attach_network_interface(state) unless config[:elastic_network_interface_id].nil?
         create_ec2_json(state) if /chef/i.match?(instance.provisioner.name)
@@ -944,6 +956,307 @@ module Kitchen
         ec2.client.delete_key_pair(key_name: state[:auto_key_id])
         state.delete(:auto_key_id)
         File.unlink("#{config[:kitchen_root]}/.kitchen/#{instance.name}.pem")
+      end
+
+      def finalize_config!(instance)
+        super
+
+        # Set up Instance Connect transport override if configured
+        if config[:use_instance_connect]
+          debug("[AWS EC2 Instance Connect] Setting up Instance Connect overrides")
+          instance_connect_setup_override(instance)
+          instance_connect_setup_inspec_override(instance)
+        end
+
+        self
+      end
+
+      private
+
+      def instance_connect_setup_override(instance)
+        # Prevent double pushing of the SSH public keys
+        return if instance.transport.respond_to?(:instance_connect_override_applied)
+
+        # Store reference to driver for use in override
+        driver_instance = self
+        use_instance_connect = config[:use_instance_connect]
+
+        # Override the transport's connection method to inject Instance Connect setup
+        original_connection = instance.transport.method(:connection)
+
+        instance.transport.define_singleton_method(:connection) do |state, &block|
+          # Set up Instance Connect configuration before every connection
+          if use_instance_connect
+            # Refresh Instance Connect SSH key
+            driver_instance.send(:instance_connect_refresh_key, state)
+
+            # Configure connection mode based on endpoint availability
+            if driver_instance.send(:instance_connect_endpoint_available?, state)
+              # Proxy command mode - ensure ssh_proxy_command is set
+              unless state[:ssh_proxy_command]
+                driver_instance.send(:instance_connect_configure_ssh_proxy_command, state)
+              end
+              driver_instance.debug("[AWS EC2 Instance Connect] Transport using proxy command mode")
+            else
+              # Direct SSH mode - ensure hostname is set to public DNS
+              driver_instance.send(:instance_connect_configure_direct_ssh, state)
+              driver_instance.debug("[AWS EC2 Instance Connect] Transport using direct SSH mode")
+            end
+          end
+          # Call original connection method
+          original_connection.call(state, &block)
+        end
+
+        # Mark as applied to prevent double pushing of the SSH public keys
+        instance.transport.define_singleton_method(:instance_connect_override_applied) { true }
+      end
+
+      def instance_connect_setup_inspec_override(instance)
+        # Only apply to InSpec verifier
+        return unless instance.verifier.name.downcase == "inspec"
+        return if instance.verifier.respond_to?(:instance_connect_inspec_override_applied)
+
+        # Store reference to driver for use in override
+        driver_instance = self
+        use_instance_connect = config[:use_instance_connect]
+
+        # Override the verifier's call method to inject proxy command setup
+        original_call = instance.verifier.method(:call)
+
+        instance.verifier.define_singleton_method(:call) do |state|
+          driver_instance.debug("[AWS EC2 Instance Connect] InSpec call method intercepted, connecting using kitchen-ec2 driver AWS EC2 Instance Connect")
+          driver_instance.debug("[AWS EC2 Instance Connect] Instance ID: #{state[:server_id]}")
+
+          # If using Instance Connect, set up the override just before the call
+          if use_instance_connect && state[:server_id]
+
+            # Check if we already have the override method defined
+            unless respond_to?(:instance_connect_original_runner_options_for_ssh)
+              # Store the original method
+              define_singleton_method(:instance_connect_original_runner_options_for_ssh, method(:runner_options_for_ssh))
+
+              # Override runner_options_for_ssh
+              define_singleton_method(:runner_options_for_ssh) do |config_data|
+
+                # Get the original options
+                opts = instance_connect_original_runner_options_for_ssh(config_data)
+
+                # Inject Instance Connect configuration if enabled
+                if use_instance_connect && config_data[:server_id]
+                  # Refresh Instance Connect SSH key
+                  driver_instance.send(:instance_connect_refresh_key, config_data)
+
+                  # Check if we should use proxy command or direct SSH
+                  if driver_instance.send(:instance_connect_endpoint_available?, config_data)
+                    # Build proxy command with the instance ID from state
+                    proxy_command = [
+                      "aws", "ec2-instance-connect", "open-tunnel",
+                      "--instance-id", config_data[:server_id]
+                    ]
+
+                    # Add optional parameters
+                    if driver_instance.config[:instance_connect_endpoint_id]
+                      proxy_command += ["--instance-connect-endpoint-id", driver_instance.config[:instance_connect_endpoint_id]]
+                    end
+                    if driver_instance.config[:instance_connect_max_tunnel_duration]
+                      proxy_command += ["--max-tunnel-duration", driver_instance.config[:instance_connect_max_tunnel_duration].to_s]
+                    end
+                    if driver_instance.config[:shared_credentials_profile]
+                      proxy_command += ["--profile", driver_instance.config[:shared_credentials_profile]]
+                    end
+                    proxy_command += ["--region", driver_instance.config[:region]]
+
+                    opts["proxy_command"] = proxy_command.join(" ")
+                    driver_instance.info("[AWS EC2 Instance Connect] InSpec using proxy command: #{opts["proxy_command"]}")
+                  else
+                    # Direct SSH mode - ensure we're using the public DNS and proper SSH options
+                    server = driver_instance.ec2.get_instance(config_data[:server_id])
+                    public_dns = server&.public_dns_name
+
+                    if public_dns && !public_dns.empty?
+                      opts["host"] = public_dns
+                      opts["ssh_options"] = (opts["ssh_options"] || {}).merge({
+                        "IdentitiesOnly" => "yes",
+                      })
+                      driver_instance.info("[AWS EC2 Instance Connect] InSpec using direct SSH to #{public_dns} with IdentitiesOnly=yes")
+                    else
+                      driver_instance.warn("[AWS EC2 Instance Connect] No public DNS available for direct SSH mode")
+                    end
+                  end
+                else
+                  driver_instance.info("[AWS EC2 Instance Connect] Not configuring Instance Connect - use_instance_connect: #{use_instance_connect}, server_id present: #{!!config_data[:server_id]}")
+                end
+
+                opts
+              end
+            end
+          end
+
+          # Call the original method
+          original_call.call(state)
+        end
+
+        # Mark as applied to prevent double setup
+        instance.verifier.define_singleton_method(:instance_connect_inspec_override_applied) { true }
+      end
+
+      def instance_connect_setup_ready(state)
+        # Determine whether to use proxy command or direct SSH based on endpoint availability
+        if instance_connect_endpoint_available?(state)
+          # Configure SSH proxy command if not already done
+          instance_connect_configure_ssh_proxy_command(state) unless state[:ssh_proxy_command]
+          info("[AWS EC2 Instance Connect] Using tunnel mode - Instance Connect endpoint available")
+        else
+          # Configure direct SSH with public DNS
+          instance_connect_configure_direct_ssh(state)
+          info("[AWS EC2 Instance Connect] Using direct SSH mode - no Instance Connect endpoint")
+        end
+
+        # Refresh Instance Connect SSH key before connection
+        instance_connect_refresh_key(state)
+      end
+
+      def instance_connect_refresh_key(state)
+        # Extract public key from the key that was already set up
+        key_path = state[:ssh_key] || instance.transport[:ssh_key]
+        return unless key_path
+
+        public_key = instance_connect_extract_public_key(key_path)
+        return unless public_key
+
+        username = state[:username] || actual_platform&.username
+
+        # Build AWS CLI command to send public key
+        cmd = [
+          "aws", "ec2-instance-connect", "send-ssh-public-key",
+          "--instance-id", state[:server_id],
+          "--instance-os-user", username,
+          "--ssh-public-key", public_key,
+          "--region", config[:region]
+        ]
+
+        cmd += ["--profile", config[:shared_credentials_profile]] if config[:shared_credentials_profile]
+
+        # Execute the command with proper shell escaping
+        debug("[AWS EC2 Instance Connect] Refreshing SSH public key for #{state[:server_id]}")
+        escaped_cmd = cmd.map { |arg| Shellwords.escape(arg) }.join(" ")
+        result = `#{escaped_cmd} 2>&1`
+        unless $?.success?
+          warn("[AWS EC2 Instance Connect] Failed to refresh SSH key: #{result}")
+        end
+      end
+
+      def instance_connect_configure_ssh_proxy_command(state)
+        info("[AWS EC2 Instance Connect] Configuring proxy command mode (tunnel)")
+
+        # Build the AWS CLI command for the tunnel
+        proxy_command = [
+          "aws", "ec2-instance-connect", "open-tunnel",
+          "--instance-id", state[:server_id]
+        ]
+
+        # Add optional parameters
+        if config[:instance_connect_endpoint_id]
+          proxy_command += ["--instance-connect-endpoint-id", config[:instance_connect_endpoint_id]]
+        end
+        if config[:instance_connect_max_tunnel_duration]
+          proxy_command += ["--max-tunnel-duration", config[:instance_connect_max_tunnel_duration].to_s]
+        end
+        if config[:shared_credentials_profile]
+          proxy_command += ["--profile", config[:shared_credentials_profile]]
+        end
+        proxy_command += ["--region", config[:region]]
+        proxy_command_str = proxy_command.join(" ")
+
+        info("Configuring SSH to use Instance Connect tunnel: #{proxy_command_str}")
+        state[:ssh_proxy_command] = proxy_command_str
+
+        # Store Instance Connect details for the transport to use
+        state[:instance_connect_config] = {
+          server_id: state[:server_id],
+          username: state[:username] || actual_platform&.username,
+          region: config[:region],
+          profile: config[:shared_credentials_profile],
+          tunnel_mode: true,
+        }
+      end
+
+      def instance_connect_endpoint_available?(state)
+        # If explicitly configured, respect that configuration
+        return true if config[:instance_connect_endpoint_id]
+
+        # Check if there are any instance connect endpoints in the VPC
+        vpc_id = get_vpc_id_for_instance(state)
+        return false unless vpc_id
+
+        begin
+          endpoints = ec2.client.describe_instance_connect_endpoints(
+            filters: [
+              { name: "vpc-id", values: [vpc_id] },
+              { name: "state", values: ["create-complete"] },
+            ]
+          ).instance_connect_endpoints
+
+          !endpoints.empty?
+        rescue ::Aws::EC2::Errors::InvalidAction, ::Aws::EC2::Errors::UnauthorizedOperation => e
+          # Instance Connect endpoints may not be available in this region or account
+          debug("[AWS EC2 Instance Connect] Cannot check for endpoints: #{e.message}")
+          false
+        end
+      end
+
+      def get_vpc_id_for_instance(state)
+        # Get the instance details to find its VPC
+        return nil unless state[:server_id]
+
+        begin
+          instance_info = ec2.client.describe_instances(instance_ids: [state[:server_id]]).reservations.first&.instances&.first
+          return nil unless instance_info
+
+          instance_info.vpc_id
+        rescue => e
+          debug("[AWS EC2 Instance Connect] Error getting VPC ID for instance: #{e.message}")
+          nil
+        end
+      end
+
+      def instance_connect_configure_direct_ssh(state)
+        # For direct SSH, we need to ensure the hostname is the public DNS name
+        # and configure SSH options appropriately
+        server = ec2.get_instance(state[:server_id])
+        public_dns = server.public_dns_name
+
+        if public_dns && !public_dns.empty?
+          info("[AWS EC2 Instance Connect] Configuring direct SSH to #{public_dns}")
+          state[:hostname] = public_dns
+
+          # Store Instance Connect details for direct SSH mode
+          state[:instance_connect_config] = {
+            server_id: state[:server_id],
+            username: state[:username] || actual_platform&.username,
+            region: config[:region],
+            profile: config[:shared_credentials_profile],
+            direct_ssh: true,
+            hostname: public_dns,
+          }
+        else
+          warn("[AWS EC2 Instance Connect] No public DNS available for direct SSH, falling back to existing hostname")
+        end
+      end
+
+      def instance_connect_extract_public_key(private_key_path)
+        public_key_path = "#{private_key_path}.pub"
+
+        if File.exist?(public_key_path)
+          return File.read(public_key_path).strip
+        end
+
+        begin
+          key = SSHKey.new(File.read(private_key_path))
+          key.ssh_public_key
+        rescue => e
+          raise "Unable to extract public key from #{private_key_path}: #{e.message}"
+        end
       end
     end
   end

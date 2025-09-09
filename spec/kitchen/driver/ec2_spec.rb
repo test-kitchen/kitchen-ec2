@@ -835,4 +835,437 @@ describe Kitchen::Driver::Ec2 do
       end
     end
   end
+
+  describe "Instance Connect functionality" do
+    let(:state) { { server_id: "i-12345", ssh_key: "/path/to/key.pem", username: "ec2-user" } }
+
+    describe "#instance_connect_configure_ssh_proxy_command" do
+      context "with instance_connect_endpoint_id configured" do
+        let(:config) do
+          {
+            use_instance_connect: true,
+            instance_connect_endpoint_id: "eice-12345",
+            instance_connect_max_tunnel_duration: 3600,
+            shared_credentials_profile: "my-profile",
+            region: "us-east-1"
+          }
+        end
+
+        it "sets up SSH proxy command with all parameters" do
+          driver.send(:instance_connect_configure_ssh_proxy_command, state)
+          expected_command = "aws ec2-instance-connect open-tunnel --instance-id i-12345 " \
+                           "--instance-connect-endpoint-id eice-12345 --max-tunnel-duration 3600 " \
+                           "--profile my-profile --region us-east-1"
+          expect(state[:ssh_proxy_command]).to eq(expected_command)
+        end
+
+        it "stores instance connect config in state" do
+          driver.send(:instance_connect_configure_ssh_proxy_command, state)
+          expect(state[:instance_connect_config]).to eq({
+            server_id: "i-12345",
+            username: "ec2-user",
+            region: "us-east-1",
+            profile: "my-profile",
+            tunnel_mode: true
+          })
+        end
+      end
+
+      context "with minimal configuration" do
+        let(:config) do
+          {
+            use_instance_connect: true,
+            region: "us-west-2"
+          }
+        end
+
+        it "sets up SSH proxy command with minimal parameters" do
+          driver.send(:instance_connect_configure_ssh_proxy_command, state)
+          expected_command = "aws ec2-instance-connect open-tunnel --instance-id i-12345 --max-tunnel-duration 3600 --region us-west-2"
+          expect(state[:ssh_proxy_command]).to eq(expected_command)
+        end
+      end
+    end
+
+    describe "#instance_connect_refresh_key" do
+      let(:config) do
+        {
+          use_instance_connect: true,
+          region: "us-east-1",
+          shared_credentials_profile: "my-profile"
+        }
+      end
+
+      before do
+        allow(driver).to receive(:instance_connect_extract_public_key).with("/path/to/key.pem").and_return("ssh-rsa AAAAB3... test-key")
+      end
+
+      it "executes aws ec2-instance-connect send-ssh-public-key command" do
+        expected_command = "aws ec2-instance-connect send-ssh-public-key " \
+                         "--instance-id i-12345 --instance-os-user ec2-user " \
+                         "--ssh-public-key ssh-rsa\\ AAAAB3...\\ test-key " \
+                         "--region us-east-1 --profile my-profile"
+        
+        expect(driver).to receive(:`).with(expected_command + " 2>&1").and_return("")
+        # Stub $? by allowing the actual command to succeed
+        allow(driver).to receive(:warn)
+        driver.send(:instance_connect_refresh_key, state)
+      end
+
+      it "handles command failure gracefully" do
+        allow(driver).to receive(:`).and_return("Error: Something went wrong")
+        expect(driver).to receive(:warn).with("[AWS EC2 Instance Connect] Failed to refresh SSH key: Error: Something went wrong")
+        allow(driver).to receive(:`) do |cmd|
+          # Simulate command failure by setting $? to failed status
+          `false`
+          "Error: Something went wrong"
+        end
+        
+        driver.send(:instance_connect_refresh_key, state)
+      end
+
+      it "returns early if no key path is provided" do
+        state.delete(:ssh_key)
+        allow(instance.transport).to receive(:[]).with(:ssh_key).and_return(nil)
+        expect(driver).not_to receive(:instance_connect_extract_public_key)
+        expect(driver).not_to receive(:`)
+        driver.send(:instance_connect_refresh_key, state)
+      end
+    end
+
+    describe "#instance_connect_extract_public_key" do
+      context "when .pub file exists" do
+        it "reads the public key from .pub file" do
+          allow(File).to receive(:exist?).with("/path/to/key.pem.pub").and_return(true)
+          allow(File).to receive(:read).with("/path/to/key.pem.pub").and_return("ssh-rsa AAAAB3... test-key\n")
+          result = driver.send(:instance_connect_extract_public_key, "/path/to/key.pem")
+          expect(result).to eq("ssh-rsa AAAAB3... test-key")
+        end
+      end
+
+      context "when .pub file does not exist" do
+        before do
+          allow(File).to receive(:exist?).with("/path/to/key.pem.pub").and_return(false)
+          allow(File).to receive(:read).with("/path/to/key.pem").and_return("-----BEGIN RSA PRIVATE KEY-----\n...")
+        end
+
+        it "extracts public key from private key using SSHKey" do
+          ssh_key_mock = double("SSHKey")
+          allow(SSHKey).to receive(:new).with("-----BEGIN RSA PRIVATE KEY-----\n...").and_return(ssh_key_mock)
+          allow(ssh_key_mock).to receive(:ssh_public_key).and_return("ssh-rsa AAAAB3... generated-key")
+          result = driver.send(:instance_connect_extract_public_key, "/path/to/key.pem")
+          expect(result).to eq("ssh-rsa AAAAB3... generated-key")
+        end
+
+        it "raises error if SSHKey fails" do
+          allow(SSHKey).to receive(:new).and_raise(StandardError.new("Invalid key format"))
+          expect { driver.send(:instance_connect_extract_public_key, "/path/to/key.pem") }
+            .to raise_error("Unable to extract public key from /path/to/key.pem: Invalid key format")
+        end
+      end
+    end
+
+    describe "#instance_connect_setup_ready" do
+      context "when endpoint is available (tunnel mode)" do
+        let(:config) do
+          {
+            use_instance_connect: true,
+            instance_connect_endpoint_id: "eice-12345",
+            region: "us-east-1"
+          }
+        end
+
+        before do
+          allow(driver).to receive(:instance_connect_endpoint_available?).with(state).and_return(true)
+        end
+
+        it "configures SSH proxy command and refreshes key" do
+          expect(driver).to receive(:instance_connect_configure_ssh_proxy_command).with(state)
+          expect(driver).to receive(:instance_connect_refresh_key).with(state)
+          expect(driver).to receive(:info).with("[AWS EC2 Instance Connect] Using tunnel mode - Instance Connect endpoint available")
+          driver.send(:instance_connect_setup_ready, state)
+        end
+
+        context "when ssh_proxy_command is already set" do
+          before do
+            state[:ssh_proxy_command] = "existing-command"
+          end
+
+          it "skips SSH proxy command configuration but still refreshes key" do
+            expect(driver).not_to receive(:instance_connect_configure_ssh_proxy_command)
+            expect(driver).to receive(:instance_connect_refresh_key).with(state)
+            expect(driver).to receive(:info).with("[AWS EC2 Instance Connect] Using tunnel mode - Instance Connect endpoint available")
+            driver.send(:instance_connect_setup_ready, state)
+          end
+        end
+      end
+
+      context "when endpoint is not available (direct SSH mode)" do
+        let(:config) do
+          {
+            use_instance_connect: true,
+            region: "us-east-1"
+          }
+        end
+
+        before do
+          allow(driver).to receive(:instance_connect_endpoint_available?).with(state).and_return(false)
+        end
+
+        it "configures direct SSH and refreshes key" do
+          expect(driver).to receive(:instance_connect_configure_direct_ssh).with(state)
+          expect(driver).to receive(:instance_connect_refresh_key).with(state)
+          expect(driver).to receive(:info).with("[AWS EC2 Instance Connect] Using direct SSH mode - no Instance Connect endpoint")
+          driver.send(:instance_connect_setup_ready, state)
+        end
+      end
+    end
+
+    describe "#instance_connect_endpoint_available?" do
+      let(:vpc_id) { "vpc-12345" }
+      let(:state) { { server_id: "i-12345" } }
+      
+      before do
+        allow(driver).to receive(:get_vpc_id_for_instance).with(state).and_return(vpc_id)
+      end
+
+      context "when instance_connect_endpoint_id is explicitly configured" do
+        let(:config) { { instance_connect_endpoint_id: "eice-12345" } }
+
+        it "returns true without checking VPC endpoints" do
+          expect(actual_client).not_to receive(:describe_instance_connect_endpoints)
+          result = driver.send(:instance_connect_endpoint_available?, state)
+          expect(result).to be true
+        end
+      end
+
+      context "when no explicit endpoint_id is configured" do
+        let(:config) { {} }
+
+        context "and VPC has active endpoints" do
+          let(:endpoints) { [double("endpoint", state: "create-complete")] }
+
+          before do
+            allow(actual_client).to receive(:describe_instance_connect_endpoints).with(
+              filters: [
+                { name: "vpc-id", values: [vpc_id] },
+                { name: "state", values: ["create-complete"] }
+              ]
+            ).and_return(double(instance_connect_endpoints: endpoints))
+          end
+
+          it "returns true" do
+            result = driver.send(:instance_connect_endpoint_available?, state)
+            expect(result).to be true
+          end
+        end
+
+        context "and VPC has no active endpoints" do
+          before do
+            allow(actual_client).to receive(:describe_instance_connect_endpoints).with(
+              filters: [
+                { name: "vpc-id", values: [vpc_id] },
+                { name: "state", values: ["create-complete"] }
+              ]
+            ).and_return(double(instance_connect_endpoints: []))
+          end
+
+          it "returns false" do
+            result = driver.send(:instance_connect_endpoint_available?, state)
+            expect(result).to be false
+          end
+        end
+
+        context "and endpoint checking fails" do
+          before do
+            allow(actual_client).to receive(:describe_instance_connect_endpoints)
+              .and_raise(Aws::EC2::Errors::InvalidAction.new("context", "Not supported in this region"))
+          end
+
+          it "returns false and logs debug message" do
+            expect(driver).to receive(:debug).with("[AWS EC2 Instance Connect] Cannot check for endpoints: Not supported in this region")
+            result = driver.send(:instance_connect_endpoint_available?, state)
+            expect(result).to be false
+          end
+        end
+
+        context "and no VPC ID is available" do
+          before do
+            allow(driver).to receive(:get_vpc_id_for_instance).with(state).and_return(nil)
+          end
+
+          it "returns false" do
+            expect(actual_client).not_to receive(:describe_instance_connect_endpoints)
+            result = driver.send(:instance_connect_endpoint_available?, state)
+            expect(result).to be false
+          end
+        end
+      end
+    end
+
+    describe "#get_vpc_id_for_instance" do
+      let(:state) { { server_id: "i-12345" } }
+      let(:instance_info) { double("instance", vpc_id: "vpc-12345") }
+      let(:reservation) { double("reservation", instances: [instance_info]) }
+
+      context "when instance exists" do
+        before do
+          allow(actual_client).to receive(:describe_instances).with(instance_ids: ["i-12345"])
+            .and_return(double(reservations: [reservation]))
+        end
+
+        it "returns the VPC ID" do
+          result = driver.send(:get_vpc_id_for_instance, state)
+          expect(result).to eq("vpc-12345")
+        end
+      end
+
+      context "when instance does not exist" do
+        before do
+          allow(actual_client).to receive(:describe_instances).with(instance_ids: ["i-12345"])
+            .and_return(double(reservations: []))
+        end
+
+        it "returns nil" do
+          result = driver.send(:get_vpc_id_for_instance, state)
+          expect(result).to be_nil
+        end
+      end
+
+      context "when server_id is not present" do
+        let(:state) { {} }
+
+        it "returns nil" do
+          expect(actual_client).not_to receive(:describe_instances)
+          result = driver.send(:get_vpc_id_for_instance, state)
+          expect(result).to be_nil
+        end
+      end
+
+      context "when API call fails" do
+        before do
+          allow(actual_client).to receive(:describe_instances)
+            .and_raise(StandardError.new("API Error"))
+        end
+
+        it "returns nil and logs debug message" do
+          expect(driver).to receive(:debug).with("[AWS EC2 Instance Connect] Error getting VPC ID for instance: API Error")
+          result = driver.send(:get_vpc_id_for_instance, state)
+          expect(result).to be_nil
+        end
+      end
+    end
+
+    describe "#instance_connect_configure_direct_ssh" do
+      let(:state) { { server_id: "i-12345", username: "ec2-user" } }
+      let(:server) { double("server", public_dns_name: "ec2-1-2-3-4.compute-1.amazonaws.com") }
+      let(:config) do
+        {
+          region: "us-east-1",
+          shared_credentials_profile: "my-profile"
+        }
+      end
+
+      before do
+        allow(client).to receive(:get_instance).with("i-12345").and_return(server)
+      end
+
+      context "when public DNS is available" do
+        it "sets hostname to public DNS and stores config" do
+          expect(driver).to receive(:info).with("[AWS EC2 Instance Connect] Configuring direct SSH to ec2-1-2-3-4.compute-1.amazonaws.com")
+          driver.send(:instance_connect_configure_direct_ssh, state)
+          
+          expect(state[:hostname]).to eq("ec2-1-2-3-4.compute-1.amazonaws.com")
+          expect(state[:instance_connect_config]).to eq({
+            server_id: "i-12345",
+            username: "ec2-user",
+            region: "us-east-1",
+            profile: "my-profile",
+            direct_ssh: true,
+            hostname: "ec2-1-2-3-4.compute-1.amazonaws.com"
+          })
+        end
+      end
+
+      context "when public DNS is not available" do
+        let(:server) { double("server", public_dns_name: nil) }
+
+        it "warns and does not change hostname" do
+          original_hostname = state[:hostname]
+          expect(driver).to receive(:warn).with("[AWS EC2 Instance Connect] No public DNS available for direct SSH, falling back to existing hostname")
+          driver.send(:instance_connect_configure_direct_ssh, state)
+          
+          expect(state[:hostname]).to eq(original_hostname)
+        end
+      end
+
+      context "when public DNS is empty string" do
+        let(:server) { double("server", public_dns_name: "") }
+
+        it "warns and does not change hostname" do
+          original_hostname = state[:hostname]
+          expect(driver).to receive(:warn).with("[AWS EC2 Instance Connect] No public DNS available for direct SSH, falling back to existing hostname")
+          driver.send(:instance_connect_configure_direct_ssh, state)
+          
+          expect(state[:hostname]).to eq(original_hostname)
+        end
+      end
+    end
+
+    describe "integration with create method" do
+      let(:server) { double("aws server object", id: "i-12345") }
+      let(:create_state) { { ssh_key: "/path/to/key.pem", username: "ec2-user" } }
+      let(:config) do
+        {
+          use_instance_connect: true,
+          instance_connect_endpoint_id: "eice-12345",
+          region: "us-east-1",
+          aws_ssh_key_id: "test-key",
+          image_id: "ami-12345",
+          security_group_ids: ["sg-12345"]
+        }
+      end
+
+      before do
+        allow(driver).to receive(:update_username)
+        allow(driver).to receive(:submit_server).and_return(server)
+        allow(server).to receive(:wait_until_exists)
+        allow(driver).to receive(:attach_network_interface)
+        allow(driver).to receive(:create_ec2_json)
+        allow(driver).to receive(:debug)
+        allow(driver).to receive(:info)
+        
+        # Stub methods that might cause early exits
+        allow(driver).to receive(:create_security_group)
+        allow(driver).to receive(:create_key)
+        allow(driver).to receive(:host_available?).and_return(true)
+        
+        # Stub wait_until_ready and the Retryable wrapper
+        allow(driver).to receive(:wait_until_ready) do |_, state|
+          state[:hostname] = "test-hostname"
+          true
+        end
+        
+        # Allow the Retryable block to execute normally
+        allow(Retryable).to receive(:retryable) do |options, &block|
+          block.call(1, nil)
+        end
+
+        # Mock the transport connection wait_until_ready call
+        connection_double = double("connection", wait_until_ready: true)
+        allow(instance.transport).to receive(:connection).with(any_args).and_return(connection_double)
+      end
+
+      it "calls instance_connect_setup_ready when use_instance_connect is true" do
+        expect(driver).to receive(:instance_connect_setup_ready).with(hash_including(server_id: "i-12345"))
+        driver.create(create_state)
+      end
+
+      it "does not call instance_connect_setup_ready when use_instance_connect is false" do
+        config[:use_instance_connect] = false
+        expect(driver).not_to receive(:instance_connect_setup_ready)
+        driver.create(create_state)
+      end
+    end
+  end
 end
