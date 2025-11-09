@@ -46,9 +46,9 @@ module Kitchen
               ]
             )
 
-            available = !resp.instance_information_list.empty? && 
-                       resp.instance_information_list.first.ping_status == "Online"
-            
+            available = !resp.instance_information_list.empty? &&
+              resp.instance_information_list.first.ping_status == "Online"
+
             if available
               @logger.info("SSM agent is available on instance #{instance_id}")
             else
@@ -66,7 +66,7 @@ module Kitchen
         def session_manager_plugin_installed?
           _output, status = Open3.capture2e("session-manager-plugin", "--version")
           installed = status.success?
-          
+
           if installed
             @logger.debug("Session Manager plugin is installed")
           else

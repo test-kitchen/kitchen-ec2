@@ -284,7 +284,7 @@ module Kitchen
         # Waiting can fail, so we have to retry on that.
         Retryable.retryable(
           tries: 10,
-          sleep: lambda { |n| [2**n, 30].min },
+          sleep: ->(n) { [2**n, 30].min },
           on: ::Aws::EC2::Errors::InvalidInstanceIDNotFound
         ) do |_r, _|
           wait_until_ready(server, state)
@@ -470,10 +470,7 @@ module Kitchen
         expanded = []
         keys = %i{instance_type}
 
-        unless config[:subnet_filter]
-          # => Use explicitly specified subnets
-          keys << :subnet_id
-        else
+        if config[:subnet_filter]
           # => Enable cascading through matching subnets
           client = ::Aws::EC2::Client.new(region: config[:region])
 
@@ -498,6 +495,9 @@ module Kitchen
             new_config[:subnet_filter] = nil
             new_config
           end
+        else
+          # => Use explicitly specified subnets
+          keys << :subnet_id
         end
 
         keys.each do |key|
@@ -552,7 +552,7 @@ module Kitchen
         # not retry if the price could not be satisfied immediately.
         Retryable.retryable(
           tries: config[:spot_wait] / config[:retryable_sleep],
-          sleep: lambda { |_n| config[:retryable_sleep] },
+          sleep: ->(_n) { config[:retryable_sleep] },
           on: ::Aws::EC2::Errors::SpotMaxPriceTooLow
         ) do |retries|
           c = retries * config[:retryable_sleep]
@@ -591,7 +591,7 @@ module Kitchen
                 output = Base64.decode64(output)
                 debug "Console output: --- \n#{output}"
               end
-              ready = !!(output.include?("Windows is Ready to use"))
+              ready = !!output.include?("Windows is Ready to use")
             end
           end
           ready
@@ -697,7 +697,7 @@ module Kitchen
 
       def create_ec2_json(state)
         if windows_os?
-          cmd = "New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File"
+          cmd = 'New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File'
         else
           debug "Using sudo_command='#{sudo_command}' for ohai hints"
           cmd = "#{sudo_command} mkdir -p /etc/chef/ohai/hints; #{sudo_command} touch /etc/chef/ohai/hints/ec2.json"
@@ -925,16 +925,16 @@ module Kitchen
         client = ::Aws::EC2::Client.new(region: config[:region])
         begin
           check_eni = client.describe_network_interface_attribute({
-            attribute: "attachment",
-            network_interface_id: config[:elastic_network_interface_id],
-          })
+                                                                    attribute: "attachment",
+                                                                    network_interface_id: config[:elastic_network_interface_id],
+                                                                  })
           if check_eni.attachment.nil?
             unless state[:server_id].nil?
               client.attach_network_interface({
-              device_index: 1,
-              instance_id: state[:server_id],
-              network_interface_id: config[:elastic_network_interface_id],
-              })
+                                                device_index: 1,
+                                                instance_id: state[:server_id],
+                                                network_interface_id: config[:elastic_network_interface_id],
+                                              })
               info("Attached Network interface <#{config[:elastic_network_interface_id]}> with the instance <#{state[:server_id]}> .")
             end
           else
@@ -1055,7 +1055,6 @@ module Kitchen
 
               # Override runner_options_for_ssh
               define_singleton_method(:runner_options_for_ssh) do |config_data|
-
                 # Get the original options
                 opts = instance_connect_original_runner_options_for_ssh(config_data)
 
@@ -1094,8 +1093,8 @@ module Kitchen
                     if public_dns && !public_dns.empty?
                       opts["host"] = public_dns
                       opts["ssh_options"] = (opts["ssh_options"] || {}).merge({
-                        "IdentitiesOnly" => "yes",
-                      })
+                                                                                "IdentitiesOnly" => "yes",
+                                                                              })
                       driver_instance.info("[AWS EC2 Instance Connect] InSpec using direct SSH to #{public_dns} with IdentitiesOnly=yes")
                     else
                       driver_instance.warn("[AWS EC2 Instance Connect] No public DNS available for direct SSH mode")
@@ -1225,11 +1224,11 @@ module Kitchen
 
       def get_vpc_id_for_instance(state)
         # Get the instance details to find its VPC
-        return nil unless state[:server_id]
+        return unless state[:server_id]
 
         begin
           instance_info = ec2.client.describe_instances(instance_ids: [state[:server_id]]).reservations.first&.instances&.first
-          return nil unless instance_info
+          return unless instance_info
 
           instance_info.vpc_id
         rescue => e
