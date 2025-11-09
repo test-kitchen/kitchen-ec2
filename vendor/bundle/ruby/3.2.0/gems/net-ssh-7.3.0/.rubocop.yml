@@ -1,0 +1,22 @@
+AllCops:
+  Exclude:
+    - 'tryout/**/*'
+    - "vendor/**/.*"
+    - "vendor/**/*"
+  NewCops: enable
+  TargetRubyVersion: 2.6
+
+inherit_from: .rubocop_todo.yml
+
+Style/DoubleNegation:
+  Exclude:
+    - 'lib/net/ssh/key_factory.rb'
+
+Layout/LineLength:
+  Max: 150
+  Exclude:
+    - 'test/**/*.rb'
+    - 'net-ssh.gemspec'
+
+Style/EmptyLiteral:
+  Enabled: false

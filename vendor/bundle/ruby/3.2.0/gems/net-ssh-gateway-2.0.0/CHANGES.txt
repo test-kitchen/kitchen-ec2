@@ -1,0 +1,33 @@
+
+
+=== 2.0.0 / 26 Jan 2017
+
+* Update net-ssh dependency to 4.0.0 which requires Ruby version >= 2.0 [delano]
+
+=== 1.3.0 / 26 Jan 2017
+
+* Fix for loop_wait option on initialization [mfazekas, tpitale]
+* Use bundler and remove remove jeweler [tpitale]
+* Use minitest instead of test/unit [tpitale]
+* Added Travis CI config [tpitale]
+
+=== 1.2.0 / 06 Feb 2013
+
+* Added public cert. All gem releases are now signed. See INSTALL in readme.
+
+=== 1.1.0 / 30 Apr 2011
+
+* Fix for sporadicly stalled SSH connections in Ruby 1.9 [Mat Trudel]
+* Decrease wait time within Net::SSH session loop [Grant Hutchins, Michael Schubert]
+
+=== 1.0.1 / 1 Feb 2009
+
+* Allow local port to be specified [Will Klancnik]
+
+=== 1.0.0 / 1 May 2008
+
+* (no changes since the preview release)
+
+=== 1.0 Preview Release 1 (0.99.0) / 10 Apr 2008
+
+* First release of Net::SSH::Gateway

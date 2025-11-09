@@ -1,0 +1,199 @@
+[Console]::OutputEncoding = New-Object -typename System.Text.ASCIIEncoding
+[System.Net.ServicePointManager]::SecurityProtocol = [System.Net.SecurityProtocolType]'Tls,Tls11,Tls12'
+
+function Get-PlatformVersion {
+  [version]$osVersion = (Get-Win32OS).version
+
+  $platform_version = switch ($osVersion) {
+    # Windows Server build numbers from: https://betawiki.net/wiki/Microsoft_Windows
+    { $_ -ge [version]'10.0.20145' } { '2022';   break }
+    { $_ -ge [version]'10.0.17609' } { '2019';   break }
+    { $_ -ge [version]'10.0.0'     } { '2016';   break }
+    { $_ -ge [version]'6.3.0'      } { '2012r2'; break }
+    { $_ -ge [version]'6.2.0'      } { '2012';   break }
+    { $_ -ge [version]'6.1.0'      } { '2008r2'; break }
+    { $_ -ge [version]'6.0.0'      } { '2008';   break }
+  }
+
+  if(Test-Path 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Server\ServerLevels') {
+    $levels = Get-ItemProperty 'HKLM:\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Server\ServerLevels'
+    if($levels.NanoServer -eq 1) { $platform_version += 'nano' }
+  }
+
+  return $platform_version
+}
+
+function Get-PlatformArchitecture {
+  if ((Get-Win32OS).osarchitecture -match '64') {
+    $architecture = 'x86_64'
+  } else {
+    $architecture = 'i386'
+  }
+  return $architecture
+}
+
+function Get-Win32OS {
+  if(!$global:win32OS)
+  {
+    $global:win32OS = Get-WMIQuery win32_operatingsystem
+  }
+  $global:win32OS
+}
+
+function New-Uri {
+  param ($baseuri, $newuri)
+
+  try {
+    $base = new-object System.Uri $baseuri
+    new-object System.Uri $base, $newuri
+  }
+  catch [System.Management.Automation.MethodInvocationException]{
+    Write-Error "$($_.exception.message)"
+    throw $_.exception
+  }
+}
+
+function Get-WebContent {
+  param ($uri, $filepath)
+
+  try {
+    if($PSVersionTable.PSEdition -eq 'Core') {
+      Get-WebContentOnCore $uri $filepath
+    }
+    else {
+      Get-WebContentOnFullNet $uri $filepath
+    }
+  }
+  catch {
+    $exception = $_.Exception
+    Write-Host "There was an error: "
+    do {
+      Write-Host "`t$($exception.message)"
+      $exception = $exception.innerexception
+    } while ($exception)
+    throw "Failed to download from $uri."
+  }
+}
+
+function Get-WebContentOnFullNet {
+  param ($uri, $filepath)
+
+  $proxy = New-Object -TypeName System.Net.WebProxy
+  $wc = new-object System.Net.WebClient
+  $wc.Headers.Add("user-agent", "<%= user_agent_string %>")
+  $proxy.Address = $env:http_proxy
+  $bypassList = $env:no_proxy
+
+
+  if($bypassList -ne $null){
+
+	 $bypassList = $bypassList.split(",")
+	 $proxy.BypassList = $byPassList
+  }
+
+  $wc.Proxy = $proxy
+
+  if ([string]::IsNullOrEmpty($filepath)) {
+    $wc.downloadstring($uri)
+  }
+  else {
+    $wc.downloadfile($uri, $filepath)
+  }
+}
+
+function Get-WebContentOnCore {
+  param ($uri, $filepath)
+
+  $handler = New-Object System.Net.Http.HttpClientHandler
+  $client = New-Object System.Net.Http.HttpClient($handler)
+  $client.DefaultRequestHeaders.UserAgent.ParseAdd("<%= user_agent_string %>")
+  $client.Timeout = New-Object System.TimeSpan(0, 30, 0)
+  $cancelTokenSource = [System.Threading.CancellationTokenSource]::new()
+  $responseMsg = $client.GetAsync([System.Uri]::new($uri), $cancelTokenSource.Token)
+  $responseMsg.Wait()
+  if (!$responseMsg.IsCanceled) {
+    $response = $responseMsg.Result
+    if ($response.IsSuccessStatusCode) {
+      if ([string]::IsNullOrEmpty($filepath)) {
+        $response.Content.ReadAsStringAsync().Result
+      }
+      else {
+        $downloadedFileStream = [System.IO.FileStream]::new($filepath, [System.IO.FileMode]::Create, [System.IO.FileAccess]::Write)
+        $copyStreamOp = $response.Content.CopyToAsync($downloadedFileStream)
+        $copyStreamOp.Wait()
+        $downloadedFileStream.Close()
+        if ($copyStreamOp.Exception -ne $null) {
+          throw $copyStreamOp.Exception
+        }
+      }
+    }
+  }
+}
+
+function Test-ProjectPackage {
+  [cmdletbinding()]
+  param ($Path, $Algorithm = 'SHA256', $Hash)
+  if (!$env:Valid_ProjectPackage){
+    Write-Verbose "Testing the $Algorithm hash for $path."
+    $ActualHash = (Custom-GetFileHash -Algorithm $Algorithm -Path $Path).Hash.ToLower()
+
+    Write-Verbose "`tDesired Hash - '$Hash'"
+    Write-Verbose "`tActual Hash  - '$ActualHash'"
+    $env:Valid_ProjectPackage = $ActualHash -eq $Hash
+    if (-not $env:Valid_ProjectPackage) {
+      Write-Error "Failed to validate the downloaded installer.  The expected $Algorithm hash was '$Hash' and the actual hash was '$ActualHash' for $path"
+    }
+  }
+  return $env:Valid_ProjectPackage
+}
+
+function Custom-GetFileHash ($Path, $Algorithm) {
+  function disposable($o){($o -is [IDisposable]) -and (($o | get-member | foreach-object {$_.name}) -contains 'Dispose')}
+  function use($obj, [scriptblock]$sb){try {& $sb} catch [exception]{throw $_} finally {if (disposable $obj) {$obj.Dispose()}} }
+  $Path = (resolve-path $Path).providerpath
+  $hash = @{Algorithm = $Algorithm; Path = $Path}
+  use ($c = Get-SHA256Converter) {
+    use ($in = (gi $Path).OpenRead()) {
+      $hash.Hash = ([BitConverter]::ToString($c.ComputeHash($in))).Replace("-", "").ToUpper()
+    }
+  }
+  return $hash
+}
+
+function Get-SHA256Converter {
+  if ($(Is-FIPS) -ge 1) {
+    New-Object -TypeName Security.Cryptography.SHA256Cng
+  } else {
+    if($PSVersionTable.PSEdition -eq 'Core') {
+      [System.Security.Cryptography.SHA256]::Create()
+    }
+    else {
+      New-Object -TypeName Security.Cryptography.SHA256Managed
+    }
+  }
+}
+
+function Is-FIPS {
+  if (!$env:fips){
+    $env:fips = (Get-ItemProperty HKLM:\SYSTEM\CurrentControlSet\Control\Lsa\FipsAlgorithmPolicy).Enabled
+  }
+  return $env:fips
+}
+
+function Get-WMIQuery {
+  param ($class)
+
+  if(Get-Command -Name Get-CimInstance -ErrorAction SilentlyContinue) {
+    try{
+      $classObject = Get-CimInstance $class
+      # If the Get-CimInstance command exists but fails due to security settings, try Get-WmiObject.
+    }
+    catch {
+      $classObject = Get-WmiObject $class
+    }
+  }
+  else {
+    $classObject = Get-WmiObject $class
+  }
+  return $classObject
+}

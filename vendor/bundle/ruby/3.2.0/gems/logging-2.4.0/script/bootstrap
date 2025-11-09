@@ -1,0 +1,13 @@
+#!/usr/bin/env sh
+
+gem_install () {
+  gem list -i $1 >/dev/null 2>&1
+  if [ $? -ne 0 ]; then
+    gem install $1
+  fi
+}
+
+gem_install 'bones'
+gem_install 'rdoc'
+
+rake gem:install_dependencies
