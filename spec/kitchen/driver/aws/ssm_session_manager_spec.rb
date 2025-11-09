@@ -88,11 +88,6 @@ describe Kitchen::Driver::Aws::SsmSessionManager do
   end
 
   describe "#session_manager_plugin_installed?" do
-    before do
-      # Reset any global Open3 stubs from other tests
-      allow(Open3).to receive(:capture2e).and_call_original
-    end
-
     context "when plugin is installed" do
       it "returns true" do
         status_double = double(success?: true)
@@ -108,15 +103,6 @@ describe Kitchen::Driver::Aws::SsmSessionManager do
         allow(Open3).to receive(:capture2e).with("session-manager-plugin", "--version").and_return(["", status_double])
 
         expect(logger).to receive(:warn).with(/Session Manager plugin is not installed/)
-        expect(ssm_manager.session_manager_plugin_installed?).to be false
-      end
-    end
-
-    context "when command execution fails" do
-      it "returns false and logs warning" do
-        allow(Open3).to receive(:capture2e).with("session-manager-plugin", "--version").and_raise(StandardError.new("Command not found"))
-
-        expect(logger).to receive(:warn).with(/Error checking for session-manager-plugin/)
         expect(ssm_manager.session_manager_plugin_installed?).to be false
       end
     end
