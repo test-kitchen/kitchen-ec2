@@ -1,0 +1,22 @@
+current directory: /home/runner/work/kitchen-ec2/kitchen-ec2/vendor/bundle/ruby/3.2.0/gems/syslog-0.3.0/ext/syslog
+/usr/bin/ruby3.2 -I/usr/lib/ruby/vendor_ruby extconf.rb
+checking for -llog... no
+checking for syslog.h... yes
+checking for openlog()... yes
+checking for setlogmask()... yes
+creating Makefile
+
+current directory: /home/runner/work/kitchen-ec2/kitchen-ec2/vendor/bundle/ruby/3.2.0/gems/syslog-0.3.0/ext/syslog
+make DESTDIR\= sitearchdir\=./.gem.20251109-3494-npalhj sitelibdir\=./.gem.20251109-3494-npalhj clean
+
+current directory: /home/runner/work/kitchen-ec2/kitchen-ec2/vendor/bundle/ruby/3.2.0/gems/syslog-0.3.0/ext/syslog
+make DESTDIR\= sitearchdir\=./.gem.20251109-3494-npalhj sitelibdir\=./.gem.20251109-3494-npalhj
+compiling syslog.c
+linking shared-object syslog_ext.so
+
+current directory: /home/runner/work/kitchen-ec2/kitchen-ec2/vendor/bundle/ruby/3.2.0/gems/syslog-0.3.0/ext/syslog
+make DESTDIR\= sitearchdir\=./.gem.20251109-3494-npalhj sitelibdir\=./.gem.20251109-3494-npalhj install
+/usr/bin/install -c -m 0755 syslog_ext.so ./.gem.20251109-3494-npalhj
+
+current directory: /home/runner/work/kitchen-ec2/kitchen-ec2/vendor/bundle/ruby/3.2.0/gems/syslog-0.3.0/ext/syslog
+make DESTDIR\= sitearchdir\=./.gem.20251109-3494-npalhj sitelibdir\=./.gem.20251109-3494-npalhj clean

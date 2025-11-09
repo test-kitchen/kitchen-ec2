@@ -1,0 +1,13 @@
+coverage
+pkg
+doc
+*.swp
+
+.DS_Store
+
+# Bundle local files
+/vendor/
+.bundle/config
+Gemfile.lock
+
+lib/net/ssh/version.rb.old
