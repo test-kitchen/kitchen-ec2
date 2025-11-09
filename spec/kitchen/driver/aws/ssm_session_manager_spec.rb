@@ -15,12 +15,12 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "kitchen/driver/aws/ssm_session_manager"
+require 'kitchen/driver/aws/ssm_session_manager'
 
 describe Kitchen::Driver::Aws::SsmSessionManager do
   let(:config) do
     {
-      region: "us-west-2",
+      region: 'us-west-2',
       shared_credentials_profile: nil,
     }
   end
@@ -32,54 +32,54 @@ describe Kitchen::Driver::Aws::SsmSessionManager do
     allow(Aws::SSM::Client).to receive(:new).and_return(ssm_client)
   end
 
-  describe "#ssm_agent_available?" do
-    let(:instance_id) { "i-1234567890abcdef0" }
+  describe '#ssm_agent_available?' do
+    let(:instance_id) { 'i-1234567890abcdef0' }
 
-    context "when SSM agent is online" do
-      it "returns true" do
+    context 'when SSM agent is online' do
+      it 'returns true' do
         response = double(
           instance_information_list: [
-            double(ping_status: "Online"),
+            double(ping_status: 'Online'),
           ]
         )
         expect(ssm_client).to receive(:describe_instance_information)
-          .with(filters: [{ key: "InstanceIds", values: [instance_id] }])
+          .with(filters: [{ key: 'InstanceIds', values: [instance_id] }])
           .and_return(response)
 
         expect(ssm_manager.ssm_agent_available?(instance_id)).to be true
       end
     end
 
-    context "when SSM agent is not online" do
-      it "returns false" do
+    context 'when SSM agent is not online' do
+      it 'returns false' do
         response = double(
           instance_information_list: [
-            double(ping_status: "ConnectionLost"),
+            double(ping_status: 'ConnectionLost'),
           ]
         )
         expect(ssm_client).to receive(:describe_instance_information)
-          .with(filters: [{ key: "InstanceIds", values: [instance_id] }])
+          .with(filters: [{ key: 'InstanceIds', values: [instance_id] }])
           .and_return(response)
 
         expect(ssm_manager.ssm_agent_available?(instance_id)).to be false
       end
     end
 
-    context "when instance not found in SSM" do
-      it "returns false" do
+    context 'when instance not found in SSM' do
+      it 'returns false' do
         response = double(instance_information_list: [])
         expect(ssm_client).to receive(:describe_instance_information)
-          .with(filters: [{ key: "InstanceIds", values: [instance_id] }])
+          .with(filters: [{ key: 'InstanceIds', values: [instance_id] }])
           .and_return(response)
 
         expect(ssm_manager.ssm_agent_available?(instance_id)).to be false
       end
     end
 
-    context "when SSM API call fails" do
-      it "returns false and logs warning" do
+    context 'when SSM API call fails' do
+      it 'returns false and logs warning' do
         expect(ssm_client).to receive(:describe_instance_information)
-          .and_raise(Aws::SSM::Errors::ServiceError.new(nil, "API Error"))
+          .and_raise(Aws::SSM::Errors::ServiceError.new(nil, 'API Error'))
 
         expect(logger).to receive(:warn).with(/Error checking SSM agent status/)
         expect(ssm_manager.ssm_agent_available?(instance_id)).to be false
@@ -87,20 +87,20 @@ describe Kitchen::Driver::Aws::SsmSessionManager do
     end
   end
 
-  describe "#session_manager_plugin_installed?" do
-    context "when plugin is installed" do
-      it "returns true" do
+  describe '#session_manager_plugin_installed?' do
+    context 'when plugin is installed' do
+      it 'returns true' do
         status_double = double(success?: true)
-        allow(Open3).to receive(:capture2e).with("session-manager-plugin", "--version").and_return(["1.2.3\n", status_double])
+        allow(Open3).to receive(:capture2e).with('session-manager-plugin', '--version').and_return(["1.2.3\n", status_double])
 
         expect(ssm_manager.session_manager_plugin_installed?).to be true
       end
     end
 
-    context "when plugin is not installed" do
-      it "returns false and logs warning" do
+    context 'when plugin is not installed' do
+      it 'returns false and logs warning' do
         status_double = double(success?: false)
-        allow(Open3).to receive(:capture2e).with("session-manager-plugin", "--version").and_return(["", status_double])
+        allow(Open3).to receive(:capture2e).with('session-manager-plugin', '--version').and_return(['', status_double])
 
         expect(logger).to receive(:warn).with(/Session Manager plugin is not installed/)
         expect(ssm_manager.session_manager_plugin_installed?).to be false
