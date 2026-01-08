@@ -160,7 +160,7 @@ describe "Default images for various platforms" do
 
     "debian" => [
       { name: "owner-id", values: %w{136693071363} },
-      { name: "name", values: %w{debian-11-*} },
+      { name: "name", values: %w{debian-13-*} },
     ],
     "debian-13" => [
       { name: "owner-id", values: %w{136693071363} },
@@ -188,7 +188,7 @@ describe "Default images for various platforms" do
     ],
     "debian-x86_64" => [
       { name: "owner-id", values: %w{136693071363} },
-      { name: "name", values: %w{debian-11-*} },
+      { name: "name", values: %w{debian-13-*} },
       { name: "architecture", values: %w{x86_64} },
     ],
 

@@ -32,6 +32,16 @@ will need access to an [AWS][aws_site] account. [IAM][iam_site] users should hav
 By automatically applying reasonable defaults wherever possible, kitchen-ec2 does a lot of work to make your life easier.
 See the [kitchen.ci kitchen-ec2 docs](https://kitchen.ci/docs/drivers/aws/) for a complete list of configuration options.
 
+### Transport Options
+
+kitchen-ec2 supports multiple transport methods for connecting to EC2 instances:
+
+- **SSH/WinRM** (default): Traditional network-based access
+- **Instance Connect**: AWS EC2 Instance Connect for temporary SSH access
+- **SSM Session Manager**: AWS Systems Manager Session Manager for secure, audited access without SSH/RDP ports
+
+For SSM Session Manager configuration and benefits, see [SSM Session Manager Documentation](docs/ssm-session-manager.md).
+
 ## Development
 
 * Source hosted at [GitHub][repo]

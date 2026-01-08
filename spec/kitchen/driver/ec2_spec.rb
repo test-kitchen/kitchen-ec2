@@ -1268,4 +1268,155 @@ describe Kitchen::Driver::Ec2 do
       end
     end
   end
+
+  describe "SSM Session Manager functionality" do
+    describe "integration with create method" do
+      let(:ssm_manager) { instance_double(Kitchen::Driver::Aws::SsmSessionManager) }
+      let(:create_state) { {} }
+      let(:config) do
+        {
+          use_ssm_session_manager: true,
+          region: "us-east-1",
+          aws_ssh_key_id: "test-key",
+          image_id: "ami-12345",
+          security_group_ids: ["sg-12345"],
+        }
+      end
+
+      before do
+        allow(driver).to receive(:update_username)
+        allow(driver).to receive(:submit_server).and_return(server)
+        allow(server).to receive(:wait_until_exists)
+        allow(server).to receive(:id).and_return("i-12345")
+        allow(driver).to receive(:attach_network_interface)
+        allow(driver).to receive(:create_ec2_json)
+        allow(driver).to receive(:debug)
+        allow(driver).to receive(:info)
+        allow(driver).to receive(:create_security_group)
+        allow(driver).to receive(:create_key)
+        allow(driver).to receive(:host_available?).and_return(true)
+        allow(driver).to receive(:ssm_session_manager).and_return(ssm_manager)
+        
+        allow(driver).to receive(:wait_until_ready) do |_, state|
+          state[:hostname] = "test-hostname"
+          true
+        end
+        
+        allow(Retryable).to receive(:retryable) do |_options, &block|
+          block.call(1, nil)
+        end
+
+        connection_double = double("connection", wait_until_ready: true)
+        allow(instance.transport).to receive(:connection).with(any_args).and_return(connection_double)
+      end
+
+      it "calls ssm_session_manager_setup_ready when use_ssm_session_manager is true" do
+        expect(driver).to receive(:ssm_session_manager_setup_ready).with(hash_including(server_id: "i-12345"))
+        driver.create(create_state)
+      end
+
+      it "does not call ssm_session_manager_setup_ready when use_ssm_session_manager is false" do
+        config[:use_ssm_session_manager] = false
+        expect(driver).not_to receive(:ssm_session_manager_setup_ready)
+        driver.create(create_state)
+      end
+    end
+
+    describe "#ssm_session_manager_setup_ready" do
+      let(:state) { { server_id: "i-12345" } }
+      let(:ssm_manager) { instance_double(Kitchen::Driver::Aws::SsmSessionManager) }
+
+      before do
+        allow(driver).to receive(:ssm_session_manager).and_return(ssm_manager)
+        allow(driver).to receive(:info)
+        allow(driver).to receive(:warn)
+        allow(ssm_manager).to receive(:session_manager_plugin_installed?).and_return(true)
+      end
+
+      context "when SSM agent is available immediately" do
+        it "does not wait" do
+          expect(ssm_manager).to receive(:ssm_agent_available?).with("i-12345").and_return(true)
+          expect(driver).not_to receive(:sleep)
+          driver.send(:ssm_session_manager_setup_ready, state)
+        end
+      end
+
+      context "when SSM agent becomes available after retries" do
+        it "waits and succeeds" do
+          call_count = 0
+          allow(ssm_manager).to receive(:ssm_agent_available?) do |_instance_id|
+            call_count += 1
+            call_count > 2
+          end
+          
+          expect(driver).to receive(:sleep).twice
+          driver.send(:ssm_session_manager_setup_ready, state)
+        end
+      end
+
+      context "when session manager plugin is not installed" do
+        it "warns the user" do
+          allow(ssm_manager).to receive(:session_manager_plugin_installed?).and_return(false)
+          allow(ssm_manager).to receive(:ssm_agent_available?).and_return(true)
+          
+          expect(driver).to receive(:warn).with(/Session Manager plugin not found/)
+          driver.send(:ssm_session_manager_setup_ready, state)
+        end
+      end
+    end
+
+    describe "#ssm_session_manager_setup_override" do
+      let(:state) { { server_id: "i-12345" } }
+      let(:config) do
+        {
+          use_ssm_session_manager: true,
+          region: "us-west-2",
+          shared_credentials_profile: "my-profile",
+        }
+      end
+
+      before do
+        allow(driver).to receive(:info)
+      end
+
+      it "overrides transport connection method" do
+        expect(instance.transport).to receive(:define_singleton_method).with(:connection)
+        expect(instance.transport).to receive(:define_singleton_method).with(:ssm_session_manager_override_applied)
+        driver.send(:ssm_session_manager_setup_override, instance)
+      end
+
+      it "sets SSH proxy command with correct parameters" do
+        driver.send(:ssm_session_manager_setup_override, instance)
+        
+        # Call the overridden connection method
+        original_method = instance.transport.method(:connection)
+        allow(original_method).to receive(:call)
+        
+        instance.transport.connection(state)
+        
+        expect(state[:ssh_proxy_command]).to include("aws ssm start-session")
+        expect(state[:ssh_proxy_command]).to include("--target i-12345")
+        expect(state[:ssh_proxy_command]).to include("--region us-west-2")
+        expect(state[:ssh_proxy_command]).to include("--profile my-profile")
+      end
+
+      it "includes document name when specified" do
+        config[:ssm_session_manager_document_name] = "MyCustomDocument"
+        driver.send(:ssm_session_manager_setup_override, instance)
+        
+        instance.transport.connection(state)
+        
+        expect(state[:ssh_proxy_command]).to include("--document-name MyCustomDocument")
+      end
+
+      it "does not apply override twice" do
+        driver.send(:ssm_session_manager_setup_override, instance)
+        expect(instance.transport).to respond_to(:ssm_session_manager_override_applied)
+        
+        # Second call should return early
+        expect(instance.transport).not_to receive(:define_singleton_method)
+        driver.send(:ssm_session_manager_setup_override, instance)
+      end
+    end
+  end
 end

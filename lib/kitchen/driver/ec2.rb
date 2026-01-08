@@ -39,6 +39,7 @@ require_relative "aws/standard_platform/macos"
 require_relative "aws/standard_platform/ubuntu"
 require_relative "aws/standard_platform/windows"
 require_relative "aws/instance_connect"
+require_relative "aws/ssm_session_manager"
 require "aws-sdk-ec2"
 require "aws-sdk-core/waiters/errors"
 require "retryable" unless defined?(Retryable)
@@ -101,6 +102,8 @@ module Kitchen
       default_config :use_instance_connect, false
       default_config :instance_connect_endpoint_id, nil
       default_config :instance_connect_max_tunnel_duration, 3600
+      default_config :use_ssm_session_manager, false
+      default_config :ssm_session_manager_document_name, nil
 
       include Kitchen::Driver::Mixins::DedicatedHosts
 
@@ -197,6 +200,15 @@ module Kitchen
         end
       end
 
+      # Ensure use_instance_connect and use_ssm_session_manager are not both enabled
+      validations[:use_ssm_session_manager] = lambda do |_attr, val, driver|
+        if val && driver[:use_instance_connect]
+          warn "Cannot use both 'use_instance_connect' and 'use_ssm_session_manager' at the same time. " \
+            "Please enable only one transport method."
+          exit!
+        end
+      end
+
       # empty keys cause failures when tagging and they make no sense
       validations[:tags] = lambda do |_attr, val, _driver|
         # if someone puts the tags each on their own line it's an array not a hash
@@ -272,7 +284,7 @@ module Kitchen
         # Waiting can fail, so we have to retry on that.
         Retryable.retryable(
           tries: 10,
-          sleep: lambda { |n| [2**n, 30].min },
+          sleep: ->(n) { [2**n, 30].min },
           on: ::Aws::EC2::Errors::InvalidInstanceIDNotFound
         ) do |_r, _|
           wait_until_ready(server, state)
@@ -282,6 +294,8 @@ module Kitchen
 
         if config[:use_instance_connect]
           instance_connect_setup_ready(state)
+        elsif config[:use_ssm_session_manager]
+          ssm_session_manager_setup_ready(state)
         end
 
         instance.transport.connection(state).wait_until_ready
@@ -456,10 +470,7 @@ module Kitchen
         expanded = []
         keys = %i{instance_type}
 
-        unless config[:subnet_filter]
-          # => Use explicitly specified subnets
-          keys << :subnet_id
-        else
+        if config[:subnet_filter]
           # => Enable cascading through matching subnets
           client = ::Aws::EC2::Client.new(region: config[:region])
 
@@ -484,6 +495,9 @@ module Kitchen
             new_config[:subnet_filter] = nil
             new_config
           end
+        else
+          # => Use explicitly specified subnets
+          keys << :subnet_id
         end
 
         keys.each do |key|
@@ -538,7 +552,7 @@ module Kitchen
         # not retry if the price could not be satisfied immediately.
         Retryable.retryable(
           tries: config[:spot_wait] / config[:retryable_sleep],
-          sleep: lambda { |_n| config[:retryable_sleep] },
+          sleep: ->(_n) { config[:retryable_sleep] },
           on: ::Aws::EC2::Errors::SpotMaxPriceTooLow
         ) do |retries|
           c = retries * config[:retryable_sleep]
@@ -577,7 +591,7 @@ module Kitchen
                 output = Base64.decode64(output)
                 debug "Console output: --- \n#{output}"
               end
-              ready = !!(output.include?("Windows is Ready to use"))
+              ready = !!output.include?("Windows is Ready to use")
             end
           end
           ready
@@ -683,7 +697,7 @@ module Kitchen
 
       def create_ec2_json(state)
         if windows_os?
-          cmd = "New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File"
+          cmd = 'New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File'
         else
           debug "Using sudo_command='#{sudo_command}' for ohai hints"
           cmd = "#{sudo_command} mkdir -p /etc/chef/ohai/hints; #{sudo_command} touch /etc/chef/ohai/hints/ec2.json"
@@ -911,16 +925,16 @@ module Kitchen
         client = ::Aws::EC2::Client.new(region: config[:region])
         begin
           check_eni = client.describe_network_interface_attribute({
-            attribute: "attachment",
-            network_interface_id: config[:elastic_network_interface_id],
-          })
+                                                                    attribute: "attachment",
+                                                                    network_interface_id: config[:elastic_network_interface_id],
+                                                                  })
           if check_eni.attachment.nil?
             unless state[:server_id].nil?
               client.attach_network_interface({
-              device_index: 1,
-              instance_id: state[:server_id],
-              network_interface_id: config[:elastic_network_interface_id],
-              })
+                                                device_index: 1,
+                                                instance_id: state[:server_id],
+                                                network_interface_id: config[:elastic_network_interface_id],
+                                              })
               info("Attached Network interface <#{config[:elastic_network_interface_id]}> with the instance <#{state[:server_id]}> .")
             end
           else
@@ -966,6 +980,10 @@ module Kitchen
           debug("[AWS EC2 Instance Connect] Setting up Instance Connect overrides")
           instance_connect_setup_override(instance)
           instance_connect_setup_inspec_override(instance)
+        elsif config[:use_ssm_session_manager]
+          debug("[AWS SSM Session Manager] Setting up SSM Session Manager overrides")
+          ssm_session_manager_setup_override(instance)
+          ssm_session_manager_setup_inspec_override(instance)
         end
 
         self
@@ -1037,7 +1055,6 @@ module Kitchen
 
               # Override runner_options_for_ssh
               define_singleton_method(:runner_options_for_ssh) do |config_data|
-
                 # Get the original options
                 opts = instance_connect_original_runner_options_for_ssh(config_data)
 
@@ -1076,8 +1093,8 @@ module Kitchen
                     if public_dns && !public_dns.empty?
                       opts["host"] = public_dns
                       opts["ssh_options"] = (opts["ssh_options"] || {}).merge({
-                        "IdentitiesOnly" => "yes",
-                      })
+                                                                                "IdentitiesOnly" => "yes",
+                                                                              })
                       driver_instance.info("[AWS EC2 Instance Connect] InSpec using direct SSH to #{public_dns} with IdentitiesOnly=yes")
                     else
                       driver_instance.warn("[AWS EC2 Instance Connect] No public DNS available for direct SSH mode")
@@ -1207,11 +1224,11 @@ module Kitchen
 
       def get_vpc_id_for_instance(state)
         # Get the instance details to find its VPC
-        return nil unless state[:server_id]
+        return unless state[:server_id]
 
         begin
           instance_info = ec2.client.describe_instances(instance_ids: [state[:server_id]]).reservations.first&.instances&.first
-          return nil unless instance_info
+          return unless instance_info
 
           instance_info.vpc_id
         rescue => e
@@ -1257,6 +1274,152 @@ module Kitchen
         rescue => e
           raise "Unable to extract public key from #{private_key_path}: #{e.message}"
         end
+      end
+
+      # SSM Session Manager Support Methods
+
+      def ssm_session_manager
+        @ssm_session_manager ||= Aws::SsmSessionManager.new(config, instance.logger)
+      end
+
+      def ssm_session_manager_setup_ready(state)
+        info("[AWS SSM Session Manager] Setting up SSM Session Manager connection")
+
+        # Verify session manager plugin is installed
+        unless ssm_session_manager.session_manager_plugin_installed?
+          warn("[AWS SSM Session Manager] Session Manager plugin not found. Please install it from: " \
+               "https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html")
+        end
+
+        # Wait for SSM agent to be available
+        max_retries = 12
+        retry_delay = 10
+        retries = 0
+
+        loop do
+          if ssm_session_manager.ssm_agent_available?(state[:server_id])
+            info("[AWS SSM Session Manager] SSM agent is available on instance #{state[:server_id]}")
+            break
+          end
+
+          retries += 1
+          if retries >= max_retries
+            warn("[AWS SSM Session Manager] SSM agent did not become available after #{max_retries * retry_delay} seconds. " \
+                 "Ensure the instance has an IAM instance profile with SSM permissions and the SSM agent is running.")
+            break
+          end
+
+          info("[AWS SSM Session Manager] Waiting for SSM agent to be available (attempt #{retries}/#{max_retries})...")
+          sleep retry_delay
+        end
+      end
+
+      def ssm_session_manager_setup_override(instance)
+        # Prevent double setup
+        return if instance.transport.respond_to?(:ssm_session_manager_override_applied)
+
+        # Store reference to driver for use in override
+        driver_instance = self
+        use_ssm = config[:use_ssm_session_manager]
+
+        # Override the transport's connection method to inject SSM setup
+        original_connection = instance.transport.method(:connection)
+
+        instance.transport.define_singleton_method(:connection) do |state, &block|
+          if use_ssm && state[:server_id]
+            # Build SSM start-session command
+            cmd = [
+              "aws", "ssm", "start-session",
+              "--target", state[:server_id],
+              "--region", driver_instance.config[:region]
+            ]
+
+            # Add document name if specified
+            if driver_instance.config[:ssm_session_manager_document_name]
+              cmd += ["--document-name", driver_instance.config[:ssm_session_manager_document_name]]
+            end
+
+            # Add AWS profile if specified
+            if driver_instance.config[:shared_credentials_profile]
+              cmd += ["--profile", driver_instance.config[:shared_credentials_profile]]
+            end
+
+            proxy_command = cmd.join(" ")
+            driver_instance.info("[AWS SSM Session Manager] Using proxy command: #{proxy_command}")
+
+            # Set proxy command for SSH transport
+            state[:ssh_proxy_command] = proxy_command
+          end
+
+          # Call original connection method
+          original_connection.call(state, &block)
+        end
+
+        # Mark as applied
+        instance.transport.define_singleton_method(:ssm_session_manager_override_applied) { true }
+      end
+
+      def ssm_session_manager_setup_inspec_override(instance)
+        # Only apply to InSpec verifier
+        return unless instance.verifier.name.downcase == "inspec"
+        return if instance.verifier.respond_to?(:ssm_session_manager_inspec_override_applied)
+
+        # Store reference to driver for use in override
+        driver_instance = self
+        use_ssm = config[:use_ssm_session_manager]
+
+        # Override the verifier's call method to inject SSM setup
+        original_call = instance.verifier.method(:call)
+
+        instance.verifier.define_singleton_method(:call) do |state|
+          driver_instance.debug("[AWS SSM Session Manager] InSpec call method intercepted")
+
+          # Set up SSM for InSpec if enabled
+          if use_ssm && state[:server_id]
+            # Check if we already have the override method defined
+            unless respond_to?(:ssm_original_runner_options_for_ssh)
+              # Store the original method
+              define_singleton_method(:ssm_original_runner_options_for_ssh, method(:runner_options_for_ssh))
+
+              # Override runner_options_for_ssh
+              define_singleton_method(:runner_options_for_ssh) do |config_data|
+                # Get the original options
+                opts = ssm_original_runner_options_for_ssh(config_data)
+
+                # Inject SSM Session Manager configuration if enabled
+                if use_ssm && config_data[:server_id]
+                  # Build SSM start-session command
+                  cmd = [
+                    "aws", "ssm", "start-session",
+                    "--target", config_data[:server_id],
+                    "--region", driver_instance.config[:region]
+                  ]
+
+                  # Add document name if specified
+                  if driver_instance.config[:ssm_session_manager_document_name]
+                    cmd += ["--document-name", driver_instance.config[:ssm_session_manager_document_name]]
+                  end
+
+                  # Add AWS profile if specified
+                  if driver_instance.config[:shared_credentials_profile]
+                    cmd += ["--profile", driver_instance.config[:shared_credentials_profile]]
+                  end
+
+                  opts["proxy_command"] = cmd.join(" ")
+                  driver_instance.info("[AWS SSM Session Manager] InSpec using proxy command: #{opts["proxy_command"]}")
+                end
+
+                opts
+              end
+            end
+          end
+
+          # Call the original method
+          original_call.call(state)
+        end
+
+        # Mark as applied
+        instance.verifier.define_singleton_method(:ssm_session_manager_inspec_override_applied) { true }
       end
     end
   end

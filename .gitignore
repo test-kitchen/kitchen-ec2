@@ -20,3 +20,4 @@ tmp
 
 .kitchen/
 .kitchen.local.yml
+vendor/bundle/
