@@ -586,7 +586,7 @@ module Kitchen
               # supplied, try to fetch it from the AWS instance
               fetch_windows_admin_password(server, state)
             else
-              output = server.console_output.output
+              output = server.console_output.output || ''
               unless output.nil?
                 output = Base64.decode64(output)
                 debug "Console output: --- \n#{output}"
