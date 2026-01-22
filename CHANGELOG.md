@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.22.1](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.0...v3.22.1) (2026-01-22)
+
+
+### Bug Fixes
+
+* bump tk dep &lt;5 ([#652](https://github.com/test-kitchen/kitchen-ec2/issues/652)) ([2135e0e](https://github.com/test-kitchen/kitchen-ec2/commit/2135e0e17ed6893f928849c7fc747740f96f764c))
+
 ## [3.22.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.21.0...v3.22.0) (2026-01-22)
 
 
