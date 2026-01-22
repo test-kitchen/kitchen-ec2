@@ -1,5 +1,18 @@
 # Change Log
 
+## [3.22.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.21.0...v3.22.0) (2026-01-22)
+
+
+### Features
+
+* Add AWS SSM Session Manager transport support ([#646](https://github.com/test-kitchen/kitchen-ec2/issues/646)) ([6b0fa6d](https://github.com/test-kitchen/kitchen-ec2/commit/6b0fa6d9f838249eb6f1f16c44906eb1bff84307))
+
+
+### Bug Fixes
+
+* Fix issue on failing create action ([#622](https://github.com/test-kitchen/kitchen-ec2/issues/622)) ([eb1d328](https://github.com/test-kitchen/kitchen-ec2/commit/eb1d328c2b56ec505ca7af4b244d82a3ba3ff175))
+* Fixing cookstyle error ([1e319c8](https://github.com/test-kitchen/kitchen-ec2/commit/1e319c887755f606a6ec2d8989fb420a42a01cbf))
+
 ## [3.21.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.20.0...v3.21.0) (2025-09-09)
 
 
