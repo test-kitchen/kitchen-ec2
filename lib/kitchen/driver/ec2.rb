@@ -1312,46 +1312,44 @@ module Kitchen
 
       def ssm_session_manager_execute_command(state, commands, max_wait: 30)
         # Execute SSM command and wait for completion
-        begin
-          ssm_client = ssm_session_manager_client
+        ssm_client = ssm_session_manager_client
 
-          resp = ssm_client.send_command(
-            instance_ids: [state[:server_id]],
-            document_name: "AWS-RunShellScript",
-            parameters: {
-              "commands" => commands
-            }
+        resp = ssm_client.send_command(
+          instance_ids: [state[:server_id]],
+          document_name: "AWS-RunShellScript",
+          parameters: {
+            "commands" => commands,
+          }
+        )
+
+        command_id = resp.command.command_id
+        debug("[AWS SSM Session Manager] Command sent, ID: #{command_id}")
+
+        # Wait for command to complete (poll every 2 seconds)
+        waited = 0
+        loop do
+          sleep 2
+          waited += 2
+
+          status_resp = ssm_client.get_command_invocation(
+            command_id: command_id,
+            instance_id: state[:server_id]
           )
 
-          command_id = resp.command.command_id
-          debug("[AWS SSM Session Manager] Command sent, ID: #{command_id}")
-
-          # Wait for command to complete (poll every 2 seconds)
-          waited = 0
-          loop do
-            sleep 2
-            waited += 2
-
-            status_resp = ssm_client.get_command_invocation(
-              command_id: command_id,
-              instance_id: state[:server_id]
-            )
-
-            if status_resp.status == "Success"
-              return true
-            elsif status_resp.status == "Failed" || status_resp.status == "Cancelled"
-              warn("[AWS SSM Session Manager] Command failed: #{status_resp.status}")
-              warn("[AWS SSM Session Manager] Error: #{status_resp.error_message}") if status_resp.error_message
-              return false
-            elsif waited >= max_wait
-              warn("[AWS SSM Session Manager] Timeout waiting for command to complete")
-              return false
-            end
+          if status_resp.status == "Success"
+            return true
+          elsif status_resp.status == "Failed" || status_resp.status == "Cancelled"
+            warn("[AWS SSM Session Manager] Command failed: #{status_resp.status}")
+            warn("[AWS SSM Session Manager] Error: #{status_resp.error_message}") if status_resp.error_message
+            return false
+          elsif waited >= max_wait
+            warn("[AWS SSM Session Manager] Timeout waiting for command to complete")
+            return false
           end
-        rescue => e
-          warn("[AWS SSM Session Manager] Error executing command: #{e.message}")
-          false
         end
+      rescue => e
+        warn("[AWS SSM Session Manager] Error executing command: #{e.message}")
+        false
       end
 
       def ssm_session_manager_setup_ready(state)
@@ -1414,7 +1412,7 @@ module Kitchen
 
         # Escape the public key for shell
         escaped_key = Shellwords.escape(public_key)
-        
+
         # Build SSM command to add key (check if key already exists to avoid duplicates)
         # Use test -f to check if file exists before grep to avoid errors
         commands = [
@@ -1422,7 +1420,7 @@ module Kitchen
           "chmod 700 #{home_dir}/.ssh",
           "test -f #{authorized_keys_path} && grep -qxF #{escaped_key} #{authorized_keys_path} || echo #{escaped_key} >> #{authorized_keys_path}",
           "chmod 600 #{authorized_keys_path}",
-          "chown #{username}:#{username} #{home_dir}/.ssh -R"
+          "chown #{username}:#{username} #{home_dir}/.ssh -R",
         ]
 
         # Use reusable SSM command execution helper
@@ -1455,7 +1453,7 @@ module Kitchen
 
             # Set proxy command for SSH transport
             state[:ssh_proxy_command] = proxy_command
-            
+
             # Override hostname to localhost - SSM proxy command handles routing
             # SSH should connect to localhost, not the instance IP
             driver_instance.debug("[AWS SSM Session Manager] Overriding hostname to localhost (was: #{state[:hostname]})")
