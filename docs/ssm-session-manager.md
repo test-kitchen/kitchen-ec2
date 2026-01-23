@@ -7,7 +7,7 @@ kitchen-ec2 now supports AWS Systems Manager (SSM) Session Manager as an alterna
 - **No SSH/WinRM network access required**: Connect to instances in private subnets without VPN or bastion hosts
 - **Enhanced security**: No need to open SSH/RDP ports in security groups
 - **Centralized audit logging**: All session activity is logged to CloudTrail
-- **No SSH key management**: Eliminate the complexity of managing SSH key pairs for testing
+- **Automatic SSH key injection**: SSH keys are automatically injected into instances via SSM before each connection
 - **Zero-trust compliance**: Access instances through AWS IAM authentication instead of network-based access
 
 ## Requirements
@@ -61,8 +61,19 @@ suites:
 | Option | Default | Description |
 |--------|---------|-------------|
 | `use_ssm_session_manager` | `false` | Enable SSM Session Manager transport |
-| `ssm_session_manager_document_name` | `nil` | Optional custom SSM document name |
+| `ssm_session_manager_document_name` | `nil` | Optional custom SSM document name eg. AWS-StartSSHSession |
 | `iam_profile_name` | `nil` | IAM instance profile (required for SSM) |
+
+## How It Works
+
+When SSM Session Manager is enabled, kitchen-ec2:
+
+1. Waits for the SSM agent to become available on the instance
+2. Automatically injects SSH public keys into the instance via SSM before each connection
+3. Configures SSH to use SSM Session Manager as a proxy command
+4. Connects to the instance through SSM, eliminating the need for direct network access
+
+SSH keys are automatically extracted from your configured key files and injected into the instance's `~/.ssh/authorized_keys` file using SSM Run Command. This happens transparently before each connection attempt.
 
 ## Additional Resources
 
