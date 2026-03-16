@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.22.2](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.1...v3.22.2) (2026-03-16)
+
+
+### Bug Fixes
+
+* Add support for Windows Server 2025 ([#656](https://github.com/test-kitchen/kitchen-ec2/issues/656)) ([c3ec8d4](https://github.com/test-kitchen/kitchen-ec2/commit/c3ec8d4c6edb3a4921fa09bc1b3e75d3a53027e1))
+
 ## [3.22.1](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.0...v3.22.1) (2026-01-22)
 
 
