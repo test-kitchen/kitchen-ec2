@@ -133,7 +133,7 @@ module Kitchen
 
           def windows_name_filter
             major, revision, service_pack = windows_version_parts
-            if [2022, 2019, 2016].include?(major)
+            if [2025, 2022, 2019, 2016].include?(major)
               "Windows_Server-#{major}-English-Full-Base-*"
             elsif [1709, 1803].include?(major)
               "Windows_Server-#{major}-English-Core-ContainersLatest-*"
