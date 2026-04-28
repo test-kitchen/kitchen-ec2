@@ -111,21 +111,21 @@ describe "Default images for various platforms" do
     ],
     "amazon2023" => [
       { name: "owner-id", values: %w{137112412989} },
-      { name: "name", values: %w{al2023-ami-2023.0.*} },
+      { name: "name", values: %w{al2023-ami-2023.*} },
     ],
     "amazon2023-x86_64" => [
       { name: "owner-id", values: %w{137112412989} },
-      { name: "name", values: %w{al2023-ami-2023.0.*} },
+      { name: "name", values: %w{al2023-ami-2023.*} },
       { name: "architecture", values: %w{x86_64} },
     ],
     "amazon2023-arm64" => [
       { name: "owner-id", values: %w{137112412989} },
-      { name: "name", values: %w{al2023-ami-2023.0.*} },
+      { name: "name", values: %w{al2023-ami-2023.*} },
       { name: "architecture", values: %w{arm64} },
     ],
-    "amazon2023-20230222" => [
+    "amazon2023-11.20260413.0" => [
       { name: "owner-id", values: %w{137112412989} },
-      { name: "name", values: %w{al2023-ami-2023.0.20230222*} },
+      { name: "name", values: %w{al2023-ami-2023.11.20260413.0*} },
     ],
     "centos" => [
       { name: "owner-id", values: %w{125523088429} },
