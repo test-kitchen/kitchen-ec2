@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.22.3](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.2...v3.22.3) (2026-04-28)
+
+
+### Bug Fixes
+
+* Corrected the Amazon Linux 2023 naming convention ([#659](https://github.com/test-kitchen/kitchen-ec2/issues/659)) ([8757f4c](https://github.com/test-kitchen/kitchen-ec2/commit/8757f4c447921dd8a107985427d150029c35ed75))
+
 ## [3.22.2](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.1...v3.22.2) (2026-03-16)
 
 
