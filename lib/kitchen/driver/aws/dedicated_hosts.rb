@@ -3,13 +3,13 @@ module Kitchen
     module Mixins
       module DedicatedHosts
         # check if a suitable dedicated host is available
-        # @return Boolean
+        # @return [Boolean]
         def host_available?
           !hosts_with_capacity.empty?
         end
 
         # get dedicated host with capacity for instance type
-        # @return Aws::EC2::Types::Host
+        # @return [Aws::EC2::Types::Host]
         def hosts_with_capacity
           hosts_managed.select do |host|
             # T-instance hosts do not report available capacity and can be overprovisioned
@@ -24,21 +24,21 @@ module Kitchen
         end
 
         # check if host has no instances running
-        # @param host_id [Aws::EC2::Types::Host] dedicated host
-        # @return Boolean
+        # @param host [Aws::EC2::Types::Host] dedicated host
+        # @return [Boolean]
         def host_unused?(host)
           host.instances.empty?
         end
 
         # get host data for host id
         # @param host_id [Aws::EC2::Types::Host] dedicated host
-        # @return Array(Aws::EC2::Types::Host)
+        # @return [Array<Aws::EC2::Types::Host>]
         def host_for_id(host_id)
           ec2.client.describe_hosts(host_ids: [host_id])&.first
         end
 
         # get dedicated hosts managed by Test Kitchen
-        # @return Array(Aws::EC2::Types::Host)
+        # @return [Array<Aws::EC2::Types::Host>]
         def hosts_managed
           response = ec2.client.describe_hosts(
             filter: [
@@ -50,7 +50,7 @@ module Kitchen
         end
 
         # allocate new dedicated host for requested instance type
-        # @return String host id
+        # @return [String] host id
         def allocate_host
           unless allow_allocate_host?
             warn "ERROR: Attempted to allocate dedicated host but need environment variable TK_ALLOCATE_DEDICATED_HOST to be set"
@@ -93,7 +93,7 @@ module Kitchen
 
         # deallocate a dedicated host
         # @param host_id [String] dedicated host id
-        # @return Aws::EC2::Types::ReleaseHostsResult
+        # @return [Aws::EC2::Types::ReleaseHostsResult]
         def deallocate_host(host_id)
           info("Deallocating dedicated host #{host_id}")
 
@@ -106,26 +106,26 @@ module Kitchen
 
         # return instance family from type
         # @param instance_type [String] type in format family.size
-        # @return String instance family
+        # @return [String] instance family
         def instance_family_from_type(instance_type)
           instance_type.split(".").first
         end
 
         # return instance size from type
         # @param instance_type [String] type in format family.size
-        # @return String instance size
+        # @return [String] instance size
         def instance_size_from_type(instance_type)
           instance_type.split(".").last
         end
 
         # check config, if host allocation is enabled
-        # @return Boolean
+        # @return [Boolean]
         def allow_allocate_host?
           config[:allocate_dedicated_host]
         end
 
         # check config, if host deallocation is enabled
-        # @return Boolean
+        # @return [Boolean]
         def allow_deallocate_host?
           config[:deallocate_dedicated_host]
         end

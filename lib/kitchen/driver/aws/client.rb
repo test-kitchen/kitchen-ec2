@@ -73,7 +73,7 @@ module Kitchen
 
         # check if instance exists, given an id
         # @param id [String] aws instance id
-        # @return boolean
+        # @return [Boolean]
         def instance_exists?(id)
           resource.instance(id).exists?
         end

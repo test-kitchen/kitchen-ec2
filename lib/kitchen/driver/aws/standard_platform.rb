@@ -120,7 +120,7 @@ module Kitchen
         # The list of StandardPlatform objects. StandardPlatforms register
         # themselves with this.
         #
-        # @return Array[Kitchen::Driver::Aws::StandardPlatform]
+        # @return [Array<Kitchen::Driver::Aws::StandardPlatform>]
         #
         def self.platforms
           @platforms ||= {}
