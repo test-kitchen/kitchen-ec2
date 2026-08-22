@@ -1400,12 +1400,39 @@ describe Kitchen::Driver::Ec2 do
         expect(state[:ssh_proxy_command]).to include("--profile my-profile")
       end
 
+      it "injects SSH key before connection" do
+        allow(driver).to receive(:debug)
+        driver.send(:ssm_session_manager_setup_override, instance)
+
+        original_method = instance.transport.method(:connection)
+        allow(original_method).to receive(:call)
+
+        expect(driver).to receive(:ssm_session_manager_inject_ssh_key).with(state)
+        instance.transport.connection(state)
+      end
+
+      it "sets hostname to localhost" do
+        state[:hostname] = "10.74.130.5"
+        allow(driver).to receive(:ssm_session_manager_inject_ssh_key)
+        allow(driver).to receive(:debug)
+        driver.send(:ssm_session_manager_setup_override, instance)
+
+        original_method = instance.transport.method(:connection)
+        allow(original_method).to receive(:call)
+
+        instance.transport.connection(state)
+
+        expect(state[:hostname]).to eq("localhost")
+      end
+
       it "includes document name when specified" do
         config[:ssm_session_manager_document_name] = "MyCustomDocument"
+        allow(driver).to receive(:ssm_session_manager_inject_ssh_key)
+        allow(driver).to receive(:debug)
         driver.send(:ssm_session_manager_setup_override, instance)
         
         instance.transport.connection(state)
-        
+
         expect(state[:ssh_proxy_command]).to include("--document-name MyCustomDocument")
       end
 
@@ -1416,6 +1443,202 @@ describe Kitchen::Driver::Ec2 do
         # Second call should return early
         expect(instance.transport).not_to receive(:define_singleton_method)
         driver.send(:ssm_session_manager_setup_override, instance)
+      end
+    end
+
+    describe "#ssm_session_manager_inject_ssh_key" do
+      let(:state) do
+        {
+          server_id: "i-12345",
+          ssh_key: "/path/to/key.pem",
+          username: "ec2-user",
+        }
+      end
+      let(:config) do
+        {
+          use_ssm_session_manager: true,
+          region: "us-west-2",
+          shared_credentials_profile: "my-profile",
+        }
+      end
+      let(:ssm_client) { instance_double(::Aws::SSM::Client) }
+      let(:command_resp) { double("command_resp", command: double("command", command_id: "cmd-123")) }
+      let(:status_resp) { double("status_resp", status: "Success") }
+
+      before do
+        allow(driver).to receive(:ssm_session_manager_client).and_return(ssm_client)
+        allow(driver).to receive(:instance_connect_extract_public_key).with("/path/to/key.pem").and_return("ssh-rsa AAAAB3... test-key")
+        allow(driver).to receive(:info)
+        allow(driver).to receive(:warn)
+        allow(driver).to receive(:actual_platform).and_return(nil)
+        allow(File).to receive(:exist?).with("/path/to/key.pem").and_return(true)
+      end
+
+      it "injects SSH key via SSM command" do
+        expect(ssm_client).to receive(:send_command).with(
+          instance_ids: ["i-12345"],
+          document_name: "AWS-RunShellScript",
+          parameters: hash_including("commands" => array_including(/mkdir -p/))
+        ).and_return(command_resp)
+
+        expect(ssm_client).to receive(:get_command_invocation).with(
+          command_id: "cmd-123",
+          instance_id: "i-12345"
+        ).and_return(status_resp)
+
+        allow(driver).to receive(:sleep)
+        expect(driver).to receive(:info).with("[AWS SSM Session Manager] SSH public key injected successfully")
+
+        driver.send(:ssm_session_manager_inject_ssh_key, state)
+      end
+
+      it "returns early if no key path is provided" do
+        state.delete(:ssh_key)
+        allow(instance.transport).to receive(:[]).with(:ssh_key).and_return(nil)
+        expect(driver).not_to receive(:instance_connect_extract_public_key)
+        expect(ssm_client).not_to receive(:send_command)
+        driver.send(:ssm_session_manager_inject_ssh_key, state)
+      end
+
+      it "returns early if key file does not exist" do
+        allow(File).to receive(:exist?).with("/path/to/key.pem").and_return(false)
+        expect(driver).not_to receive(:instance_connect_extract_public_key)
+        expect(ssm_client).not_to receive(:send_command)
+        driver.send(:ssm_session_manager_inject_ssh_key, state)
+      end
+
+      it "handles key extraction failure gracefully" do
+        allow(driver).to receive(:instance_connect_extract_public_key).and_raise(StandardError.new("Key extraction failed"))
+        expect(driver).to receive(:warn).with(/Could not extract public key/)
+        expect(ssm_client).not_to receive(:send_command)
+        driver.send(:ssm_session_manager_inject_ssh_key, state)
+      end
+
+      it "handles SSM command failure" do
+        expect(ssm_client).to receive(:send_command).and_return(command_resp)
+        failed_status = double("status_resp", status: "Failed", error_message: "Command failed")
+        expect(ssm_client).to receive(:get_command_invocation).and_return(failed_status)
+        allow(driver).to receive(:sleep)
+        expect(driver).to receive(:warn).with(/Failed to inject SSH key/)
+
+        driver.send(:ssm_session_manager_inject_ssh_key, state)
+      end
+    end
+
+    describe "#ssm_session_manager_execute_command" do
+      let(:state) { { server_id: "i-12345" } }
+      let(:config) do
+        {
+          use_ssm_session_manager: true,
+          region: "us-west-2",
+          shared_credentials_profile: "my-profile",
+        }
+      end
+      let(:ssm_client) { instance_double(::Aws::SSM::Client) }
+      let(:command_resp) { double("command_resp", command: double("command", command_id: "cmd-123")) }
+      let(:commands) { ["echo 'test'"] }
+
+      before do
+        allow(driver).to receive(:ssm_session_manager_client).and_return(ssm_client)
+        allow(driver).to receive(:debug)
+        allow(driver).to receive(:warn)
+      end
+
+      it "executes SSM command and returns true on success" do
+        expect(ssm_client).to receive(:send_command).with(
+          instance_ids: ["i-12345"],
+          document_name: "AWS-RunShellScript",
+          parameters: {
+            "commands" => commands,
+          }
+        ).and_return(command_resp)
+
+        success_status = double("status_resp", status: "Success")
+        expect(ssm_client).to receive(:get_command_invocation).with(
+          command_id: "cmd-123",
+          instance_id: "i-12345"
+        ).and_return(success_status)
+
+        allow(driver).to receive(:sleep)
+
+        result = driver.send(:ssm_session_manager_execute_command, state, commands)
+        expect(result).to be true
+      end
+
+      it "returns false on command failure" do
+        expect(ssm_client).to receive(:send_command).and_return(command_resp)
+        failed_status = double("status_resp", status: "Failed", error_message: "Command failed")
+        expect(ssm_client).to receive(:get_command_invocation).and_return(failed_status)
+        allow(driver).to receive(:sleep)
+        expect(driver).to receive(:warn).with(/Command failed/)
+
+        result = driver.send(:ssm_session_manager_execute_command, state, commands)
+        expect(result).to be false
+      end
+
+      it "returns false on timeout" do
+        expect(ssm_client).to receive(:send_command).and_return(command_resp)
+        in_progress_status = double("status_resp", status: "InProgress")
+        expect(ssm_client).to receive(:get_command_invocation).and_return(in_progress_status).at_least(:once)
+        allow(driver).to receive(:sleep)
+        expect(driver).to receive(:warn).with(/Timeout waiting/)
+
+        result = driver.send(:ssm_session_manager_execute_command, state, commands, max_wait: 2)
+        expect(result).to be false
+      end
+
+      it "handles exceptions gracefully" do
+        expect(ssm_client).to receive(:send_command).and_raise(StandardError.new("Network error"))
+        expect(driver).to receive(:warn).with(/Error executing command/)
+
+        result = driver.send(:ssm_session_manager_execute_command, state, commands)
+        expect(result).to be false
+      end
+    end
+
+    describe "#ssm_session_manager_setup_inspec_override" do
+      let(:state) { { server_id: "i-12345" } }
+      let(:config) do
+        {
+          use_ssm_session_manager: true,
+          region: "us-west-2",
+          shared_credentials_profile: "my-profile",
+        }
+      end
+      let(:inspec_verifier) do
+        verifier = double("InspecVerifier")
+        allow(verifier).to receive(:name).and_return("inspec")
+        verifier
+      end
+
+      before do
+        allow(instance).to receive(:verifier).and_return(inspec_verifier)
+        allow(driver).to receive(:info)
+        allow(driver).to receive(:debug)
+      end
+
+      it "overrides InSpec verifier call method" do
+        original_call = ->(state) {}
+        allow(inspec_verifier).to receive(:method).with(:call).and_return(original_call)
+        allow(inspec_verifier).to receive(:respond_to?).with(:ssm_session_manager_inspec_override_applied).and_return(false)
+
+        expect(inspec_verifier).to receive(:define_singleton_method).with(:call)
+        expect(inspec_verifier).to receive(:define_singleton_method).with(:ssm_session_manager_inspec_override_applied)
+
+        driver.send(:ssm_session_manager_setup_inspec_override, instance)
+      end
+
+      it "does not apply override twice" do
+        allow(inspec_verifier).to receive(:respond_to?).with(:ssm_session_manager_inspec_override_applied).and_return(true)
+
+        expect(inspec_verifier).not_to receive(:define_singleton_method)
+        driver.send(:ssm_session_manager_setup_inspec_override, instance)
+      end
+
+      it "only applies to InSpec verifier" do
+        allow(inspec_verifier).to receive(:name).and_return("serverspec")
+        expect(inspec_verifier).not_to receive(:define_singleton_method)
+        driver.send(:ssm_session_manager_setup_inspec_override, instance)
       end
     end
   end
