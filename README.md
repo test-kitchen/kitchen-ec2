@@ -1,7 +1,7 @@
 # kitchen-ec2
 
 [![Gem Version](https://badge.fury.io/rb/kitchen-ec2.svg)](https://badge.fury.io/rb/kitchen-ec2)
-![CI](https://github.com/test-kitchen/kitchen-ec2/workflows/Test/badge.svg?branch=main)
+[![Test](https://github.com/test-kitchen/kitchen-ec2/actions/workflows/lint.yml/badge.svg)](https://github.com/test-kitchen/kitchen-ec2/actions/workflows/lint.yml)
 
 A [Test Kitchen](https://kitchen.ci/) driver that creates and destroys [Amazon EC2](https://aws.amazon.com/ec2/) instances, so you can test your cookbooks and infrastructure code on real AWS machines. It uses the [AWS SDK for Ruby](https://docs.aws.amazon.com/sdk-for-ruby/v3/api/) to talk to EC2.
 
