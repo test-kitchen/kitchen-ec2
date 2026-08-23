@@ -919,19 +919,13 @@ RSpec.describe Kitchen::Driver::Ec2 do
     # actually gone wrong. A missing default VPC, a malformed filter or a
     # permissions problem all reported themselves as an image problem, and the
     # original class and backtrace were discarded along the way.
+    # The message is asserted exactly, which is what pins down that nothing was
+    # appended to it: the advice used to arrive as a suffix on every failure.
     it "re-raises an unrelated failure unchanged" do
       error = ::Aws::EC2::Errors::VPCIdNotSpecified.new(nil, "No default VPC for this user")
 
       expect(&failing_create(error))
         .to raise_error(::Aws::EC2::Errors::VPCIdNotSpecified, "No default VPC for this user")
-    end
-
-    it "does not blame the image for an unrelated failure" do
-      error = ::Aws::EC2::Errors::VPCIdNotSpecified.new(nil, "No default VPC for this user")
-
-      expect(&failing_create(error)).to raise_error { |raised|
-        expect(raised.message).not_to include("AMI")
-      }
     end
 
     # The advice is genuinely useful for the case it was written for, so it is
