@@ -256,6 +256,72 @@ module Kitchen
 
       # Create an EC2 instance and wait until it can be connected to.
       #
+      # Configuration that cannot possibly work is rejected first, before
+      # anything billable is launched; {#launch_instance} does the real work.
+      #
+      # @param state [Hash] the instance state, updated in place with
+      #   `:server_id`, `:hostname` and any auto-created credentials
+      # @return [void]
+      # @raise [Kitchen::UserError] when the platform is misconfigured such
+      #   that the run could not succeed
+      def create(state)
+        return if state[:server_id]
+
+        # Deliberately checked here rather than inside #launch_instance: that
+        # method rewrites every exception it sees into an "is this AMI available
+        # in this region" message, which would bury this one.
+        assert_powershell_shell_type!
+
+        launch_instance(state)
+      end
+
+      # Refuse to launch a Windows instance that would be driven with a Bourne
+      # shell type.
+      #
+      # Test Kitchen infers `shell_type` from the platform *name*, not from
+      # `os_type`, so a Windows platform named something that does not begin
+      # with "windows" silently ends up as a Bourne host. The provisioner then
+      # generates Bourne commands, WinRM executes them in PowerShell, and the
+      # run fails deep into converge with an error that points nowhere near the
+      # real cause -- typically a `New-Item` complaint that the sandbox
+      # directory already exists.
+      #
+      # Failing here costs the user nothing; letting it through costs them a
+      # billable instance and a confusing converge failure.
+      #
+      # @raise [Kitchen::UserError] when the platform is Windows but its shell
+      #   type is not PowerShell
+      # @return [void]
+      # @see https://github.com/test-kitchen/kitchen-ec2/issues/621
+      def assert_powershell_shell_type!
+        return unless windows_os?
+        return if powershell_shell?
+
+        shell_type = instance.platform.respond_to?(:shell_type) ? instance.platform.shell_type : nil
+
+        raise Kitchen::UserError, <<~MESSAGE
+          Platform '#{instance.platform.name}' sets os_type 'windows' but its shell_type is '#{shell_type}'.
+
+          Test Kitchen infers shell_type from the platform name, so a Windows platform
+          whose name does not begin with 'windows' is treated as a Bourne shell host.
+          Provisioner commands would be generated as Bourne syntax and then executed by
+          PowerShell over WinRM, failing during converge with an unrelated error such as
+          'Cannot create ... because a file or directory with the same name already exists'.
+
+          Set shell_type explicitly on the platform:
+
+            platforms:
+              - name: #{instance.platform.name}
+                os_type: windows
+                shell_type: powershell
+
+          Renaming the platform to start with 'windows' also works, as Test Kitchen then
+          infers both os_type and shell_type from the name.
+        MESSAGE
+      end
+
+      # Request the instance and wait until it can be connected to.
+      #
       # Auto-creates a security group and key pair when none were configured,
       # allocates a dedicated host if `tenancy: host` requires one, requests
       # either an on-demand or a spot instance, then waits for the instance to
@@ -270,9 +336,7 @@ module Kitchen
       # @return [void]
       # @raise [Kitchen::ActionFailed] wrapping whatever went wrong, after
       #   cleaning up
-      def create(state)
-        return if state[:server_id]
-
+      def launch_instance(state)
         update_username(state)
 
         info(Kitchen::Util.outdent!(<<-END)) unless config[:skip_cost_warning]

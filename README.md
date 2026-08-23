@@ -400,6 +400,28 @@ cinc kitchen list --live --json
 
 Both flags require Test Kitchen 4.
 
+### Windows platforms not named `windows-*`
+
+Test Kitchen infers a platform's `shell_type` from its **name**, not from `os_type`.
+A Windows platform whose name does not begin with `windows` is treated as a Bourne
+shell host, and the run fails partway through converge with a message that points
+nowhere near the cause, such as `Cannot create ... because a file or directory with
+the same name already exists`.
+
+Set `shell_type` explicitly whenever the name does not start with `windows`:
+
+```yaml
+platforms:
+  - name: tr-windows-2016
+    os_type: windows
+    shell_type: powershell
+    driver:
+      image_id: ami-0123456789abcdef0
+```
+
+The driver checks for this before launching anything and stops with an explanation,
+so you are not billed for an instance that cannot converge.
+
 ## Using with Chef
 
 This driver is not tied to Cinc. The examples above use Cinc Workstation and the `cinc_infra` provisioner, but the driver works exactly the same with [Chef Workstation](https://www.chef.io/downloads/tools/workstation) — run `kitchen` instead of `cinc kitchen`, and use `chef_infra` instead of `cinc_infra`:

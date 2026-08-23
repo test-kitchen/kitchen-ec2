@@ -214,6 +214,91 @@ RSpec.describe Kitchen::Driver::Ec2 do
     end
   end
 
+  describe "#assert_powershell_shell_type!" do
+    subject(:driver) { build_driver(instance_attributes: { platform: platform }, **config) }
+
+    context "when the platform name starts with windows" do
+      let(:platform) { Kitchen::Platform.new(name: "windows-2016", os_type: "windows") }
+
+      it "does not object, because shell_type is inferred as powershell" do
+        expect { driver.assert_powershell_shell_type! }.not_to raise_error
+      end
+    end
+
+    # Test Kitchen infers shell_type from the platform *name*, so setting
+    # os_type alone leaves a Windows box with a Bourne shell type and the run
+    # fails much later with an unrelated message. See issue #621.
+    context "when a windows platform is named something else" do
+      let(:platform) { Kitchen::Platform.new(name: "tr-windows-2016", os_type: "windows") }
+
+      it "raises a UserError" do
+        expect { driver.assert_powershell_shell_type! }.to raise_error(Kitchen::UserError)
+      end
+
+      it "names the offending platform and its shell type" do
+        expect { driver.assert_powershell_shell_type! }
+          .to raise_error(Kitchen::UserError, /Platform 'tr-windows-2016'.*shell_type is 'bourne'/m)
+      end
+
+      it "tells the user exactly what to set" do
+        expect { driver.assert_powershell_shell_type! }
+          .to raise_error(Kitchen::UserError, /shell_type: powershell/)
+      end
+
+      it "mentions the confusing downstream error it prevents" do
+        expect { driver.assert_powershell_shell_type! }
+          .to raise_error(Kitchen::UserError, /already exists/)
+      end
+    end
+
+    context "when a windows platform sets shell_type explicitly" do
+      let(:platform) do
+        Kitchen::Platform.new(name: "tr-windows-2016", os_type: "windows", shell_type: "powershell")
+      end
+
+      it "does not object" do
+        expect { driver.assert_powershell_shell_type! }.not_to raise_error
+      end
+    end
+
+    context "when the platform is not windows" do
+      let(:platform) { Kitchen::Platform.new(name: "ubuntu-22.04") }
+
+      it "does not object" do
+        expect { driver.assert_powershell_shell_type! }.not_to raise_error
+      end
+    end
+
+    # Mirrors how Kitchen::Configurable guards these lookups, so a platform
+    # object that predates shell_type cannot crash the check.
+    context "when the platform does not report a shell type at all" do
+      let(:platform) { double("platform", name: "custom", os_type: "windows") }
+
+      it "raises the guidance rather than a NoMethodError" do
+        expect { driver.assert_powershell_shell_type! }.to raise_error(Kitchen::UserError)
+      end
+    end
+  end
+
+  describe "#create with an unusable shell type" do
+    subject(:driver) { build_driver(instance_attributes: { platform: platform }, **config) }
+
+    let(:platform) { Kitchen::Platform.new(name: "tr-windows-2016", os_type: "windows") }
+
+    it "fails before anything is launched" do
+      expect(driver).not_to receive(:launch_instance)
+      expect { driver.create(state) }.to raise_error(Kitchen::UserError)
+    end
+
+    # #launch_instance rewrites every error into an AMI-region message. Running
+    # the check outside it is what keeps this message intact.
+    it "does not rewrite the message into an AMI availability hint" do
+      expect { driver.create(state) }.to raise_error(Kitchen::UserError) { |e|
+        expect(e.message).not_to match(/available in this region/)
+      }
+    end
+  end
+
   describe "#image" do
     it "looks the configured image up in EC2" do
       expect(driver.image.name).to eq(image_name)
