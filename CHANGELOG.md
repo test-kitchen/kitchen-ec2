@@ -1,5 +1,12 @@
 # Change Log
 
+## [3.22.4](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.3...v3.22.4) (2026-08-23)
+
+
+### Bug Fixes
+
+* Correct platform detection, SSM plugin check, and dedicated host lookups ([#667](https://github.com/test-kitchen/kitchen-ec2/issues/667)) ([8461c75](https://github.com/test-kitchen/kitchen-ec2/commit/8461c75e0dfe5fc4e0eaaa7023dfcc3c4cf97e46))
+
 ## [3.22.3](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.2...v3.22.3) (2026-04-28)
 
 
