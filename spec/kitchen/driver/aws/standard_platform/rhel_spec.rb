@@ -57,6 +57,21 @@ RSpec.describe Kitchen::Driver::Aws::StandardPlatform::El do
   end
 
   describe "#sort_by_version" do
+    # The version sort's result used to be discarded -- `super(images)` was
+    # called for its return value and then thrown away, with the Beta
+    # partition applied to the original, unsorted argument. Both non-Beta
+    # here, so only the version sort can order them.
+    it "sorts by release, not by the order the images arrive in" do
+      images = [
+        build_image(name: "RHEL-9.6.0_HVM-20260811-x86_64-0-Hourly2-GP3"),
+        build_image(name: "RHEL-10.0.0_HVM-20260812-x86_64-0-Hourly2-GP3"),
+      ]
+
+      sorted = platform_for(nil).sort_by_version(images)
+
+      expect(sorted.first.name).to include("RHEL-10.0.0")
+    end
+
     it "pushes Beta images behind generally available ones" do
       images = [
         build_image(name: "RHEL-10.0_Beta-20250101-x86_64-0-Hourly2-GP3"),

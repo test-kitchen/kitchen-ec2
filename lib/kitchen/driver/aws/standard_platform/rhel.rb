@@ -90,10 +90,11 @@ module Kitchen
           # @param images [Array<Aws::EC2::Image>] the images to sort
           # @return [Array<Aws::EC2::Image>] the images, best match first
           def sort_by_version(images)
-            # First do a normal version sort
-            super(images)
-            # Now sort again, shunning Beta releases.
-            prefer(images) { |image| !image.name.match(/_Beta-/i) }
+            # `prefer(super)`, not `super(images)` followed by
+            # `prefer(images)`: `prefer` returns a new array rather than
+            # reordering in place, so applying it to the original argument
+            # discarded the version sort entirely.
+            prefer(super) { |image| !image.name.match?(/_Beta-/i) }
           end
         end
       end
