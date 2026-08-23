@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## [3.22.8](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.7...v3.22.8) (2026-08-23)
+
+
+### Bug Fixes
+
+* Accept the hyphenated spelling of amazon-2023 and amazon-2 ([#679](https://github.com/test-kitchen/kitchen-ec2/issues/679)) ([938d0c8](https://github.com/test-kitchen/kitchen-ec2/commit/938d0c8c6c0b9a78bfcc93d8fa30cca9631a15bc))
+* Name the setting that actually enables dedicated host allocation ([#686](https://github.com/test-kitchen/kitchen-ec2/issues/686)) ([342211b](https://github.com/test-kitchen/kitchen-ec2/commit/342211b24fd18ac7ca3d42e2e441ff0ab6f449bb))
+* Repair Fedora AMI search for the current image naming scheme ([#678](https://github.com/test-kitchen/kitchen-ec2/issues/678)) ([b783304](https://github.com/test-kitchen/kitchen-ec2/commit/b783304a36b5af72f1b9392b776e625fafb28fe5))
+* Stop reporting every create failure as an AMI problem ([#671](https://github.com/test-kitchen/kitchen-ec2/issues/671)) ([207ca36](https://github.com/test-kitchen/kitchen-ec2/commit/207ca36e36f4fcf9047e4f255586dfdc6e46db26)), closes [#606](https://github.com/test-kitchen/kitchen-ec2/issues/606)
+* Tunnel SSH over SSM using the AWS-StartSSHSession document ([#682](https://github.com/test-kitchen/kitchen-ec2/issues/682)) ([a33ee43](https://github.com/test-kitchen/kitchen-ec2/commit/a33ee43a44958d6a30b932b503b612ed0ad28869))
+
 ## [3.22.7](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.6...v3.22.7) (2026-08-23)
 
 
