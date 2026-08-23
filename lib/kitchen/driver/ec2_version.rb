@@ -19,6 +19,6 @@
 module Kitchen
   module Driver
     # Version string for EC2 Test Kitchen driver
-    EC2_VERSION = "3.22.10".freeze
+    EC2_VERSION = "3.23.0".freeze
   end
 end

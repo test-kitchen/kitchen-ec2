@@ -2,6 +2,22 @@
 
 ## Unreleased
 
+## [3.23.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.10...v3.23.0) (2026-08-23)
+
+
+### Features
+
+* Report live instance status for kitchen list --live ([#705](https://github.com/test-kitchen/kitchen-ec2/issues/705)) ([6a7d610](https://github.com/test-kitchen/kitchen-ec2/commit/6a7d610ca539da296b20f887e0a66344cab833f0))
+
+
+### Bug Fixes
+
+* Correct the macOS AMI owner and architecture filters ([#700](https://github.com/test-kitchen/kitchen-ec2/issues/700)) ([219985f](https://github.com/test-kitchen/kitchen-ec2/commit/219985f35b9f2fa1680ae2801ab3304608bd1daa))
+* Describe a create failure by what actually went wrong ([#703](https://github.com/test-kitchen/kitchen-ec2/issues/703)) ([ce3c5d7](https://github.com/test-kitchen/kitchen-ec2/commit/ce3c5d7ebe8e2d894dc15d67ba5bd52f01fb876f))
+* Match the default instance type to the image architecture ([#701](https://github.com/test-kitchen/kitchen-ec2/issues/701)) ([5e1940a](https://github.com/test-kitchen/kitchen-ec2/commit/5e1940afaf4c444b920e0ddc07cd4aae7c28c349))
+* Partition extra Windows volumes with GPT, not MBR ([#704](https://github.com/test-kitchen/kitchen-ec2/issues/704)) ([a894b0d](https://github.com/test-kitchen/kitchen-ec2/commit/a894b0db82d1f574fa341a36c0c6fc4c37a4362f))
+* Release the dedicated host when security groups are configured ([#702](https://github.com/test-kitchen/kitchen-ec2/issues/702)) ([47b32e4](https://github.com/test-kitchen/kitchen-ec2/commit/47b32e4f6f3338534b6dde4a861f98e998beb5e8))
+
 ## [3.22.10](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.9...v3.22.10) (2026-08-23)
 
 
