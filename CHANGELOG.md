@@ -2,6 +2,17 @@
 
 ## Unreleased
 
+## [3.22.9](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.8...v3.22.9) (2026-08-23)
+
+
+### Bug Fixes
+
+* Apply the RHEL version sort instead of discarding it ([#685](https://github.com/test-kitchen/kitchen-ec2/issues/685)) ([2fc652b](https://github.com/test-kitchen/kitchen-ec2/commit/2fc652bc4e3f36512f339f8a8153e238c41f340c))
+* Do not fail destroy when the local key file is already gone ([#689](https://github.com/test-kitchen/kitchen-ec2/issues/689)) ([ca2e4d6](https://github.com/test-kitchen/kitchen-ec2/commit/ca2e4d6a996e0fad42722d72fa6c83f3ef3c08e9))
+* Keep AlmaLinux Kitten out of the alma platform ([#684](https://github.com/test-kitchen/kitchen-ec2/issues/684)) ([3e07b6e](https://github.com/test-kitchen/kitchen-ec2/commit/3e07b6e0059874899b377d488b31b364627f9784))
+* Prefer the FreeBSD cloud-init image flavor ([#683](https://github.com/test-kitchen/kitchen-ec2/issues/683)) ([552a3f5](https://github.com/test-kitchen/kitchen-ec2/commit/552a3f5c152ceb73434792dc9226bbb76be5f84d))
+* Send licence configurations as license_specifications ([#688](https://github.com/test-kitchen/kitchen-ec2/issues/688)) ([26f5675](https://github.com/test-kitchen/kitchen-ec2/commit/26f5675d3a21a28ca0179c6028eb9f60b4b49049))
+
 ## [3.22.8](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.7...v3.22.8) (2026-08-23)
 
 
