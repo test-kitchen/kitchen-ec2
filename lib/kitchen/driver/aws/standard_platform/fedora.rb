@@ -23,6 +23,12 @@ module Kitchen
         class Fedora < StandardPlatform
           StandardPlatform.platforms["fedora"] = self
 
+          # Name fragments marking an image as a development stream rather
+          # than a Fedora release: Rawhide (the rolling development branch),
+          # ELN (Enterprise Linux Next) and the Prerelease builds published
+          # while a release is still stabilising.
+          DEVELOPMENT_STREAMS = /-(?:Rawhide|ELN|Prerelease)-/i
+
           # The account EC2 creates on this platform's official AMIs.
           #
           # Used as the SSH username when the transport does not specify one.
@@ -43,10 +49,34 @@ module Kitchen
           def image_search
             search = {
               "owner-id" => "125523088429",
-              "name" => version ? "Fedora-Cloud-Base-#{version}-*" : "Fedora-Cloud-Base-*",
+              "name" => if version
+                          # Both naming schemes are searched because the older
+                          # one is still present in some regions.
+                          ["Fedora-Cloud-Base-AmazonEC2.*-#{version}-*",
+                           "Fedora-Cloud-Base-#{version}-*"]
+                        else
+                          "Fedora-Cloud-Base-*"
+                        end,
             }
             search["architecture"] = architecture if architecture
             search
+          end
+
+          # Sort images newest release first, keeping development streams last.
+          #
+          # Fedora publishes Rawhide, ELN and Prerelease images from the same
+          # account and under the same "Fedora-Cloud-Base-" prefix as its
+          # releases. Those names carry a build date where a release carries a
+          # release number, so {.from_image} reads a version like "20250820.0"
+          # off them -- larger than any real release, which sorts them to the
+          # front. They are pushed to the back afterwards, the same way RHEL
+          # handles its Beta images.
+          #
+          # @param images [Array<Aws::EC2::Image>] the images to sort
+          # @return [Array<Aws::EC2::Image>] the images, newest release first
+          def sort_by_version(images)
+            images = super
+            prefer(images) { |image| !DEVELOPMENT_STREAMS.match?(image.name) }
           end
 
           # Detect this platform from an EC2 image.
