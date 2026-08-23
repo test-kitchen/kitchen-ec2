@@ -228,6 +228,19 @@ module Kitchen
         end
       end
 
+      # A placement group is named either by ID or by name, never both: EC2
+      # rejects a RunInstances call carrying the pair. The payload generator
+      # therefore only applies each one when the other is absent, which means
+      # setting both silently drops both and the instance launches in no
+      # placement group at all, with nothing in the output to say so.
+      validations[:placement] = lambda do |_attr, val, _driver|
+        if val.is_a?(Hash) && val[:group_id] && val[:group_name]
+          warn "Cannot set both 'group_id' and 'group_name' under 'placement'. " \
+            "A placement group is identified by one or the other, so please set only one."
+          exit!
+        end
+      end
+
       # empty keys cause failures when tagging and they make no sense
       validations[:tags] = lambda do |_attr, val, _driver|
         # if someone puts the tags each on their own line it's an array not a hash

@@ -134,6 +134,29 @@ RSpec.describe Kitchen::Driver::Ec2 do
       end
     end
 
+    # EC2 rejects a RunInstances call carrying both, so the generator only
+    # applied each one when the other was absent -- which meant setting both
+    # silently dropped both, and the instance launched in no placement group
+    # at all while the run reported success.
+    it "refuses to run when both a placement group id and name are set" do
+      outcome, stderr = validate(placement: { group_id: "pg-1", group_name: "my-group" })
+
+      expect(outcome).to eq(:exited)
+      expect(stderr).to match(/group_id.*group_name|group_name.*group_id/m)
+    end
+
+    it "accepts a placement group id on its own" do
+      expect(validate(placement: { group_id: "pg-1" }).first).to eq(:ok)
+    end
+
+    it "accepts a placement group name on its own" do
+      expect(validate(placement: { group_name: "my-group" }).first).to eq(:ok)
+    end
+
+    it "accepts placement settings that name no group" do
+      expect(validate(placement: { host_id: "h-1" }).first).to eq(:ok)
+    end
+
     it "accepts each valid tenancy" do
       %w{default host dedicated}.each do |tenancy|
         expect(validate(tenancy: tenancy).first).to eq(:ok)
