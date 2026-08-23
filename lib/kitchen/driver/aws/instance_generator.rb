@@ -92,34 +92,29 @@ module Kitchen
             security_groups = []
             filters = [config[:security_group_filter]].flatten
             filters.each do |sg_filter|
-              r = {}
+              # Built up rather than assigned, so that a filter carrying both a
+              # name and a tag searches on both. Assigning meant the tag
+              # replaced the name outright, silently widening the search to
+              # whatever else carried that tag.
+              criteria = []
               if sg_filter[:name]
-                r[:filters] = [
-                  {
-                    name: "group-name",
-                    values: [sg_filter[:name]],
-                  },
-                  {
-                    name: "vpc-id",
-                    values: [vpc_id],
-                  },
-                ]
+                criteria << { name: "group-name", values: [sg_filter[:name]] }
               end
-
               if sg_filter[:tag]
-                r[:filters] = [
-                  {
-                    name: "tag:#{sg_filter[:tag]}",
-                    values: [sg_filter[:value]],
-                  },
-                  {
-                    name: "vpc-id",
-                    values: [vpc_id],
-                  },
-                ]
+                criteria << { name: "tag:#{sg_filter[:tag]}", values: [sg_filter[:value]] }
               end
 
-              security_group = client.describe_security_groups(r).security_groups
+              # Refused rather than sent: describe_security_groups with no
+              # filters returns every security group in the region, and all of
+              # them were then attached to the instance.
+              if criteria.empty?
+                raise "A security_group_filter needs a `name` or a `tag`, but " \
+                      "#{sg_filter.inspect} has neither."
+              end
+
+              criteria << { name: "vpc-id", values: [vpc_id] }
+
+              security_group = client.describe_security_groups(filters: criteria).security_groups
 
               if security_group.any?
                 security_group.each { |sg| security_groups.push(sg.group_id) }

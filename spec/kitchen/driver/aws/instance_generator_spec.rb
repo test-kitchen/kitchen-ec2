@@ -362,6 +362,36 @@ RSpec.describe Kitchen::Driver::Aws::InstanceGenerator do
         expect(instance_data[:security_group_ids]).to eq(%w{sg-found sg-found})
       end
 
+      # The tag branch used to overwrite the filter list the name branch had
+      # just built, so a filter carrying both silently searched on the tag
+      # alone and could attach a group the name ruled out.
+      it "requires both a name and a tag when a filter gives both" do
+        config[:security_group_filter] = { name: "kitchen-sg", tag: "Role", value: "web" }
+        instance_data
+
+        expect(request_params_for(ec2_client, :describe_security_groups)[:filters]).to eq([
+          { name: "group-name", values: %w{kitchen-sg} },
+          { name: "tag:Role", values: %w{web} },
+          { name: "vpc-id", values: %w{vpc-1} },
+        ])
+      end
+
+      # A filter naming neither left the request with no filters at all, and
+      # describe_security_groups with no filters returns every security group
+      # in the region -- all of which were then attached to the instance.
+      it "raises rather than searching on nothing when a filter names neither" do
+        config[:security_group_filter] = { group_name: "kitchen-sg" }
+
+        expect { instance_data }.to raise_error(/needs a `name` or a `tag`/)
+      end
+
+      it "does not send an unfiltered request when a filter names neither" do
+        config[:security_group_filter] = { group_name: "kitchen-sg" }
+
+        expect { instance_data }.to raise_error(/needs a `name` or a `tag`/)
+        expect(requests_for(ec2_client, :describe_security_groups)).to be_empty
+      end
+
       context "when a filter matches nothing" do
         let(:ec2_client) do
           stub_ec2_client(
