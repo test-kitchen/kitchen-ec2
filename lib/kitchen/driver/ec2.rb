@@ -18,6 +18,7 @@
 
 require "sshkey" unless defined?(SSHKey)
 require "benchmark" unless defined?(Benchmark)
+require "open3" unless defined?(Open3)
 require "json" unless defined?(JSON)
 require "kitchen"
 require_relative "ec2_version"
@@ -1614,12 +1615,44 @@ module Kitchen
           return File.read(public_key_path).strip
         end
 
+        public_key = instance_connect_public_key_via_ssh_keygen(private_key_path)
+        return public_key if public_key
+
         begin
           key = SSHKey.new(File.read(private_key_path))
           key.ssh_public_key
         rescue => e
           raise "Unable to extract public key from #{private_key_path}: #{e.message}"
         end
+      end
+
+      # Derive the public half of a private key with ssh-keygen.
+      #
+      # OpenSSH reads every key type EC2 can create. The sshkey gem handles
+      # only RSA and DSA, and raises "Neither PUB key nor PRIV key" on an
+      # ed25519 key -- which is exactly what `aws_ssh_key_type: ed25519`
+      # produces, so that documented setting could not be combined with
+      # Instance Connect at all.
+      #
+      # Falling back to the gem rather than requiring ssh-keygen keeps the RSA
+      # default working where OpenSSH is not installed.
+      #
+      # @param private_key_path [String] path to the private key
+      # @return [String, nil] the public key in OpenSSH format, or nil when
+      #   ssh-keygen is unavailable or could not read the key
+      def instance_connect_public_key_via_ssh_keygen(private_key_path)
+        output, status = Open3.capture2e("ssh-keygen", "-y", "-f", private_key_path)
+        return output.strip if status.success?
+
+        debug("ssh-keygen could not read #{private_key_path}: #{output.strip}")
+        nil
+      # ::StandardError, not StandardError: this file is nested inside `module
+      # Kitchen`, which defines Kitchen::StandardError. An unqualified constant
+      # resolves to that one, letting the Errno::ENOENT raised by a missing
+      # ssh-keygen escape the check meant to detect it.
+      rescue ::StandardError => e
+        debug("Could not run ssh-keygen: #{e.message}")
+        nil
       end
 
       # SSM Session Manager Support Methods

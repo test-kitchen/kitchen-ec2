@@ -1384,11 +1384,39 @@ RSpec.describe Kitchen::Driver::Ec2 do
           .to start_with("ssh-rsa ")
       end
 
+      # `aws_ssh_key_type: ed25519` is a supported setting, and an ed25519 key
+      # is what `create_key` then downloads. The sshkey gem handles only RSA
+      # and DSA, so deriving the public half of one raised "Neither PUB key
+      # nor PRIV key" and failed every Instance Connect create that used the
+      # documented combination of those two settings.
+      it "derives the public key from an ed25519 private key" do
+        write_ed25519_key(private_key_path)
+
+        expect(driver.send(:instance_connect_extract_public_key, private_key_path))
+          .to start_with("ssh-ed25519 ")
+      end
+
       it "raises a helpful error when the key cannot be read" do
         File.write(private_key_path, "not a key at all")
 
         expect { driver.send(:instance_connect_extract_public_key, private_key_path) }
           .to raise_error(/Unable to extract public key from/)
+      end
+
+      # Written with ssh-keygen because there is no practical way to produce an
+      # OpenSSH-format ed25519 private key from Ruby's stdlib. The example is
+      # skipped rather than failed where ssh-keygen is unavailable, since that
+      # says nothing about the driver.
+      def write_ed25519_key(path)
+        FileUtils.rm_f(path)
+        generated = system(
+          "ssh-keygen", "-t", "ed25519", "-N", "", "-C", "kitchen-spec", "-f", path,
+          out: File::NULL, err: File::NULL
+        )
+        skip "ssh-keygen is not available to generate an ed25519 key" unless generated
+
+        # create_key downloads a bare private key, so the spec matches that.
+        FileUtils.rm_f("#{path}.pub")
       end
     end
   end
