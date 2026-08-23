@@ -120,7 +120,7 @@ cinc kitchen destroy   # terminate the instance
 If you do not specify them, the driver will:
 
 - **Find an AMI** matching the platform name, searching the official owner for that distribution
-- **Pick an instance type**, defaulting to the free-tier `t3.micro` for HVM images
+- **Pick an instance type**, defaulting to the free-tier `t3.micro` for HVM images, or `t4g.micro` for arm64 ones
 - **Create a security group** in the target VPC allowing inbound access on the transport's port, deleted on `destroy`
 - **Create an SSH key pair**, deleted on `destroy`
 - **Tag the instance** with `created-by: test-kitchen`
@@ -167,7 +167,7 @@ at `transport.username`.
 
 | Option | Default | Description |
 | --- | --- | --- |
-| `instance_type` | `"t3.micro"` (HVM) | EC2 instance type. |
+| `instance_type` | `"t3.micro"`, or `"t4g.micro"` for an arm64 image (HVM) | EC2 instance type. |
 | `ebs_optimized` | `false` | Launch as EBS-optimized. |
 | `delete_on_termination` | `true` | Delete the root volume when the instance terminates. |
 | `block_device_mappings` | *from AMI* | Array of block device mapping hashes, for sizing the root volume or attaching extra volumes. |

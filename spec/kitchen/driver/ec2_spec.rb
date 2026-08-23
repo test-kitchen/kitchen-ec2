@@ -244,6 +244,38 @@ RSpec.describe Kitchen::Driver::Ec2 do
       expect(driver.default_instance_type).to eq("t3.micro")
     end
 
+    # An instance type runs one architecture, and EC2 rejects a RunInstances
+    # call that pairs it with an image built for another:
+    #
+    #   The architecture 'x86_64' of the specified instance type does not match
+    #   the architecture 'arm64' of the specified AMI.
+    #
+    # Defaulting every HVM image to t3.micro therefore made every arm64
+    # platform unlaunchable, despite "-arm64" being an architecture suffix the
+    # driver parses and builds a search filter from.
+    context "with an arm64 image" do
+      let(:image) { build_image(name: image_name, architecture: "arm64") }
+
+      it "uses the Graviton counterpart t4g.micro" do
+        expect(driver.default_instance_type).to eq("t4g.micro")
+      end
+
+      it "explains why it picked the arm64 family" do
+        driver.default_instance_type
+        expect(logged_output.string).to match(/image is arm64/)
+      end
+    end
+
+    # Mac images run only on dedicated Mac hosts, which bill for a 24-hour
+    # minimum, so no default is guessed for them.
+    context "with a Mac image" do
+      let(:image) { build_image(name: image_name, architecture: "arm64_mac") }
+
+      it "does not treat the Mac architecture as arm64" do
+        expect(driver.default_instance_type).not_to eq("t4g.micro")
+      end
+    end
+
     context "with a paravirtual image" do
       let(:image) { build_image(name: image_name, virtualization_type: "paravirtual") }
 

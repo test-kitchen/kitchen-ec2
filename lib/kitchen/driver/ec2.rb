@@ -494,19 +494,44 @@ module Kitchen
 
       # The instance type to use when the user did not choose one.
       #
+      # An instance type runs one processor architecture and EC2 rejects a
+      # RunInstances call pairing it with an image built for another, so the
+      # default has to follow the image: t4g is the Graviton counterpart of
+      # t3. Picking t3.micro for every HVM image made every arm64 platform --
+      # "ubuntu-24.04-arm64" and friends, an architecture this driver parses
+      # and searches for -- fail to launch outright.
+      #
       # t3 instances require a hardware-virtualized image, so a paravirtual
       # image falls back to the older t1 family.
       #
-      # @return [String] a free-tier instance type
+      # @return [String] a free-tier instance type matching the image
       def default_instance_type
         @instance_type ||= if image && image.virtualization_type == "hvm"
-                             info("instance_type not specified. Using free tier t3.micro instance ...")
-                             "t3.micro"
+                             hvm_default_instance_type
                            else
                              info("instance_type not specified. Using free tier t1.micro instance since" \
                                   " image is paravirtual (pick an hvm image to use the superior t3.micro!) ...")
                              "t1.micro"
                            end
+      end
+
+      # The free-tier instance type matching a hardware-virtualized image.
+      #
+      # Only arm64 is special-cased. EC2's Mac architectures ("arm64_mac" and
+      # "x86_64_mac") are deliberately not defaulted: they run only on
+      # dedicated Mac hosts, which carry a 24-hour minimum allocation, so
+      # guessing one would be an expensive surprise rather than a convenience.
+      #
+      # @return [String] the instance type to launch
+      def hvm_default_instance_type
+        if image.architecture == "arm64"
+          info("instance_type not specified. Using free tier t4g.micro instance" \
+               " since image is arm64 ...")
+          "t4g.micro"
+        else
+          info("instance_type not specified. Using free tier t3.micro instance ...")
+          "t3.micro"
+        end
       end
 
       # The platform detected from the image actually being used.
