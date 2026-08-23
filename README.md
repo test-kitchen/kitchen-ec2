@@ -348,6 +348,37 @@ driver:
     cost-center: "1234"
 ```
 
+### Checking whether instances are still running
+
+`kitchen list` reports the last action Test Kitchen took, which is not the same
+as what is still running in EC2. `--live` asks EC2 instead:
+
+```sh
+cinc kitchen list --live
+```
+
+```text
+Instance             Driver  ...  Last Action  Last Error  Live Status
+default-ubuntu-2404  Ec2     ...  Created      <None>      running
+```
+
+The two columns disagreeing is the point: an instance terminated in the
+console, reaped by an account policy, or orphaned by a run that was killed
+part-way through still leaves a state file saying `Created`. Those show as
+`terminated` or `not_found`, and `kitchen destroy` clears the stale state.
+
+`stopped` counts as live — the instance still exists, still bills for its EBS
+volumes, and still needs a `destroy`.
+
+Add `--probe` to also open a transport connection, and `--json` for the full
+report including the instance ID and the time EC2 was asked:
+
+```sh
+cinc kitchen list --live --json
+```
+
+Both flags require Test Kitchen 4.
+
 ## Using with Chef
 
 This driver is not tied to Cinc. The examples above use Cinc Workstation and the `cinc_infra` provisioner, but the driver works exactly the same with [Chef Workstation](https://www.chef.io/downloads/tools/workstation) — run `kitchen` instead of `cinc kitchen`, and use `chef_infra` instead of `cinc_infra`:

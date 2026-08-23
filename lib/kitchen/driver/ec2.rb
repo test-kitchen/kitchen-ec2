@@ -471,6 +471,59 @@ module Kitchen
         deallocate_host(host_id) if host && host_unused?(host)
       end
 
+      # EC2 instance states in which the instance still exists as a resource.
+      #
+      # "shutting-down" and "terminated" are left out deliberately. Neither can
+      # be brought back and neither leaves anything to destroy, so counting
+      # them as live would defeat the point of asking.
+      #
+      # @return [Array<String>]
+      LIVE_INSTANCE_STATES = %w{pending running stopping stopped}.freeze
+
+      # Whether the instance Test Kitchen recorded is still there.
+      #
+      # Answers `kitchen list --live` by asking EC2 rather than trusting the
+      # state file, which is the whole point: the state file records what Test
+      # Kitchen last did, not what survived. An instance terminated in the
+      # console, reaped by an account policy, or orphaned by a run that was
+      # killed mid-create all leave a state file claiming the instance exists.
+      #
+      # Kept to a single describe call, since `kitchen list --live` makes one
+      # of these per instance.
+      #
+      # @param state [Hash] the instance state
+      # @return [Hash] status data, normalized by Kitchen::Instance
+      # @see https://docs.aws.amazon.com/AWSEC2/latest/APIReference/API_InstanceState.html
+      def status(state)
+        unless state[:server_id]
+          return status_report(
+            live: false,
+            instance_state: "not_created",
+            message: "No EC2 instance has been created for this suite yet"
+          )
+        end
+
+        instance_state = ec2.get_instance(state[:server_id]).state.name
+
+        status_report(
+          live: LIVE_INSTANCE_STATES.include?(instance_state),
+          instance_state: instance_state,
+          resource_id: state[:server_id],
+          message: "EC2 instance #{state[:server_id]} is #{instance_state}"
+        )
+      rescue ::Aws::EC2::Errors::InvalidInstanceIDNotFound
+        # The reconciliation this check exists for: Test Kitchen still believes
+        # it has an instance, and EC2 has never heard of it.
+        status_report(
+          live: false,
+          instance_state: "not_found",
+          resource_id: state[:server_id],
+          message: "EC2 does not know instance #{state[:server_id]}. It was terminated " \
+                   "outside Test Kitchen, or has aged out of EC2's terminated instance list. " \
+                   "Run `kitchen destroy` to clear the stale state."
+        )
+      end
+
       # The EC2 image this instance will be created from.
       #
       # @return [Aws::EC2::Image]
@@ -1306,6 +1359,28 @@ module Kitchen
       end
 
       private
+
+      # Build a status hash in the shape Kitchen::Instance normalizes.
+      #
+      # `checked_at` is stamped here rather than left out so that the timestamp
+      # reflects when EC2 was actually asked, not when the answer was rendered.
+      #
+      # @param live [Boolean] whether the instance still exists
+      # @param instance_state [String] the EC2 state name, or a driver-level
+      #   one such as "not_created" for the cases EC2 was never asked about
+      # @param message [String] a human-readable explanation
+      # @param resource_id [String, nil] the EC2 instance ID, when there is one
+      # @return [Hash]
+      def status_report(live:, instance_state:, message:, resource_id: nil)
+        {
+          live: live,
+          state: instance_state,
+          source: "driver",
+          resource_id: resource_id,
+          message: message,
+          checked_at: Time.now.utc.iso8601,
+        }
+      end
 
       # Wrap the transport's `connection` method with Instance Connect setup.
       #

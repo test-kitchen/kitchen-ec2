@@ -1043,6 +1043,96 @@ RSpec.describe Kitchen::Driver::Ec2 do
     end
   end
 
+  # Test Kitchen 4 added Driver::Base#status, which backs `kitchen list --live`
+  # and `--probe`. A driver that does not override it inherits "does not
+  # support status checks", so every kitchen-ec2 instance reported "unknown".
+  describe "#status" do
+    it "takes the state hash, as Kitchen::Instance requires" do
+      # Kitchen::Instance#driver_status bails out with an unknown status when
+      # the method takes no arguments, so the signature is part of the contract.
+      expect(driver.method(:status).arity).not_to eq(0)
+    end
+
+    it "reports not_created when nothing has been launched" do
+      report = driver.status({})
+
+      expect(report[:live]).to be(false)
+      expect(report[:state]).to eq("not_created")
+      expect(report[:resource_id]).to be_nil
+    end
+
+    it "stamps the source and a check time" do
+      report = driver.status({})
+
+      expect(report[:source]).to eq("driver")
+      expect { Time.iso8601(report[:checked_at]) }.not_to raise_error
+    end
+
+    context "with an instance EC2 still knows" do
+      def status_for(instance_state)
+        server = instance_double(
+          ::Aws::EC2::Instance,
+          state: ::Aws::EC2::Types::InstanceState.new(name: instance_state)
+        )
+        allow(aws_client).to receive(:get_instance).and_return(server)
+        driver.status(server_id: "i-0123456789abcdef0")
+      end
+
+      it "reports a running instance as live, carrying the EC2 state through" do
+        report = status_for("running")
+
+        expect(report[:live]).to be(true)
+        expect(report[:state]).to eq("running")
+        expect(report[:resource_id]).to eq("i-0123456789abcdef0")
+      end
+
+      # A stopped instance still exists, still bills for its EBS volumes, and
+      # still needs a destroy. Calling it dead would say the opposite.
+      it "reports a stopped instance as live" do
+        expect(status_for("stopped")[:live]).to be(true)
+      end
+
+      it "reports a pending instance as live" do
+        expect(status_for("pending")[:live]).to be(true)
+      end
+
+      # Neither can be brought back and neither leaves anything to destroy.
+      it "reports a terminated instance as not live" do
+        report = status_for("terminated")
+
+        expect(report[:live]).to be(false)
+        expect(report[:state]).to eq("terminated")
+      end
+
+      it "reports a shutting-down instance as not live" do
+        expect(status_for("shutting-down")[:live]).to be(false)
+      end
+    end
+
+    # The reconciliation the check exists for: the state file claims an
+    # instance, EC2 has never heard of it. Happens when someone terminates it
+    # in the console, or a run is killed before it can clean up.
+    context "with an instance EC2 no longer knows" do
+      before do
+        allow(aws_client).to receive(:get_instance)
+          .and_raise(::Aws::EC2::Errors::InvalidInstanceIDNotFound.new(nil, "does not exist"))
+      end
+
+      it "reports it as not_found rather than raising" do
+        report = driver.status(server_id: "i-0123456789abcdef0")
+
+        expect(report[:live]).to be(false)
+        expect(report[:state]).to eq("not_found")
+        expect(report[:resource_id]).to eq("i-0123456789abcdef0")
+      end
+
+      it "says how to clear the stale state" do
+        expect(driver.status(server_id: "i-0123456789abcdef0")[:message])
+          .to match(/kitchen destroy/)
+      end
+    end
+  end
+
   describe "#destroy" do
     let(:server) { instance_double(::Aws::EC2::Instance, id: "i-0123456789abcdef0") }
 
