@@ -1124,13 +1124,36 @@ RSpec.describe Kitchen::Driver::Ec2 do
       expect(script).to include("localport=5985")
     end
 
-    # EC2Launch (2016+) and the older EC2Config service log to different paths,
-    # so the script picks one at runtime.
-    it "chooses a log path based on the detected OS version" do
+    # Extra EBS volumes come up RAW: no launch agent initializes them by
+    # default, which is why the script did it. It used to do so by running
+    # EC2Launch v1's InitializeDisks.ps1, reached through a branch that
+    # matched the OS on the release years 2016 and 2019. Server 2022 reports
+    # "Windows Server 2022 Datacenter", matched neither, and so never
+    # initialized anything -- its extra volumes stayed RAW.
+    it "initializes uninitialized volumes" do
       script = driver.default_windows_user_data
 
-      expect(script).to include('C:\ProgramData\Amazon\EC2-Windows\Launch\Log\kitchen-ec2.log')
-      expect(script).to include('C:\Program Files\Amazon\Ec2ConfigService\Logs\kitchen-ec2.log')
+      expect(script).to include("Initialize-Disk")
+      expect(script).to include("Format-Volume")
+    end
+
+    it "only touches volumes that are still RAW" do
+      expect(driver.default_windows_user_data).to match(/PartitionStyle\s+-eq\s+.RAW./)
+    end
+
+    it "does not decide what to do from a list of Windows release years" do
+      script = driver.default_windows_user_data
+
+      expect(script).not_to include("2016")
+      expect(script).not_to include("2019")
+    end
+
+    # Logging into a directory belonging to an agent that is not installed
+    # creates a misleading empty tree: on Server 2022 the old script produced
+    # a C:\Program Files\Amazon\Ec2ConfigService directory on a machine that
+    # has never had EC2Config.
+    it "logs somewhere that exists rather than inventing an agent directory" do
+      expect(driver.default_windows_user_data).to include("Test-Path")
     end
 
     it "creates no extra account for the built-in administrator" do

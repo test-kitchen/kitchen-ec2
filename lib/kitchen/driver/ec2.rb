@@ -953,19 +953,34 @@ module Kitchen
       # @return [String] a PowerShell script wrapped in `<powershell>` tags
       def default_windows_user_data
         base_script = Kitchen::Util.outdent!(<<-EOH)
-	$OSVersion = (get-itemproperty -Path "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" -Name ProductName).ProductName
-  If($OSVersion.contains('2016') -Or $OSVersion.contains('2019') -Or $OSVersion -eq 'Windows Server Datacenter') {
-    New-Item -ItemType Directory -Force -Path 'C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log'
-    $logfile='C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log\\kitchen-ec2.log'
-    # EC2Launch doesn't init extra disks by default
-    C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Scripts\\InitializeDisks.ps1
-  } Else {
-     New-Item -ItemType Directory -Force -Path 'C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs'
-     $logfile='C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs\\kitchen-ec2.log'
-  }
-
-        # Logfile fail-safe in case the directory does not exist
+        # Log where the installed launch agent already logs, chosen by looking
+        # for it rather than by matching the OS against known release names.
+        # Writing into the directory of an agent that is not installed would
+        # invent a misleading empty tree.
+        $logdir = If (Test-Path 'C:\\ProgramData\\Amazon\\EC2Launch') {
+            'C:\\ProgramData\\Amazon\\EC2Launch\\log'
+        } ElseIf (Test-Path 'C:\\ProgramData\\Amazon\\EC2-Windows\\Launch') {
+            'C:\\ProgramData\\Amazon\\EC2-Windows\\Launch\\Log'
+        } ElseIf (Test-Path 'C:\\Program Files\\Amazon\\Ec2ConfigService') {
+            'C:\\Program Files\\Amazon\\Ec2ConfigService\\Logs'
+        } Else {
+            Join-Path $env:ProgramData 'Amazon\\kitchen-ec2'
+        }
+        New-Item -ItemType Directory -Force -Path $logdir | Out-Null
+        $logfile = Join-Path $logdir 'kitchen-ec2.log'
         New-Item $logfile -Type file -Force
+
+        # Extra EBS volumes are attached but left uninitialized: no launch
+        # agent partitions them by default, on any release. Done with the
+        # storage cmdlets rather than by calling a particular agent's script,
+        # so it does not matter which agent is installed. Only RAW disks are
+        # touched, so a volume that already carries a filesystem is never
+        # reformatted.
+        "Initializing any uninitialized volumes" >> $logfile
+        Get-Disk | Where-Object PartitionStyle -eq 'RAW' |
+          Initialize-Disk -PartitionStyle MBR -PassThru |
+          New-Partition -AssignDriveLetter -UseMaximumSize |
+          Format-Volume -FileSystem NTFS -Confirm:$false >> $logfile
 
         # Allow script execution
         Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Force
@@ -979,7 +994,6 @@ module Kitchen
         & winrm.cmd set winrm/config '@{MaxTimeoutms="1800000"}' >> $logfile
         & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
         & winrm.cmd set winrm/config/winrs '@{MaxShellsPerUser="50"}' >> $logfile
-        & winrm.cmd set winrm/config/winrs '@{MaxMemoryPerShellMB="1024"}' >> $logfile
         #Firewall Config
         & netsh advfirewall firewall set rule name="Windows Remote Management (HTTP-In)" profile=public protocol=tcp localport=5985 remoteip=localsubnet new remoteip=any  >> $logfile
         Set-ItemProperty -Name LocalAccountTokenFilterPolicy -Path HKLM:\\software\\Microsoft\\Windows\\CurrentVersion\\Policies\\system -Value 1
