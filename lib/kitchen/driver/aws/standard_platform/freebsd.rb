@@ -57,6 +57,28 @@ module Kitchen
             search
           end
 
+          # Sort images newest release first, preferring the cloud-init flavor.
+          #
+          # FreeBSD publishes several flavors of each release, distinguished
+          # only by a word at the end of the image name, and only the
+          # cloud-init flavor is a general-purpose cloud image. "base" and
+          # "small" ship without sudo, so a converge fails on them; "builder"
+          # is a developer image that does not boot to a usable state on a
+          # small instance -- launched on a t3.micro it reaches "impaired" and
+          # never opens port 22. Nothing in the name distinguishes them by
+          # date or version, so without a preference the flavor selected is
+          # effectively arbitrary.
+          #
+          # Releases old enough to predate the flavored names publish a single
+          # image each. Because this is a stable partition rather than a
+          # filter, those are left where the version sort put them.
+          #
+          # @param images [Array<Aws::EC2::Image>] the images to sort
+          # @return [Array<Aws::EC2::Image>] the images, best match first
+          def sort_by_version(images)
+            prefer(super) { |image| image.name.include?("cloud-init") }
+          end
+
           # Detect this platform from an EC2 image.
           #
           # Matching is done on the image name, which is the only reliable signal
