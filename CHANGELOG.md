@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## [3.22.7](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.6...v3.22.7) (2026-08-23)
+
+
+### Bug Fixes
+
+* Update FreeBSD AMI search to the FreeBSD project's AWS account ([#677](https://github.com/test-kitchen/kitchen-ec2/issues/677)) ([f58f255](https://github.com/test-kitchen/kitchen-ec2/commit/f58f25578fb507d77134e3ce8976fe75ccfd3d08))
+
 ## [3.22.6](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.5...v3.22.6) (2026-08-23)
 
 
