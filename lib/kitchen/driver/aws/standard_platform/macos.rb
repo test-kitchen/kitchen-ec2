@@ -34,6 +34,24 @@ module Kitchen
             "ec2-user"
           end
 
+          # The AWS account Amazon publishes its macOS AMIs under.
+          #
+          # @return [String]
+          MACOS_OWNER_ID = "628277914472".freeze
+
+          # EC2's architecture values for Mac instances, keyed by the name the
+          # platform string uses.
+          #
+          # EC2 reports a Mac image's architecture as "x86_64_mac" or
+          # "arm64_mac", never the bare "x86_64" or "arm64" every other
+          # platform uses, so an unmapped value matches nothing at all.
+          #
+          # @return [Hash{String => String}]
+          MAC_ARCHITECTURES = {
+            "arm64" => "arm64_mac",
+            "x86_64" => "x86_64_mac",
+          }.freeze
+
           # EC2 image filters that select Amazon's macOS AMIs, which run only on dedicated Mac hosts.
           #
           # A filter is added for {StandardPlatform#architecture} only when one was
@@ -44,11 +62,12 @@ module Kitchen
           # @see StandardPlatform#find_image
           def image_search
             search = {
-              "owner-id" => "100343932686",
+              "owner-id" => MACOS_OWNER_ID,
               "name" => version ? "amzn-ec2-macos-#{version}*" : "amzn-ec2-macos-*",
             }
-            search["architecture"] = architecture if architecture
-            search["architecture"] = "arm64_mac" if architecture == "arm64"
+            if architecture
+              search["architecture"] = MAC_ARCHITECTURES.fetch(architecture, architecture)
+            end
             search
           end
 

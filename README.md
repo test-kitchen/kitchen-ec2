@@ -217,6 +217,27 @@ at `transport.username`.
 | `allocate_dedicated_host` | `false` | Allocate a dedicated host before launching. |
 | `deallocate_dedicated_host` | `false` | Release the dedicated host on destroy. |
 
+#### macOS
+
+The `macos` platform resolves Amazon's Mac AMIs, which run only on dedicated
+Mac hosts. Both an instance type and a dedicated host are required, and neither
+is defaulted for you, because a Mac host has a **24-hour minimum allocation**
+and bills for the whole of it:
+
+```yaml
+platforms:
+  - name: macos
+    driver:
+      instance_type: mac2.metal   # mac1.metal for the x86_64 images
+      availability_zone: us-east-1a
+      tenancy: host
+      allocate_dedicated_host: true
+      deallocate_dedicated_host: true
+```
+
+Append an architecture to select between the Apple silicon and Intel images:
+`macos-arm64` (the default, `mac2.metal`) or `macos-x86_64` (`mac1.metal`).
+
 ### Connectivity
 
 For a full explanation of Session Manager, including its IAM requirements and why you might prefer it, see [docs/ssm-session-manager.md](docs/ssm-session-manager.md).
