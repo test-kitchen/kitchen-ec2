@@ -415,17 +415,17 @@ module Kitchen
 
       # The instance type to use when the user did not choose one.
       #
-      # t2 instances require a hardware-virtualized image, so a paravirtual
+      # t3 instances require a hardware-virtualized image, so a paravirtual
       # image falls back to the older t1 family.
       #
       # @return [String] a free-tier instance type
       def default_instance_type
         @instance_type ||= if image && image.virtualization_type == "hvm"
-                             info("instance_type not specified. Using free tier t2.micro instance ...")
-                             "t2.micro"
+                             info("instance_type not specified. Using free tier t3.micro instance ...")
+                             "t3.micro"
                            else
                              info("instance_type not specified. Using free tier t1.micro instance since" \
-                                  " image is paravirtual (pick an hvm image to use the superior t2.micro!) ...")
+                                  " image is paravirtual (pick an hvm image to use the superior t3.micro!) ...")
                              "t1.micro"
                            end
       end

@@ -217,14 +217,14 @@ RSpec.describe Kitchen::Driver::Ec2 do
   end
 
   describe "#default_instance_type" do
-    it "uses t2.micro for a modern HVM image" do
-      expect(driver.default_instance_type).to eq("t2.micro")
+    it "uses t3.micro for a modern HVM image" do
+      expect(driver.default_instance_type).to eq("t3.micro")
     end
 
     context "with a paravirtual image" do
       let(:image) { build_image(name: image_name, virtualization_type: "paravirtual") }
 
-      # t2 instances require HVM, so a paravirtual image has to fall back to the
+      # t3 instances require HVM, so a paravirtual image has to fall back to the
       # older t1 family.
       it "falls back to t1.micro" do
         expect(driver.default_instance_type).to eq("t1.micro")
