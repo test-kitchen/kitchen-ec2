@@ -98,6 +98,29 @@ module Kitchen
             search
           end
 
+          # Sort images newest release first, keeping backports images last.
+          #
+          # Debian publishes a backports image alongside each release, from the
+          # same account and under the same "debian-<release>-" prefix,
+          # differing only by the word "backports" in the name:
+          #
+          #     debian-12-backports-amd64-20260821-2577
+          #     debian-12-amd64-20260821-2577
+          #
+          # It runs the backports kernel rather than the release's own -- 6.12
+          # against 6.1 for Debian 12 -- and is often published minutes after
+          # its plain counterpart, so a tie broken on creation date handed
+          # every Debian platform the backports image.
+          #
+          # This is a preference rather than a filter, so a release with only
+          # backports images published is still selectable.
+          #
+          # @param images [Array<Aws::EC2::Image>] the images to sort
+          # @return [Array<Aws::EC2::Image>] the images, newest release first
+          def sort_by_version(images)
+            prefer(super) { |image| !image.name.include?("backports") }
+          end
+
           # Detect this platform from an EC2 image.
           #
           # Matching is done on the image name, which is the only reliable signal

@@ -41,6 +41,45 @@ RSpec.describe Kitchen::Driver::Aws::StandardPlatform::Debian do
     $stderr = original
   end
 
+  describe "#sort_by_version" do
+    # Debian publishes a backports image alongside each release, from the same
+    # account and under the same "debian-<release>-" prefix, differing only by
+    # the word "backports" in the name. It carries the backports kernel rather
+    # than the release's own, and it is often published minutes after its
+    # plain counterpart, so a tie broken on creation date handed every Debian
+    # platform the backports image.
+    it "prefers the release image over its backports counterpart" do
+      images = [
+        build_image(name: "debian-12-backports-amd64-20260821-2577"),
+        build_image(name: "debian-12-amd64-20260821-2577"),
+      ]
+
+      sorted = platform_for(nil).sort_by_version(images)
+
+      expect(sorted.first.name).to eq("debian-12-amd64-20260821-2577")
+      expect(sorted.last.name).to include("backports")
+    end
+
+    it "still prefers the newest release among the release images" do
+      images = [
+        build_image(name: "debian-11-amd64-20260821-2577"),
+        build_image(name: "debian-12-amd64-20260821-2577"),
+      ]
+
+      sorted = platform_for(nil).sort_by_version(images)
+
+      expect(sorted.first.name).to include("debian-12")
+    end
+
+    # A release with nothing but backports images published must still be
+    # selectable, so this is a preference rather than a filter.
+    it "still selects a backports image when it is the only one" do
+      images = [build_image(name: "debian-12-backports-amd64-20260821-2577")]
+
+      expect(platform_for(nil).sort_by_version(images).first.name).to include("backports")
+    end
+  end
+
   describe "#codename" do
     it "maps a major version onto its Debian codename" do
       expect(codename_for("11")).to eq("bullseye")
