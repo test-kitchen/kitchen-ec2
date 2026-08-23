@@ -1648,9 +1648,18 @@ module Kitchen
               "--region", driver_instance.config[:region]
             ]
 
-            # Add document name if specified
+            # Tunnelling SSH over SSM needs a session document that forwards a
+            # port. Without one, `start-session` opens an interactive shell
+            # session instead, which speaks nothing SSH understands: pointed at
+            # that as a ProxyCommand, SSH waits for a banner that never comes
+            # and the create hangs until it is interrupted. AWS-StartSSHSession
+            # is the document AWS publishes for this, and `%p` is substituted by
+            # Net::SSH::Proxy::Command with the port being connected on, so a
+            # transport using a port other than 22 tunnels to that port.
             if driver_instance.config[:ssm_session_manager_document_name]
               cmd += ["--document-name", driver_instance.config[:ssm_session_manager_document_name]]
+            else
+              cmd += ["--document-name", "AWS-StartSSHSession", "--parameters", "portNumber=%p"]
             end
 
             # Add AWS profile if specified

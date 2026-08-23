@@ -1304,15 +1304,33 @@ RSpec.describe Kitchen::Driver::Ec2 do
       state[:ssh_proxy_command]
     end
 
-    it "proxies SSH through an SSM session" do
+    # `aws ssm start-session` with no document starts an interactive shell
+    # session, which speaks nothing SSH understands. Pointed at that as a
+    # ProxyCommand, SSH waits for a banner that never arrives and the create
+    # hangs until it is interrupted. Tunnelling SSH over SSM is what the
+    # AWS-StartSSHSession document is for.
+    it "proxies SSH through an SSM session using the SSH session document" do
       expect(ssm_proxy_command).to eq(
-        "aws ssm start-session --target i-0123456789abcdef0 --region us-west-2"
+        "aws ssm start-session --target i-0123456789abcdef0 --region us-west-2 " \
+        "--document-name AWS-StartSSHSession --parameters portNumber=%p"
       )
+    end
+
+    # Net::SSH::Proxy::Command substitutes %p with the port it is connecting
+    # on, so a transport configured for a port other than 22 tunnels to that
+    # port rather than silently to 22.
+    it "tunnels to the port SSH is connecting on" do
+      expect(ssm_proxy_command).to include("--parameters portNumber=%p")
     end
 
     it "uses a custom session document when one is configured" do
       expect(ssm_proxy_command(ssm_session_manager_document_name: "MySessionDoc"))
         .to include("--document-name MySessionDoc")
+    end
+
+    it "does not also add the default document when one is configured" do
+      expect(ssm_proxy_command(ssm_session_manager_document_name: "MySessionDoc"))
+        .not_to include("AWS-StartSSHSession")
     end
 
     it "passes the shared credentials profile through" do
