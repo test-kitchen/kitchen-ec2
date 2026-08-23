@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## [3.22.6](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.5...v3.22.6) (2026-08-23)
+
+
+### Bug Fixes
+
+* Detect sized .metal instance types when allocating dedicated hosts ([#674](https://github.com/test-kitchen/kitchen-ec2/issues/674)) ([304e08b](https://github.com/test-kitchen/kitchen-ec2/commit/304e08bafdc9592cff834107f3fa3c66bfad4d04))
+
 ## [3.22.5](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.4...v3.22.5) (2026-08-23)
 
 
