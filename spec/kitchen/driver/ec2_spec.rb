@@ -828,6 +828,30 @@ RSpec.describe Kitchen::Driver::Ec2 do
       expect(requests_for(ec2_client, :delete_key_pair)).to be_empty
       expect(File).to exist(key_path)
     end
+
+    # The local key file is not always still there by the time destroy runs:
+    # it may have been cleaned up by hand, wiped along with .kitchen, or never
+    # written at all, since create records the key pair in the state before
+    # writing the file. Deleting it is the last thing destroy does, so an
+    # unguarded unlink failed the whole action after every AWS resource had
+    # already been cleaned up successfully.
+    context "when the local key file is already gone" do
+      before { FileUtils.rm_f(key_path) }
+
+      it "still deletes the key pair and the state entry" do
+        state[:auto_key_id] = "kitchen-generated"
+        driver.delete_key(state)
+
+        expect(request_params_for(ec2_client, :delete_key_pair)[:key_name]).to eq("kitchen-generated")
+        expect(state).not_to have_key(:auto_key_id)
+      end
+
+      it "does not fail the destroy" do
+        state[:auto_key_id] = "kitchen-generated"
+
+        expect { driver.delete_key(state) }.not_to raise_error
+      end
+    end
   end
 
   describe "#attach_network_interface" do

@@ -16,6 +16,7 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
+require "fileutils" unless defined?(FileUtils)
 require "sshkey" unless defined?(SSHKey)
 require "benchmark" unless defined?(Benchmark)
 require "json" unless defined?(JSON)
@@ -1231,7 +1232,12 @@ module Kitchen
         info("Removing automatic key pair #{state[:auto_key_id]}")
         ec2.client.delete_key_pair(key_name: state[:auto_key_id])
         state.delete(:auto_key_id)
-        File.unlink("#{config[:kitchen_root]}/.kitchen/#{instance.name}.pem")
+        # The file is not always still there: it may have been cleaned up by
+        # hand, wiped along with .kitchen, or never written at all, since
+        # create records the key pair in the state before writing it. This is
+        # the last thing destroy does, so raising here fails the whole action
+        # after every AWS resource has already been cleaned up successfully.
+        FileUtils.rm_f("#{config[:kitchen_root]}/.kitchen/#{instance.name}.pem")
       end
 
       # Finalize the driver config and install transport overrides.
