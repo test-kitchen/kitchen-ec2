@@ -893,6 +893,68 @@ RSpec.describe Kitchen::Driver::Ec2 do
     end
   end
 
+  describe "#create" do
+    # `create` is only reached for its failure handling here; the paths that
+    # auto-create a security group and key pair have their own examples.
+    before do
+      allow(driver).to receive(:create_security_group)
+      allow(driver).to receive(:create_key)
+      allow(driver).to receive(:destroy)
+      allow(driver).to receive(:update_username)
+    end
+
+    def failing_create(error)
+      allow(driver).to receive(:submit_server).and_raise(error)
+      -> { driver.create(state) }
+    end
+
+    it "cleans up after a failed create" do
+      failing_create(::Aws::EC2::Errors::VPCIdNotSpecified.new(nil, "No default VPC")).call
+    rescue ::Aws::EC2::Errors::VPCIdNotSpecified
+      expect(driver).to have_received(:destroy).with(state)
+    end
+
+    # Every failure used to be re-raised as a bare RuntimeError carrying the
+    # advice "Please check this AMI is available in this region", whatever had
+    # actually gone wrong. A missing default VPC, a malformed filter or a
+    # permissions problem all reported themselves as an image problem, and the
+    # original class and backtrace were discarded along the way.
+    it "re-raises an unrelated failure unchanged" do
+      error = ::Aws::EC2::Errors::VPCIdNotSpecified.new(nil, "No default VPC for this user")
+
+      expect(&failing_create(error))
+        .to raise_error(::Aws::EC2::Errors::VPCIdNotSpecified, "No default VPC for this user")
+    end
+
+    it "does not blame the image for an unrelated failure" do
+      error = ::Aws::EC2::Errors::VPCIdNotSpecified.new(nil, "No default VPC for this user")
+
+      expect(&failing_create(error)).to raise_error { |raised|
+        expect(raised.message).not_to include("AMI")
+      }
+    end
+
+    # The advice is genuinely useful for the case it was written for, so it is
+    # kept where EC2 says the image itself is the problem.
+    it "names the region when EC2 rejects the image id" do
+      error = ::Aws::EC2::Errors::InvalidAMIIDNotFound.new(nil, "The image id does not exist")
+
+      expect(&failing_create(error))
+        .to raise_error(::Aws::EC2::Errors::InvalidAMIIDNotFound, /available in region us-west-2/)
+    end
+
+    # A failure to clean up is worth reporting, but it must not replace the
+    # error that caused the cleanup, or the user debugs the wrong problem.
+    it "reports a cleanup failure without hiding the original error" do
+      allow(driver).to receive(:destroy).and_raise(RuntimeError, "could not delete security group")
+
+      expect(&failing_create(::Aws::EC2::Errors::VPCIdNotSpecified.new(nil, "No default VPC")))
+        .to raise_error(::Aws::EC2::Errors::VPCIdNotSpecified)
+
+      expect(logged_output.string).to include("could not delete security group")
+    end
+  end
+
   describe "#destroy" do
     let(:server) { instance_double(::Aws::EC2::Instance, id: "i-0123456789abcdef0") }
 

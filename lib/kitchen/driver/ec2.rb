@@ -108,6 +108,11 @@ module Kitchen
 
       include Kitchen::Driver::Mixins::DedicatedHosts
 
+      # EC2 error codes meaning the requested image is itself the problem: it
+      # does not exist, is malformed, or is not available to this account in
+      # this region. Only these get told to check the image.
+      IMAGE_ERROR_CODES = /\AInvalidAMIID/
+
       # @param args [Array] passed through to {Kitchen::Driver::Base}
       # @param block [Proc] passed through to {Kitchen::Driver::Base}
       def initialize(*args, &block)
@@ -336,9 +341,29 @@ module Kitchen
         create_ec2_json(state) if /chef/i.match?(instance.provisioner.name)
         debug("ec2:create '#{state[:hostname]}'")
       rescue Exception => e
-        # Clean up the instance and any auto-created security groups or keys on the way out.
-        destroy(state)
-        raise "#{e.message} in the specified region #{config[:region]}. Please check this AMI is available in this region."
+        # Clean up the instance and any auto-created security groups or keys
+        # on the way out. A cleanup that fails is worth reporting, but it must
+        # not replace the error that caused the cleanup: raising from here
+        # would leave the user debugging a failed `delete_security_group`
+        # rather than the reason the instance never came up.
+        begin
+          destroy(state)
+        rescue Exception => cleanup_error
+          error("Failed to clean up after a failed create: #{cleanup_error.message}")
+        end
+
+        # An image that does not exist in the region being launched into is a
+        # common enough mistake to be worth naming. It is only one of the ways
+        # create fails, though, and this advice used to be appended to every
+        # one of them -- a missing default VPC, a malformed filter or a denied
+        # permission all reported themselves as an image problem, with the
+        # original class and backtrace discarded on the way through.
+        raise unless e.respond_to?(:code) && IMAGE_ERROR_CODES.match?(e.code.to_s)
+
+        # `Exception#exception` copies the receiver, so the class, the EC2
+        # error code and the backtrace all survive being given more context.
+        raise e.exception("#{e.message}. Check that image #{config[:image_id]} " \
+          "is available in region #{config[:region]}.")
       end
 
       # Terminate the instance and clean up everything created alongside it.
