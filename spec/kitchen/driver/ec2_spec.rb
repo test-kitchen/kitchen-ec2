@@ -1220,6 +1220,17 @@ RSpec.describe Kitchen::Driver::Ec2 do
       expect(driver.default_windows_user_data).to match(/PartitionStyle\s+-eq\s+.RAW./)
     end
 
+    # An MBR disk cannot address beyond 2 TiB, and Initialize-Disk does not
+    # fail on a larger one -- it silently caps it. A 2600 GB volume came up as
+    # a 2 TiB filesystem, with the remaining ~540 GB unreachable and still
+    # billed, and nothing in the output to say so.
+    it "partitions with GPT so volumes larger than 2 TiB are usable" do
+      script = driver.default_windows_user_data
+
+      expect(script).to match(/Initialize-Disk\s+-PartitionStyle\s+GPT/)
+      expect(script).not_to match(/Initialize-Disk\s+-PartitionStyle\s+MBR/)
+    end
+
     it "does not decide what to do from a list of Windows release years" do
       script = driver.default_windows_user_data
 

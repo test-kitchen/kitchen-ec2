@@ -1003,9 +1003,15 @@ module Kitchen
         # so it does not matter which agent is installed. Only RAW disks are
         # touched, so a volume that already carries a filesystem is never
         # reformatted.
+        #
+        # GPT, not MBR: an MBR disk cannot address beyond 2 TiB, and
+        # Initialize-Disk does not fail on a larger one -- it caps it, so a
+        # 2600 GB volume came up as a 2 TiB filesystem with the remainder
+        # unreachable and still billed. GPT is supported by every Windows
+        # release this driver can launch.
         "Initializing any uninitialized volumes" >> $logfile
         Get-Disk | Where-Object PartitionStyle -eq 'RAW' |
-          Initialize-Disk -PartitionStyle MBR -PassThru |
+          Initialize-Disk -PartitionStyle GPT -PassThru |
           New-Partition -AssignDriveLetter -UseMaximumSize |
           Format-Volume -FileSystem NTFS -Confirm:$false >> $logfile
 
