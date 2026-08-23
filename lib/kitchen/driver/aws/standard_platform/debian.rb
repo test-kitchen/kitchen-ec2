@@ -23,6 +23,12 @@ module Kitchen
         class Debian < StandardPlatform
           StandardPlatform.platforms["debian"] = self
 
+          # Debian release numbers to their codenames, newest first.
+          #
+          # The order matters: the first entry is the newest known release and
+          # is what an unversioned Debian platform resolves to.
+          #
+          # @return [Hash{Integer => String}]
           DEBIAN_CODENAMES = {
             13 => "trixie",
             12 => "bookworm",
@@ -34,21 +40,43 @@ module Kitchen
             6 => "squeeze",
           }.freeze
 
-          # default username for this platform's ami
-          # @return [String]
+          # The account EC2 creates on this platform's official AMIs.
+          #
+          # Debian uses "admin" rather than the "ec2-user" or distribution-named
+          # account most other platforms create.
+          #
+          # @return [String] the default SSH username
           def username
             "admin"
           end
 
+          # The Debian release codename for the requested version.
+          #
+          # Only the major version selects a codename, so a more precise version
+          # such as "12.5" is truncated, with a warning that the extra precision
+          # is being discarded. With no version at all, the newest known release
+          # is used.
+          #
+          # @return [String, nil] the codename, or nil for an unknown version
           def codename
             v = version
-            if v && v.size > 1
+            # Warn only when truncating to the major version actually discards
+            # something. Comparing string forms keeps a version that arrived as
+            # an Integer from warning about itself.
+            if v && v.to_s != v.to_i.to_s
               warn("WARN: Debian version #{version} specified, but searching for #{version.to_i} instead.")
-              v = v.to_i
             end
             v ? DEBIAN_CODENAMES[v.to_i] : DEBIAN_CODENAMES.values.first
           end
 
+          # EC2 image filters that select Debian cloud images.
+          #
+          # A filter is added for {StandardPlatform#architecture} only when one was
+          # requested, so that an unspecified architecture matches any of them.
+          #
+          # @return [Hash{String => String, Array<String>}] filter name to the value
+          #   or values it must match
+          # @see StandardPlatform#find_image
           def image_search
             search = {}
 
@@ -70,15 +98,26 @@ module Kitchen
             search
           end
 
+          # Detect this platform from an EC2 image.
+          #
+          # Matching is done on the image name, which is the only reliable signal
+          # EC2 exposes about what an AMI actually contains.
+          #
+          # @param driver [Kitchen::Driver::Ec2] the driver requesting detection
+          # @param image [Aws::EC2::Image] the image to inspect
+          # @return [Debian, nil] a platform when the image is Debian, otherwise nil
           def self.from_image(driver, image)
             return unless /debian/i.match?(image.name)
 
             image.name =~ /\b(\d+|#{DEBIAN_CODENAMES.values.join("|")})\b/i
             version = (Regexp.last_match || [])[1]
             if version&.to_i&.zero?
+              # `to_s`, so that a codename-derived version is the same type as a
+              # version read straight out of the image name. Callers compare and
+              # display these without caring which path produced them.
               version = DEBIAN_CODENAMES.find do |_v, codename|
                 codename == version.downcase
-              end.first
+              end&.first&.to_s
             end
             new(driver, "debian", version, image.architecture)
           end

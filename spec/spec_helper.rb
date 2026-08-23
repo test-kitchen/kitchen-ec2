@@ -1,9 +1,4 @@
 #
-# Author:: Fletcher Nichol (<fnichol@nichol.ca>)
-#
-# Copyright:: 2015-2018, Fletcher Nichol
-# Copyright:: 2016-2018, Chef Software, Inc.
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,74 +11,90 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "support/fake_image"
-
-RSpec.configure do |config|
-  # rspec-expectations config goes here. You can use an alternate
-  # assertion/expectation library such as wrong or the stdlib/minitest
-  # assertions if you prefer.
-  config.expect_with :rspec do |expectations|
-    # This option will default to `true` in RSpec 4. It makes the `description`
-    # and `failure_message` of custom matchers include text for helper methods
-    # defined using `chain`, e.g.:
-    #     be_bigger_than(2).and_smaller_than(4).description
-    #     # => "be bigger than 2 and smaller than 4"
-    # ...rather than:
-    #     # => "be bigger than 2"
-    expectations.include_chain_clauses_in_custom_matcher_descriptions = true
-  end
-
-  # rspec-mocks config goes here. You can use an alternate test double
-  # library (such as bogus or mocha) by changing the `mock_with` option here.
-  config.mock_with :rspec do |mocks|
-    # Prevents you from mocking or stubbing a method that does not exist on
-    # a real object. This is generally recommended, and will default to
-    # `true` in RSpec 4.
-    mocks.verify_partial_doubles = true
-  end
-
-  # These two settings work together to allow you to limit a spec run
-  # to individual examples or groups you care about by tagging them with
-  # `:focus` metadata. When nothing is tagged with `:focus`, all examples
-  # get run.
-  config.filter_run :focus
-  config.run_all_when_everything_filtered = true
-
-  # Limits the available syntax to the non-monkey patched syntax that is
-  # recommended. For more details, see:
-  #   - http://myronmars.to/n/dev-blog/2012/06/rspecs-new-expectation-syntax
-  #   - http://teaisaweso.me/blog/2013/05/27/rspecs-new-message-expectation-syntax/
-  config.disable_monkey_patching!
-
-  # This setting enables warnings. It's recommended, but in some cases may
-  # be too noisy due to issues in dependencies.
-  config.warnings = true
-
-  # Many RSpec users commonly either run the entire suite or an individual
-  # file, and it's useful to allow more verbose output when running an
-  # individual spec file.
-  if config.files_to_run.one?
-    # Use the documentation formatter for detailed output,
-    # unless a formatter has already been configured
-    # (e.g. via a command-line flag).
-    config.default_formatter = "doc"
-  end
-
-  # Run specs in random order to surface order dependencies. If you find an
-  # order dependency and want to debug it, you can fix the order by providing
-  # the seed, which is printed after each run.
-  #     --seed 1234
-  config.order = :random
-
-  # Seed global randomization in this process using the `--seed` CLI option.
-  # Setting this allows you to use `--seed` to deterministically reproduce
-  # test failures related to randomization by passing the same `--seed` value
-  # as the one that triggered the failure.
-  Kernel.srand config.seed
-
-  config.expose_dsl_globally = true
-end
+# Several of the driver's `default_config` blocks read ENV at class-definition
+# time, which happens once when "kitchen/driver/ec2" is first required. Clearing
+# these here -- before any spec file requires the driver -- keeps a developer's
+# real AWS environment from changing the defaults under test.
+#
+# This only affects the RSpec process; the parent shell is untouched.
+%w{
+  AWS_ACCESS_KEY_ID
+  AWS_PROFILE
+  AWS_REGION
+  AWS_SECRET_ACCESS_KEY
+  AWS_SESSION_TOKEN
+  AWS_SSH_KEY_ID
+  HTTPS_PROXY
+  HTTP_PROXY
+}.each { |key| ENV.delete(key) }
 
 require "aws-sdk-ec2"
-# https://ruby.awsblog.com/post/Tx15V81MLPR8D73/Client-Response-Stubs
-Aws.config[:stub_responses] = true
+
+# The no-op plugins the support helpers assemble instances from. Loading them
+# here does not pull in the driver under test, so the ENV scrubbing above still
+# happens first.
+require "kitchen"
+require "kitchen/provisioner/dummy"
+require "kitchen/transport/dummy"
+require "kitchen/verifier/dummy"
+
+Dir[File.join(__dir__, "support", "**", "*.rb")].sort.each { |file| require file }
+
+RSpec.configure do |config|
+  config.expect_with :rspec do |expectations|
+    expectations.include_chain_clauses_in_custom_matcher_descriptions = true
+    expectations.syntax = :expect
+  end
+
+  config.mock_with :rspec do |mocks|
+    mocks.verify_partial_doubles = true
+    mocks.syntax = :expect
+  end
+
+  config.shared_context_metadata_behavior = :apply_to_host_groups
+  config.disable_monkey_patching!
+  config.warnings = false
+
+  config.filter_run_when_matching :focus
+  config.example_status_persistence_file_path = "spec/examples.txt"
+
+  # Report every failed expectation in an example rather than aborting at the
+  # first one. Individual examples can opt out with `aggregate_failures: false`.
+  config.define_derived_metadata do |metadata|
+    metadata[:aggregate_failures] = true unless metadata.key?(:aggregate_failures)
+  end
+
+  # Progress for a full run; the documentation format is more useful when a
+  # single file is being worked on.
+  config.default_formatter = "doc" if config.files_to_run.one?
+
+  config.order = :random
+  Kernel.srand config.seed
+
+  config.include AwsStubs
+  config.include DriverFactory
+  config.include ImageFixtures
+
+  # The AWS SDK is configured process-wide, and `Kitchen::Driver::Aws::Client`
+  # mutates `Aws.config` as a side effect of being constructed. Snapshot and
+  # restore it so that configuration cannot leak between examples.
+  config.around do |example|
+    saved = ::Aws.config.dup
+    begin
+      example.run
+    ensure
+      ::Aws.config.replace(saved)
+    end
+  end
+
+  # A network kill-switch, not a stubbing strategy: examples inject their own
+  # explicitly stubbed clients. This only guarantees that a *missed* stub fails
+  # locally instead of reaching the real EC2 API.
+  config.before do
+    ::Aws.config.update(
+      stub_responses: true,
+      region: "us-west-2",
+      credentials: ::Aws::Credentials.new("test-akid", "test-secret")
+    )
+  end
+end

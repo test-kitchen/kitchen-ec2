@@ -23,6 +23,8 @@ module Kitchen
     class Aws
       # Manages AWS Systems Manager Session Manager connections for Test Kitchen
       class SsmSessionManager
+        # @param config [Hash] the driver config
+        # @param logger [Kitchen::Logger] the logger to report through
         def initialize(config, logger)
           @config = config
           @logger = logger
@@ -32,7 +34,13 @@ module Kitchen
           )
         end
 
-        # Check if SSM agent is running on the instance
+        # Whether the SSM agent on an instance has checked in and is reachable.
+        #
+        # Polled while an instance boots, so an API error is reported as "not
+        # ready" rather than raised.
+        #
+        # @param instance_id [String] the instance to check
+        # @return [Boolean] true when the agent is registered and online
         def ssm_agent_available?(instance_id)
           @logger.debug("Checking if SSM agent is available on instance #{instance_id}")
 
@@ -62,7 +70,12 @@ module Kitchen
           end
         end
 
-        # Verify that the AWS CLI session manager plugin is installed
+        # Whether the AWS CLI Session Manager plugin is installed locally.
+        #
+        # The plugin is a separate download from the AWS CLI itself and is
+        # required to open a session.
+        #
+        # @return [Boolean] true when the plugin responds to `--version`
         def session_manager_plugin_installed?
           _output, status = Open3.capture2e("session-manager-plugin", "--version")
           installed = status.success?
@@ -75,7 +88,11 @@ module Kitchen
           end
 
           installed
-        rescue StandardError => e
+        # ::StandardError, not StandardError: this file is nested inside
+        # `module Kitchen`, which defines Kitchen::StandardError. An unqualified
+        # constant resolves to that one, which would let the Errno::ENOENT
+        # raised by a missing plugin escape the check meant to detect it.
+        rescue ::StandardError => e
           @logger.warn("Error checking for session-manager-plugin: #{e.message}")
           false
         end

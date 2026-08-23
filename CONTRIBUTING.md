@@ -48,7 +48,33 @@ bundle exec cookstyle -a
 ```
 
 The unit tests stub the AWS SDK, so they neither launch instances nor require
-AWS credentials.
+AWS credentials. `spec/` mirrors `lib/`, and the shared helpers under
+`spec/support/` build stubbed AWS clients, EC2 image fixtures, and configured
+driver instances.
+
+## Documentation
+
+The library is documented with [YARD](https://yardoc.org/). Generate the HTML
+docs into `doc/`:
+
+```sh
+bundle exec rake yard
+```
+
+Check documentation coverage and list anything undocumented:
+
+```sh
+bundle exec rake yard:stats
+```
+
+Browse the docs locally, reloading as you edit:
+
+```sh
+bundle exec rake yard:serve
+```
+
+Documentation is not checked in CI, so `rake yard` never fails a build. Please
+still add YARD comments to new methods, and update the ones you change.
 
 ### Manual testing against AWS
 

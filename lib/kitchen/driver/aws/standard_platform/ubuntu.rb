@@ -23,12 +23,23 @@ module Kitchen
         class Ubuntu < StandardPlatform
           StandardPlatform.platforms["ubuntu"] = self
 
-          # default username for this platform's ami
-          # @return [String]
+          # The account EC2 creates on this platform's official AMIs.
+          #
+          # Used as the SSH username when the transport does not specify one.
+          #
+          # @return [String] the default SSH username
           def username
             "ubuntu"
           end
 
+          # EC2 image filters that select Ubuntu cloud images published by Canonical.
+          #
+          # A filter is added for {StandardPlatform#architecture} only when one was
+          # requested, so that an unspecified architecture matches any of them.
+          #
+          # @return [Hash{String => String, Array<String>}] filter name to the value
+          #   or values it must match
+          # @see StandardPlatform#find_image
           def image_search
             search = {
               "owner-id" => "099720109477",
@@ -38,6 +49,14 @@ module Kitchen
             search
           end
 
+          # Detect this platform from an EC2 image.
+          #
+          # Matching is done on the image name, which is the only reliable signal
+          # EC2 exposes about what an AMI actually contains.
+          #
+          # @param driver [Kitchen::Driver::Ec2] the driver requesting detection
+          # @param image [Aws::EC2::Image] the image to inspect
+          # @return [Ubuntu, nil] a platform when the image is Ubuntu, otherwise nil
           def self.from_image(driver, image)
             return unless /ubuntu/i.match?(image.name)
 

@@ -23,34 +23,39 @@ module Kitchen
         class Windows < StandardPlatform
           StandardPlatform.platforms["windows"] = self
 
-          # default username for this platform's ami
-          # @return [String]
+          # The account EC2 creates on this platform's official AMIs.
+          #
+          # Used as the SSH username when the transport does not specify one.
+          #
+          # @return [String] the default SSH username
           def username
             "administrator"
           end
 
-          # Figure out the right set of names to search for:
+          # EC2 image filters that select Amazon's Windows Server AMIs.
           #
-          # "windows" -> [nil, nil, nil]
-          #   Windows_Server-*-R*_RTM-, Windows_Server-*-R*_SP*-,
-          #   Windows_Server-*-RTM-, Windows_Server-*-SP*-,
-          #   Windows_Server-*-
-          # "windows-2012" -> [2012, 0, nil]
-          #   Windows_Server-2012-RTM-, Windows_Server-2012-SP*-
-          # "windows-2012r2" -> [2012, 2, nil]
-          #   Windows_Server-2012-R2_RTM-, Windows_Server-2012-R2_SP*-
-          # "windows-2012sp1" -> [2012, 0, 1]
-          #   Windows_Server-2012-SP1-
-          # "windows-2012rtm" -> [2012, 0, 0]
-          #   Windows_Server-2012-RTM-
-          # "windows-2012r2sp1" -> [2012, 2, 1]
-          #   Windows_Server-2012-R2_SP1-
-          # "windows-2012r2rtm" -> [2012, 2, 0]
-          #   Windows_Server-2012-R2_RTM-
-          # "windows-2016" -> [2016, 0, nil]
-          #   Windows_Server-2016-
-          # "windows-2019" -> [2019, 0, nil]
-          #   Windows_Server-2019-
+          # Windows AMI names encode the release, an optional revision ("R2")
+          # and an optional service pack, and the naming scheme changed with
+          # Server 2016. The requested version is decomposed by
+          # {#windows_version_parts} and turned into whichever set of name
+          # patterns can match it:
+          #
+          #     "windows"          Windows_Server-*-RTM-, -SP*-, -R*_RTM-,
+          #                        -R*_SP*-, and Windows_Server-*-Full-Base-*
+          #     "windows-2012"     Windows_Server-2012-RTM-, -2012-SP*-
+          #     "windows-2012r2"   Windows_Server-2012-R2_RTM-, -R2_SP*-
+          #     "windows-2012sp1"  Windows_Server-2012-SP1-
+          #     "windows-2012r2sp1" Windows_Server-2012-R2_SP1-
+          #     "windows-2016"     Windows_Server-2016-English-Full-Base-*
+          #     "windows-2019"     Windows_Server-2019-English-Full-Base-*
+          #
+          # A filter is added for {StandardPlatform#architecture} only when one
+          # was requested, so that an unspecified architecture matches any.
+          #
+          # @return [Hash{String => String, Array<String>}] filter name to the
+          #   value or values it must match
+          # @see #windows_name_filter
+          # @see StandardPlatform#find_image
           def image_search
             search = {
               "owner-alias" => "amazon",
@@ -60,6 +65,15 @@ module Kitchen
             search
           end
 
+          # Sort images newest release first.
+          #
+          # Windows versions cannot be compared as numbers -- "2012r2" is newer
+          # than "2012" but older than "2016" -- so each image is reduced to a
+          # [major, revision, service_pack] tuple and those are compared
+          # instead.
+          #
+          # @param images [Array<Aws::EC2::Image>] the images to sort
+          # @return [Array<Aws::EC2::Image>] the images, newest release first
           def sort_by_version(images)
             # 2008r2rtm -> [ img1, img2, img3 ]
             # 2012r2sp1 -> [ img4, img5 ]
@@ -69,6 +83,14 @@ module Kitchen
               .reverse.flat_map { |_version, platform_images| platform_images }
           end
 
+          # Detect this platform from an EC2 image.
+          #
+          # Matching is done on the image name, which is the only reliable signal
+          # EC2 exposes about what an AMI actually contains.
+          #
+          # @param driver [Kitchen::Driver::Ec2] the driver requesting detection
+          # @param image [Aws::EC2::Image] the image to inspect
+          # @return [Windows, nil] a platform when the image is Windows Server, otherwise nil
           def self.from_image(driver, image)
             return unless /Windows/i.match?(image.name)
 
@@ -88,18 +110,25 @@ module Kitchen
 
           protected
 
-          # Turn windows version into [ major, revision, service_pack ]
+          # Decompose a Windows version string into comparable parts.
           #
-          # nil -> [ nil, nil, nil ]
-          # 2012 -> [ 2012, 0, nil ]
-          # 2012r2 -> [ 2012, 2, nil ]
-          # 2012r2sp4 -> [ 2012, 2, 4 ]
-          # 2012sp4 -> [ 2012, 0, 4 ]
-          # 2012rtm -> [ 2012, 0, 0 ]
-          # 2016 -> [ 2016, 0, nil ]
-          # 2019 -> [ 2019, 0, nil ]
-          # 1709 -> [ 1709, 0, nil ]
-          # 1803 -> [ 1803, 0, nil ]
+          # A missing revision becomes 0 so that "2012" and "2012r2" order
+          # correctly against each other. A missing service pack stays nil,
+          # which means "any", while an explicit "rtm" becomes 0.
+          #
+          #     nil        -> [nil,  nil, nil]
+          #     "2012"     -> [2012, 0,   nil]
+          #     "2012r2"   -> [2012, 2,   nil]
+          #     "2012rtm"  -> [2012, 0,   0]
+          #     "2012sp4"  -> [2012, 0,   4]
+          #     "2012r2sp4"-> [2012, 2,   4]
+          #     "2016"     -> [2016, 0,   nil]
+          #
+          # A leading "server-" is stripped first, so that a platform named
+          # "windows-server-2019" behaves like "windows-2019".
+          #
+          # @return [Array(Integer, Integer, Integer), Array(nil, nil, nil)]
+          #   the major version, revision and service pack
           def windows_version_parts
             version = self.version
             if version
@@ -131,6 +160,10 @@ module Kitchen
 
           private
 
+          # Build the AMI name patterns for the requested version.
+          #
+          # @return [String, Array<String>] a single pattern for releases with a
+          #   predictable name, otherwise every pattern that could match
           def windows_name_filter
             major, revision, service_pack = windows_version_parts
             if [2025, 2022, 2019, 2016].include?(major)

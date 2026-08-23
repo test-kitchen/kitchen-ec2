@@ -1,2 +1,4 @@
 --readme README.md
 --markup markdown
+--output-dir doc
+lib/**/*.rb

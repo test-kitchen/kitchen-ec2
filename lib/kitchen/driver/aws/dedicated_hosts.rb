@@ -1,15 +1,34 @@
 module Kitchen
   module Driver
+    # Namespace for behavior mixed into {Kitchen::Driver::Ec2}.
     module Mixins
+      # Allocation and release of EC2 Dedicated Hosts.
+      #
+      # A dedicated host is physical hardware reserved for one account, required
+      # for `tenancy: host` and for platforms such as macOS. Hosts are billed
+      # from allocation until release regardless of whether an instance is
+      # running on them, so both operations are gated behind explicit config and
+      # failures are fatal rather than warnings.
+      #
+      # Only hosts tagged `ManagedBy: Test Kitchen` are ever considered, so a
+      # user's own dedicated hosts are never allocated to or released.
+      #
+      # This module expects its includer to provide `config`, `ec2` and the
+      # Test Kitchen logging methods; it is mixed into {Kitchen::Driver::Ec2}.
       module DedicatedHosts
-        # check if a suitable dedicated host is available
+        # Whether any managed host has room for the configured instance type.
+        #
         # @return [Boolean]
         def host_available?
           !hosts_with_capacity.empty?
         end
 
-        # get dedicated host with capacity for instance type
-        # @return [Aws::EC2::Types::Host]
+        # Managed hosts with room for the configured instance type.
+        #
+        # T-family hosts report no capacity information and may be
+        # overprovisioned, so a host with no capacity block counts as available.
+        #
+        # @return [Array<Aws::EC2::Types::Host>]
         def hosts_with_capacity
           hosts_managed.select do |host|
             # T-instance hosts do not report available capacity and can be overprovisioned
@@ -18,26 +37,37 @@ module Kitchen
             else
               instance_capacity = host.available_capacity.available_instance_capacity
               capacity_for_type = instance_capacity.detect { |cap| cap.instance_type == config[:instance_type] }
-              capacity_for_type.available_capacity > 0
+              # A host that lists no capacity for this instance type cannot run
+              # one, so treat a missing entry the same as zero rather than
+              # raising on it.
+              !capacity_for_type.nil? && capacity_for_type.available_capacity > 0
             end
           end
         end
 
-        # check if host has no instances running
-        # @param host [Aws::EC2::Types::Host] dedicated host
-        # @return [Boolean]
+        # Whether a host has no instances running on it.
+        #
+        # @param host [Aws::EC2::Types::Host] the host to inspect
+        # @return [Boolean] true when the host can be released
         def host_unused?(host)
           host.instances.empty?
         end
 
-        # get host data for host id
-        # @param host_id [Aws::EC2::Types::Host] dedicated host
-        # @return [Array<Aws::EC2::Types::Host>]
+        # Look a dedicated host up by ID.
+        #
+        # @param host_id [String] the host ID, e.g. "h-0123456789abcdef0"
+        # @return [Aws::EC2::Types::Host, nil] the host, or nil when EC2 does
+        #   not know it
         def host_for_id(host_id)
-          ec2.client.describe_hosts(host_ids: [host_id])&.first
+          ec2.client.describe_hosts(host_ids: [host_id]).hosts.first
         end
 
-        # get dedicated hosts managed by Test Kitchen
+        # Available dedicated hosts that Test Kitchen allocated.
+        #
+        # Filtered on the `ManagedBy` tag so that hosts belonging to the user are
+        # never touched, and on state so that hosts still being provisioned or
+        # already released are ignored.
+        #
         # @return [Array<Aws::EC2::Types::Host>]
         def hosts_managed
           response = ec2.client.describe_hosts(
@@ -49,8 +79,16 @@ module Kitchen
           response.hosts.select { |host| host.state == "available" }
         end
 
-        # allocate new dedicated host for requested instance type
-        # @return [String] host id
+        # Allocate a new dedicated host for the configured instance type.
+        #
+        # A `.metal` size occupies a whole host, so it is allocated for that
+        # exact type; every other size can share a host, so the whole instance
+        # family is allocated and EC2 places instances within it.
+        #
+        # @return [String] the new host's ID
+        # @note Terminates the process with `exit!` when allocation is not
+        #   enabled or no availability zone is configured, since an allocated
+        #   host costs money whether or not it is used.
         def allocate_host
           unless allow_allocate_host?
             warn "ERROR: Attempted to allocate dedicated host but need environment variable TK_ALLOCATE_DEDICATED_HOST to be set"
@@ -91,9 +129,12 @@ module Kitchen
           response.host_ids.first
         end
 
-        # deallocate a dedicated host
-        # @param host_id [String] dedicated host id
-        # @return [Aws::EC2::Types::ReleaseHostsResult]
+        # Release a dedicated host.
+        #
+        # @param host_id [String] the host to release
+        # @return [nil] when the host was released successfully
+        # @note Terminates the process with `exit!` when the release fails, as a
+        #   host that stays allocated keeps accruing charges silently.
         def deallocate_host(host_id)
           info("Deallocating dedicated host #{host_id}")
 
@@ -104,27 +145,31 @@ module Kitchen
           exit!
         end
 
-        # return instance family from type
-        # @param instance_type [String] type in format family.size
-        # @return [String] instance family
+        # The family part of an instance type.
+        #
+        # @param instance_type [String] a type in "family.size" form, e.g. "m5.large"
+        # @return [String] the family, e.g. "m5"
         def instance_family_from_type(instance_type)
           instance_type.split(".").first
         end
 
-        # return instance size from type
-        # @param instance_type [String] type in format family.size
-        # @return [String] instance size
+        # The size part of an instance type.
+        #
+        # @param instance_type [String] a type in "family.size" form, e.g. "m5.large"
+        # @return [String] the size, e.g. "large"
         def instance_size_from_type(instance_type)
           instance_type.split(".").last
         end
 
-        # check config, if host allocation is enabled
+        # Whether the user has opted in to allocating dedicated hosts.
+        #
         # @return [Boolean]
         def allow_allocate_host?
           config[:allocate_dedicated_host]
         end
 
-        # check config, if host deallocation is enabled
+        # Whether the user has opted in to releasing dedicated hosts.
+        #
         # @return [Boolean]
         def allow_deallocate_host?
           config[:deallocate_dedicated_host]

@@ -1,9 +1,4 @@
 #
-# Author:: Tyler Ball (<tball@chef.io>)
-#
-# Copyright:: 2015-2018, Fletcher Nichol
-# Copyright:: 2016-2018, Chef Software, Inc.
-#
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
 # You may obtain a copy of the License at
@@ -16,786 +11,429 @@
 # See the License for the specific language governing permissions and
 # limitations under the License.
 
-require "kitchen/driver/aws/instance_generator"
-require "kitchen/driver/aws/client"
-require "tempfile" unless defined?(Tempfile)
-require "base64" unless defined?(Base64)
-require "aws-sdk-ec2"
+require "kitchen/driver/ec2"
+require "tempfile"
 
-describe Kitchen::Driver::Aws::InstanceGenerator do
-  let(:config) { { region: "us-east-1" } }
-  let(:resource) { instance_double(Aws::EC2::Resource) }
-  let(:ec2) { instance_double(Kitchen::Driver::Aws::Client, resource: resource) }
-  let(:logger) { instance_double(Logger) }
-  let(:generator) { Kitchen::Driver::Aws::InstanceGenerator.new(config, ec2, logger) }
+RSpec.describe Kitchen::Driver::Aws::InstanceGenerator do
+  subject(:generator) { described_class.new(config, aws_client, test_logger) }
 
-  describe "#prepared_user_data" do
-    context "when config[:user_data] is a file" do
-      let(:tmp_file) { Tempfile.new("prepared_user_data_test") }
-      let(:config) { { user_data: tmp_file.path } }
+  let(:aws_client) { stub_aws_client(client: ec2_client) }
+  let(:ec2_client) { stub_ec2_client }
+  let(:config) { base_config }
+  let(:base_config) { { region: "us-west-2", instance_type: "t3.micro", image_id: "ami-0123456789abcdef0" } }
 
-      before do
-        tmp_file.write("foo\nbar")
-        tmp_file.rewind
+  # `ec2_instance_data` builds its own EC2 client rather than using the wrapper
+  # it was handed, so lookups are intercepted at the constructor.
+  before do
+    allow(::Aws::EC2::Client).to receive(:new).and_return(ec2_client)
+  end
+
+  def instance_data
+    generator.ec2_instance_data
+  end
+
+  describe "#ec2_instance_data" do
+    it "always requests exactly one instance" do
+      expect(instance_data).to include(min_count: 1, max_count: 1)
+    end
+
+    it "carries the core instance settings through" do
+      expect(instance_data).to include(
+        instance_type: "t3.micro",
+        image_id: "ami-0123456789abcdef0"
+      )
+    end
+
+    it "passes the SSH key pair name as key_name" do
+      config[:aws_ssh_key_id] = "my-key"
+      expect(instance_data[:key_name]).to eq("my-key")
+    end
+
+    describe "tags" do
+      it "tags both the instance and its volumes" do
+        config[:tags] = { "created-by" => "test-kitchen" }
+
+        expect(instance_data[:tag_specifications]).to eq([
+          { resource_type: "instance", tags: [{ key: "created-by", value: "test-kitchen" }] },
+          { resource_type: "volume", tags: [{ key: "created-by", value: "test-kitchen" }] },
+        ])
       end
 
-      after do
-        tmp_file.close
-        tmp_file.unlink
+      # EC2 rejects non-string tag values, so integers and nils are coerced
+      # rather than passed through and failing at the API boundary.
+      it "stringifies tag values" do
+        config[:tags] = { "number" => 42, "nothing" => nil }
+
+        tags = instance_data[:tag_specifications].first[:tags]
+        expect(tags).to eq([
+          { key: "number", value: "42" },
+          { key: "nothing", value: "" },
+        ])
       end
 
-      it "reads the file contents" do
-        expect(Base64.decode64(generator.prepared_user_data)).to eq("foo\nbar")
-      end
-
-      it "memoizes the file contents" do
-        decoded = Base64.decode64(generator.prepared_user_data)
-        expect(decoded).to eq("foo\nbar")
-        tmp_file.write("other\nvalue")
-        tmp_file.rewind
-        expect(decoded).to eq("foo\nbar")
+      it "omits tag specifications when there are no tags" do
+        config[:tags] = {}
+        expect(instance_data).not_to have_key(:tag_specifications)
       end
     end
 
-    context "when config[:user_data] is binary" do
-      let(:config) { { user_data: "foo\0bar" } }
+    describe "availability zone" do
+      # A bare letter is a convenience shorthand for "this zone in my region".
+      it "expands a bare zone letter using the region" do
+        config[:availability_zone] = "b"
+        expect(instance_data[:placement][:availability_zone]).to eq("us-west-2b")
+      end
 
-      it "handles nulls in user_data" do
-        expect(Base64.decode64(generator.prepared_user_data)).to eq "foo\0bar"
+      it "downcases a fully qualified zone" do
+        config[:availability_zone] = "US-WEST-2B"
+        expect(instance_data[:placement][:availability_zone]).to eq("us-west-2b")
+      end
+
+      it "omits placement when no zone or tenancy is given" do
+        expect(instance_data).not_to have_key(:placement)
+      end
+    end
+
+    describe "tenancy" do
+      it "sets tenancy on its own" do
+        config[:tenancy] = "dedicated"
+        expect(instance_data[:placement]).to eq(tenancy: "dedicated")
+      end
+
+      it "merges tenancy alongside an availability zone" do
+        config[:availability_zone] = "us-west-2a"
+        config[:tenancy] = "host"
+
+        expect(instance_data[:placement]).to eq(
+          availability_zone: "us-west-2a", tenancy: "host"
+        )
+      end
+    end
+
+    describe "the placement block" do
+      it "passes through each supported placement setting" do
+        config[:placement] = {
+          affinity: "host",
+          availability_zone: "us-west-2c",
+          host_id: "h-0123456789abcdef0",
+          host_resource_group_arn: "arn:aws:resource-groups:us-west-2:1234:group/hosts",
+          partition_number: 2,
+          tenancy: "host",
+        }
+
+        expect(instance_data[:placement]).to include(
+          affinity: "host",
+          availability_zone: "us-west-2c",
+          host_id: "h-0123456789abcdef0",
+          host_resource_group_arn: "arn:aws:resource-groups:us-west-2:1234:group/hosts",
+          partition_number: 2,
+          tenancy: "host"
+        )
+      end
+
+      # EC2 accepts a placement group by ID or by name, never both, so each is
+      # only forwarded when the other is absent.
+      it "sends group_id when only an ID is given" do
+        config[:placement] = { group_id: "pg-0123456789abcdef0" }
+        expect(instance_data[:placement]).to eq(group_id: "pg-0123456789abcdef0")
+      end
+
+      it "sends group_name when only a name is given" do
+        config[:placement] = { group_name: "my-group" }
+        expect(instance_data[:placement]).to eq(group_name: "my-group")
+      end
+
+      it "sends neither when both are given" do
+        config[:placement] = { group_id: "pg-0123456789abcdef0", group_name: "my-group" }
+
+        expect(instance_data[:placement]).not_to have_key(:group_id)
+        expect(instance_data[:placement]).not_to have_key(:group_name)
+      end
+    end
+
+    describe "security groups" do
+      it "wraps a single security group ID in an array" do
+        config[:security_group_ids] = "sg-0123456789abcdef0"
+        expect(instance_data[:security_group_ids]).to eq(%w{sg-0123456789abcdef0})
+      end
+
+      it "passes a list of security group IDs through" do
+        config[:security_group_ids] = %w{sg-aaa sg-bbb}
+        expect(instance_data[:security_group_ids]).to eq(%w{sg-aaa sg-bbb})
+      end
+
+      it "omits security groups when none are configured" do
+        expect(instance_data).not_to have_key(:security_group_ids)
+      end
+    end
+
+    describe "block device mappings" do
+      it "passes mappings through unchanged" do
+        mappings = [{ device_name: "/dev/sda1", ebs: { volume_size: 30 } }]
+        config[:block_device_mappings] = mappings
+
+        expect(instance_data[:block_device_mappings]).to eq(mappings)
+      end
+
+      it "omits the key when the list is empty" do
+        config[:block_device_mappings] = []
+        expect(instance_data).not_to have_key(:block_device_mappings)
+      end
+
+      it "omits the key when the list is nil" do
+        config[:block_device_mappings] = nil
+        expect(instance_data).not_to have_key(:block_device_mappings)
+      end
+    end
+
+    describe "other pass-through settings" do
+      it "forwards metadata options" do
+        config[:metadata_options] = { http_tokens: "required" }
+        expect(instance_data[:metadata_options]).to eq(http_tokens: "required")
+      end
+
+      it "wraps an IAM profile name in an instance profile" do
+        config[:iam_profile_name] = "kitchen-profile"
+        expect(instance_data[:iam_instance_profile]).to eq(name: "kitchen-profile")
+      end
+
+      it "forwards licence configuration ARNs" do
+        config[:licenses] = [{ license_configuration_arn: "arn:aws:license-manager:lic-1" }]
+
+        expect(instance_data[:licenses]).to eq([
+          { license_configuration_arn: "arn:aws:license-manager:lic-1" },
+        ])
+      end
+
+      it "forwards a shutdown behavior" do
+        config[:instance_initiated_shutdown_behavior] = "terminate"
+        expect(instance_data[:instance_initiated_shutdown_behavior]).to eq("terminate")
+      end
+
+      it "omits an empty shutdown behavior" do
+        config[:instance_initiated_shutdown_behavior] = ""
+        expect(instance_data).not_to have_key(:instance_initiated_shutdown_behavior)
+      end
+    end
+
+    # Specifying a network interface moves several top-level settings inside
+    # the interface block; EC2 rejects a request that sets them in both places.
+    describe "network interfaces" do
+      before { config[:associate_public_ip] = true }
+
+      it "declares a single interface at device index 0" do
+        expect(instance_data[:network_interfaces]).to eq([
+          { device_index: 0, associate_public_ip_address: true, delete_on_termination: true },
+        ])
+      end
+
+      it "moves the subnet into the interface" do
+        config[:subnet_id] = "subnet-0123456789abcdef0"
+
+        expect(instance_data).not_to have_key(:subnet_id)
+        expect(instance_data[:network_interfaces][0][:subnet_id]).to eq("subnet-0123456789abcdef0")
+      end
+
+      it "moves the private IP address into the interface" do
+        config[:private_ip_address] = "10.0.0.5"
+
+        expect(instance_data).not_to have_key(:private_ip_address)
+        expect(instance_data[:network_interfaces][0][:private_ip_address]).to eq("10.0.0.5")
+      end
+
+      it "moves security groups into the interface as groups" do
+        config[:security_group_ids] = %w{sg-aaa}
+
+        expect(instance_data).not_to have_key(:security_group_ids)
+        expect(instance_data[:network_interfaces][0][:groups]).to eq(%w{sg-aaa})
+      end
+
+      it "requests an IPv6 address when asked" do
+        config[:associate_ipv6] = true
+        expect(instance_data[:network_interfaces][0][:ipv_6_address_count]).to eq(1)
+      end
+
+      it "builds no interface block when associate_public_ip is unset" do
+        config.delete(:associate_public_ip)
+        expect(instance_data).not_to have_key(:network_interfaces)
+      end
+
+      # False is a meaningful value here -- "attach an interface, but no public
+      # IP" -- so it must still produce an interface block.
+      it "builds an interface block when associate_public_ip is false" do
+        config[:associate_public_ip] = false
+        expect(instance_data[:network_interfaces][0][:associate_public_ip_address]).to be(false)
+      end
+    end
+
+    describe "subnet lookup by tag" do
+      let(:ec2_client) do
+        stub_ec2_client(
+          describe_subnets: {
+            subnets: [
+              { subnet_id: "subnet-small", vpc_id: "vpc-1", available_ip_address_count: 3 },
+              { subnet_id: "subnet-roomy", vpc_id: "vpc-1", available_ip_address_count: 250 },
+            ],
+          }
+        )
+      end
+
+      before { config[:subnet_filter] = { tag: "Name", value: "kitchen" } }
+
+      # Picking the emptiest subnet spreads instances out and avoids exhausting
+      # a subnet that is already nearly full.
+      it "chooses the subnet with the most free addresses" do
+        expect(instance_data[:subnet_id]).to eq("subnet-roomy")
+      end
+
+      it "queries by the configured tag" do
+        instance_data
+
+        expect(request_params_for(ec2_client, :describe_subnets)[:filters]).to eq([
+          { name: "tag:Name", values: %w{kitchen} },
+        ])
+      end
+
+      it "accepts several filters at once" do
+        config[:subnet_filter] = [{ tag: "Name", value: "kitchen" }, { tag: "Env", value: "test" }]
+        instance_data
+
+        expect(request_params_for(ec2_client, :describe_subnets)[:filters]).to eq([
+          { name: "tag:Name", values: %w{kitchen} },
+          { name: "tag:Env", values: %w{test} },
+        ])
+      end
+
+      it "writes the chosen subnet back into the config" do
+        instance_data
+        expect(config[:subnet_id]).to eq("subnet-roomy")
+      end
+
+      context "when no subnet matches" do
+        let(:ec2_client) { stub_ec2_client(describe_subnets: { subnets: [] }) }
+
+        it "raises rather than launching into an unknown subnet" do
+          expect { instance_data }.to raise_error(/Subnets with tags .* not found/)
+        end
+      end
+
+      context "when an explicit subnet ID is also set" do
+        it "leaves the explicit subnet alone" do
+          config[:subnet_id] = "subnet-explicit"
+
+          expect(instance_data[:subnet_id]).to eq("subnet-explicit")
+          expect(requests_for(ec2_client, :describe_subnets)).to be_empty
+        end
+      end
+    end
+
+    describe "security group lookup by filter" do
+      let(:ec2_client) do
+        stub_ec2_client(
+          describe_subnets: { subnets: [{ subnet_id: "subnet-1", vpc_id: "vpc-1" }] },
+          describe_security_groups: { security_groups: [{ group_id: "sg-found" }] }
+        )
+      end
+
+      before { config[:subnet_id] = "subnet-1" }
+
+      it "finds a group by name within the subnet's VPC" do
+        config[:security_group_filter] = { name: "kitchen-sg" }
+
+        expect(instance_data[:security_group_ids]).to eq(%w{sg-found})
+        expect(request_params_for(ec2_client, :describe_security_groups)[:filters]).to eq([
+          { name: "group-name", values: %w{kitchen-sg} },
+          { name: "vpc-id", values: %w{vpc-1} },
+        ])
+      end
+
+      it "finds a group by tag within the subnet's VPC" do
+        config[:security_group_filter] = { tag: "Name", value: "kitchen-sg" }
+        instance_data
+
+        expect(request_params_for(ec2_client, :describe_security_groups)[:filters]).to eq([
+          { name: "tag:Name", values: %w{kitchen-sg} },
+          { name: "vpc-id", values: %w{vpc-1} },
+        ])
+      end
+
+      it "collects groups from several filters" do
+        config[:security_group_filter] = [{ name: "sg-a" }, { name: "sg-b" }]
+        expect(instance_data[:security_group_ids]).to eq(%w{sg-found sg-found})
+      end
+
+      context "when a filter matches nothing" do
+        let(:ec2_client) do
+          stub_ec2_client(
+            describe_subnets: { subnets: [{ subnet_id: "subnet-1", vpc_id: "vpc-1" }] },
+            describe_security_groups: { security_groups: [] }
+          )
+        end
+
+        it "raises naming the filter that failed" do
+          config[:security_group_filter] = { name: "missing-sg" }
+
+          expect { instance_data }
+            .to raise_error(/A Security Group matching the following filter could not be found/)
+        end
+      end
+
+      context "when explicit security group IDs are set" do
+        it "skips the lookup entirely" do
+          config[:security_group_ids] = %w{sg-explicit}
+          config[:security_group_filter] = { name: "kitchen-sg" }
+
+          expect(instance_data[:security_group_ids]).to eq(%w{sg-explicit})
+          expect(requests_for(ec2_client, :describe_security_groups)).to be_empty
+        end
       end
     end
   end
 
-  describe "#ec2_instance_data" do
-    ec2_stub = Aws::EC2::Client.new(stub_responses: true)
-
-    ec2_stub.stub_responses(
-      :describe_subnets,
-      subnets: [
-        {
-          subnet_id: "s-123",
-          vpc_id: "vpc-456",
-          tags: [{ key: "foo", value: "bar" }],
-        },
-      ]
-    )
-
-    ec2_stub.stub_responses(
-      :describe_security_groups,
-      security_groups: [
-        {
-          group_id: "sg-123",
-          tags: [{ key: "foo", value: "bar" }],
-        },
-      ]
-    )
-
-    it "returns empty on nil" do
-      expect(generator.ec2_instance_data).to eq(
-        instance_type: nil,
-        ebs_optimized: nil,
-        image_id: nil,
-        key_name: nil,
-        subnet_id: nil,
-        private_ip_address: nil,
-        max_count: 1,
-        min_count: 1
-      )
+  describe "#prepared_user_data" do
+    it "is nil when no user data is configured" do
+      expect(generator.prepared_user_data).to be_nil
     end
 
-    context "when populated with minimum requirements" do
-      let(:config) do
-        {
-          region: "us-east-1",
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          subnet_id: "s-456",
-          private_ip_address: "0.0.0.0",
-        }
-      end
+    it "base64 encodes an inline script" do
+      config[:user_data] = "#!/bin/sh\necho hello\n"
 
-      it "returns the minimum data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          key_name: nil,
-          subnet_id: "s-456",
-          private_ip_address: "0.0.0.0",
-          max_count: 1,
-          min_count: 1
-        )
+      expect(Base64.decode64(generator.prepared_user_data)).to eq("#!/bin/sh\necho hello\n")
+    end
+
+    it "reads user data from a file path" do
+      Tempfile.create("user-data") do |file|
+        file.write("#!/bin/sh\nfrom-a-file\n")
+        file.flush
+        config[:user_data] = file.path
+
+        expect(Base64.decode64(generator.prepared_user_data)).to eq("#!/bin/sh\nfrom-a-file\n")
       end
     end
 
-    context "when provided with tags" do
-      let(:config) do
-        {
-          region: "us-east-2",
-          tags: {
-            string_tag: "string",
-            integer_tag: 1,
-          },
-        }
-      end
+    # A script containing a null byte would make File.file? raise, so the null
+    # check has to come first. It also reliably identifies inline content.
+    it "treats content containing a null byte as inline data" do
+      config[:user_data] = "binary\0content"
 
-      it "includes tag specifications" do
-        expect(generator.ec2_instance_data).to include(
-          tag_specifications: [
-            {
-              resource_type: "instance",
-              tags: [
-                { key: :string_tag, value: "string" },
-                { key: :integer_tag, value: "1" },
-              ],
-            },
-            {
-              resource_type: "volume",
-              tags: [
-                { key: :string_tag, value: "string" },
-                { key: :integer_tag, value: "1" },
-              ],
-            },
-          ]
-        )
-      end
+      expect(Base64.decode64(generator.prepared_user_data)).to eq("binary\0content")
     end
 
-    context "when populated with ssh key" do
-      let(:config) do
-        {
-          region: "us-east-1",
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          aws_ssh_key_id: "key",
-          subnet_id: "s-456",
-          private_ip_address: "0.0.0.0",
-        }
-      end
+    it "reads the file only once" do
+      config[:user_data] = "inline"
+      first = generator.prepared_user_data
 
-      it "returns the minimum data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          key_name: "key",
-          subnet_id: "s-456",
-          private_ip_address: "0.0.0.0",
-          max_count: 1,
-          min_count: 1
-        )
-      end
+      config[:user_data] = "changed"
+      expect(generator.prepared_user_data).to equal(first)
     end
 
-    context "when provided subnet tag instead of id" do
-      let(:config) do
-        {
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          aws_ssh_key_id: "key",
-          subnet_id: nil,
-          region: "us-west-2",
-          subnet_filter: {
-              tag: "foo",
-              value: "bar",
-            },
-        }
-      end
-
-      it "generates id from the provided tag" do
-        allow(Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
-        expect(ec2_stub).to receive(:describe_subnets).with(
-          {
-            filters: [
-              {
-                name: "tag:foo",
-                values: ["bar"],
-              },
-            ],
-          }
-        ).and_return(ec2_stub.describe_subnets)
-        expect(generator.ec2_instance_data[:subnet_id]).to eq("s-123")
-      end
+    it "is included in the instance data when set" do
+      config[:user_data] = "inline"
+      expect(instance_data[:user_data]).to eq(Base64.encode64("inline"))
     end
 
-    context "when provided security_group tag instead of id" do
-      let(:config) do
-        {
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          aws_ssh_key_id: "key",
-          subnet_id: "s-123",
-          security_group_ids: nil,
-          region: "us-west-2",
-          security_group_filter: {
-              tag: "foo",
-              value: "bar",
-            },
-        }
-      end
-
-      it "generates id from the provided tag" do
-        allow(Aws::EC2::Client).to receive(:new).and_return(ec2_stub)
-        expect(ec2_stub).to receive(:describe_security_groups).with(
-          {
-            filters: [
-              {
-                name: "tag:foo",
-                values: ["bar"],
-              },
-              {
-                name: "vpc-id",
-                values: ["vpc-456"],
-              },
-            ],
-          }
-        ).and_return(ec2_stub.describe_security_groups)
-        expect(generator.ec2_instance_data[:security_group_ids]).to eq(["sg-123"])
-      end
-    end
-
-    context "when provided a non existing security_group tag filter" do
-      ec2_stub_without_security_group = Aws::EC2::Client.new(stub_responses: true)
-      ec2_stub_without_security_group.stub_responses(
-        :describe_subnets,
-        subnets: [
-          {
-            subnet_id: "s-123",
-            vpc_id: "vpc-456",
-            tags: [{ key: "foo", value: "bar" }],
-          },
-        ]
-      )
-
-      let(:config) do
-        {
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          aws_ssh_key_id: "key",
-          subnet_id: "s-123",
-          security_group_ids: nil,
-          region: "us-west-2",
-          security_group_filter: {
-              tag: "foo",
-              value: "bar",
-            },
-        }
-      end
-
-      it "generates id from the provided tag" do
-        allow(Aws::EC2::Client).to receive(:new).and_return(ec2_stub_without_security_group)
-        expect(ec2_stub_without_security_group).to receive(:describe_security_groups).with(
-          {
-            filters: [
-              {
-                name: "tag:foo",
-                values: ["bar"],
-              },
-              {
-                name: "vpc-id",
-                values: ["vpc-456"],
-              },
-            ],
-          }
-        ).and_return(ec2_stub_without_security_group.describe_security_groups)
-
-        expect { generator.ec2_instance_data }.to raise_error(
-          "A Security Group matching the following filter could not be found:\n#{config[:security_group_filter]}"
-        )
-      end
-    end
-
-    context "when passed an empty block_device_mappings" do
-      let(:config) do
-        {
-          region: "us-east-1",
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          aws_ssh_key_id: "key",
-          subnet_id: "s-456",
-          private_ip_address: "0.0.0.0",
-          block_device_mappings: [],
-        }
-      end
-
-      it "does not return block_device_mappings" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          key_name: "key",
-          subnet_id: "s-456",
-          private_ip_address: "0.0.0.0",
-          max_count: 1,
-          min_count: 1
-        )
-      end
-    end
-
-    context "when availability_zone is provided as 'eu-west-1c'" do
-      let(:config) do
-        {
-          region: "eu-east-1",
-          availability_zone: "eu-west-1c",
-        }
-      end
-      it "returns that in the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: nil,
-          ebs_optimized: nil,
-          image_id: nil,
-          key_name: nil,
-          subnet_id: nil,
-          private_ip_address: nil,
-          placement: { availability_zone: "eu-west-1c" },
-          max_count: 1,
-          min_count: 1
-        )
-      end
-    end
-
-    context "when availability_zone is provided as 'c'" do
-      let(:config) do
-        {
-          region: "eu-east-1",
-          availability_zone: "c",
-        }
-      end
-      it "adds the region to it in the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: nil,
-          ebs_optimized: nil,
-          image_id: nil,
-          key_name: nil,
-          subnet_id: nil,
-          private_ip_address: nil,
-          placement: { availability_zone: "eu-east-1c" },
-          max_count: 1,
-          min_count: 1
-        )
-      end
-    end
-
-    context "when availability_zone is not provided" do
-      let(:config) do
-        {
-          region: "eu-east-1",
-        }
-      end
-      it "is not added to the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: nil,
-          ebs_optimized: nil,
-          image_id: nil,
-          key_name: nil,
-          subnet_id: nil,
-          private_ip_address: nil,
-          max_count: 1,
-          min_count: 1
-        )
-      end
-    end
-
-    context "when availability_zone and tenancy are provided" do
-      let(:config) do
-        {
-          region: "eu-east-1",
-          availability_zone: "c",
-          tenancy: "dedicated",
-        }
-      end
-      it "adds the region to it in the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: nil,
-          ebs_optimized: nil,
-          image_id: nil,
-          key_name: nil,
-          subnet_id: nil,
-          private_ip_address: nil,
-          max_count: 1,
-          min_count: 1,
-          placement: { availability_zone: "eu-east-1c",
-                       tenancy: "dedicated" }
-        )
-      end
-    end
-
-    context "when tenancy is provided but availability_zone isn't" do
-      let(:config) do
-        {
-          region: "eu-east-1",
-          tenancy: "default",
-        }
-      end
-      it "is not added to the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: nil,
-          ebs_optimized: nil,
-          image_id: nil,
-          key_name: nil,
-          subnet_id: nil,
-          private_ip_address: nil,
-          placement: { tenancy: "default" },
-          max_count: 1,
-          min_count: 1
-        )
-      end
-    end
-
-    context "when availability_zone and tenancy are provided" do
-      let(:config) do
-        {
-          region: "eu-east-1",
-          availability_zone: "c",
-          tenancy: "dedicated",
-        }
-      end
-      it "adds the region to it in the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: nil,
-          ebs_optimized: nil,
-          image_id: nil,
-          key_name: nil,
-          subnet_id: nil,
-          private_ip_address: nil,
-          max_count: 1,
-          min_count: 1,
-          placement: { availability_zone: "eu-east-1c",
-                       tenancy: "dedicated" }
-        )
-      end
-    end
-
-    context "when tenancy is provided but availability_zone isn't" do
-      let(:config) do
-        {
-          region: "eu-east-1",
-          tenancy: "default",
-        }
-      end
-      it "is not added to the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: nil,
-          ebs_optimized: nil,
-          image_id: nil,
-          key_name: nil,
-          subnet_id: nil,
-          private_ip_address: nil,
-          placement: { tenancy: "default" },
-          max_count: 1,
-          min_count: 1
-        )
-      end
-    end
-
-    context "when subnet_id is provided" do
-      let(:config) do
-        {
-          region: "us-east-1",
-          subnet_id: "s-456",
-        }
-      end
-
-      it "adds a network_interfaces block" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: nil,
-          ebs_optimized: nil,
-          image_id: nil,
-          key_name: nil,
-          subnet_id: "s-456",
-          private_ip_address: nil,
-          max_count: 1,
-          min_count: 1
-        )
-      end
-    end
-
-    context "when associate_public_ip is provided" do
-      let(:config) do
-        {
-          region: "us-east-1",
-          associate_public_ip: true,
-        }
-      end
-
-      it "adds a network_interfaces block" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: nil,
-          ebs_optimized: nil,
-          image_id: nil,
-          key_name: nil,
-          subnet_id: nil,
-          private_ip_address: nil,
-          network_interfaces: [{
-            device_index: 0,
-            associate_public_ip_address: true,
-            delete_on_termination: true,
-          }],
-          max_count: 1,
-          min_count: 1
-        )
-      end
-
-      context "and associate_ipv6 is provided" do
-        let(:config) do
-          {
-            region: "us-east-1",
-            associate_public_ip: true,
-            associate_ipv6: true,
-          }
-        end
-
-        it "adds a network_interfaces block" do
-          expect(generator.ec2_instance_data).to eq(
-            instance_type: nil,
-            ebs_optimized: nil,
-            image_id: nil,
-            key_name: nil,
-            subnet_id: nil,
-            private_ip_address: nil,
-            network_interfaces: [{
-              device_index: 0,
-              associate_public_ip_address: true,
-              ipv_6_address_count: 1,
-              delete_on_termination: true,
-            }],
-            max_count: 1,
-            min_count: 1
-          )
-        end
-      end
-
-      context "and subnet is provided" do
-        let(:config) do
-          {
-            region: "us-east-1",
-            associate_public_ip: true,
-            subnet_id: "s-456",
-          }
-        end
-
-        it "adds a network_interfaces block" do
-          expect(generator.ec2_instance_data).to eq(
-            instance_type: nil,
-            ebs_optimized: nil,
-            image_id: nil,
-            key_name: nil,
-            private_ip_address: nil,
-            network_interfaces: [{
-              device_index: 0,
-              associate_public_ip_address: true,
-              delete_on_termination: true,
-              subnet_id: "s-456",
-            }],
-            max_count: 1,
-            min_count: 1
-          )
-        end
-      end
-
-      context "and security_group_ids is provided" do
-        let(:config) do
-          {
-            region: "us-east-1",
-            associate_public_ip: true,
-            security_group_ids: ["sg-789"],
-          }
-        end
-
-        it "adds a network_interfaces block" do
-          expect(generator.ec2_instance_data).to eq(
-            instance_type: nil,
-            ebs_optimized: nil,
-            image_id: nil,
-            key_name: nil,
-            subnet_id: nil,
-            private_ip_address: nil,
-            network_interfaces: [{
-              device_index: 0,
-              associate_public_ip_address: true,
-              delete_on_termination: true,
-              groups: ["sg-789"],
-            }],
-            max_count: 1,
-            min_count: 1
-          )
-        end
-
-        it "accepts a single string value" do
-          config[:security_group_ids] = "only-one"
-
-          expect(generator.ec2_instance_data).to include(
-            network_interfaces: [{
-              device_index: 0,
-              associate_public_ip_address: true,
-              delete_on_termination: true,
-              groups: ["only-one"],
-            }]
-          )
-        end
-      end
-
-      context "and private_ip_address is provided" do
-        let(:config) do
-          {
-            region: "us-east-1",
-            associate_public_ip: true,
-            private_ip_address: "0.0.0.0",
-          }
-        end
-
-        it "adds a network_interfaces block" do
-          expect(generator.ec2_instance_data).to eq(
-            instance_type: nil,
-            ebs_optimized: nil,
-            image_id: nil,
-            key_name: nil,
-            subnet_id: nil,
-            network_interfaces: [{
-              device_index: 0,
-              associate_public_ip_address: true,
-              delete_on_termination: true,
-              private_ip_address: "0.0.0.0",
-            }],
-            max_count: 1,
-            min_count: 1
-          )
-        end
-      end
-    end
-
-    context "when placement host resource group arn and licenses are provided" do
-      let(:config) do
-        {
-          region: "eu-east-1",
-          placement: {
-            host_resource_group_arn: "arn:aws:ec2:us-east-1:123456789012:resource-group/my-group",
-          },
-          licenses: [
-            {
-              license_configuration_arn: "arn:aws:ec2:us-east-1:123456789012:license-configuration/my-license",
-            }
-          ],
-        }
-      end
-
-      it "adds the region to it in the instance data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: nil,
-          ebs_optimized: nil,
-          image_id: nil,
-          key_name: nil,
-          subnet_id: nil,
-          private_ip_address: nil,
-          max_count: 1,
-          min_count: 1,
-          placement: { host_resource_group_arn: "arn:aws:ec2:us-east-1:123456789012:resource-group/my-group"},
-          licenses: [{license_configuration_arn: "arn:aws:ec2:us-east-1:123456789012:license-configuration/my-license"}]
-        )
-      end
-    end
-
-    context "when provided the maximum config" do
-      let(:config) do
-        {
-          region: "eu-west-1",
-          availability_zone: "eu-west-1a",
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          aws_ssh_key_id: "key",
-          subnet_id: "s-456",
-          private_ip_address: "0.0.0.0",
-          block_device_mappings: [
-            {
-              device_name: "/dev/sda2",
-              virtual_name: "test",
-              ebs: {
-                volume_size: 15,
-                delete_on_termination: false,
-                volume_type: "gp2",
-                snapshot_id: "id",
-              },
-            },
-          ],
-          security_group_ids: ["sg-789"],
-          user_data: "foo",
-          iam_profile_name: "iam-123",
-          associate_public_ip: true,
-          tags: {
-            string_tag: "string",
-            integer_tag: 1,
-          },
-          licenses: [{
-            license_configuration_arn: "arn:aws:ec2:us-east-1:123456789012:license-configuration/my-license",
-          }],
-          placement: {
-            availability_zone: "eu-west-1a",
-            tenancy: "dedicated"
-          },
-        }
-      end
-      it "returns the maximum data" do
-        expect(generator.ec2_instance_data).to eq(
-          instance_type: "micro",
-          ebs_optimized: true,
-          image_id: "ami-123",
-          key_name: "key",
-          block_device_mappings: [
-            {
-              device_name: "/dev/sda2",
-              virtual_name: "test",
-              ebs: {
-                volume_size: 15,
-                delete_on_termination: false,
-                volume_type: "gp2",
-                snapshot_id: "id",
-              },
-            },
-          ],
-          iam_instance_profile: { name: "iam-123" },
-          licenses: [{
-            license_configuration_arn: "arn:aws:ec2:us-east-1:123456789012:license-configuration/my-license",
-          }],
-          network_interfaces: [{
-            device_index: 0,
-            associate_public_ip_address: true,
-            subnet_id: "s-456",
-            delete_on_termination: true,
-            groups: ["sg-789"],
-            private_ip_address: "0.0.0.0",
-          }],
-          placement: {
-            availability_zone: "eu-west-1a",
-            tenancy: "dedicated"
-          },
-          user_data: Base64.encode64("foo"),
-          max_count: 1,
-          min_count: 1,
-          tag_specifications: [
-            {
-              resource_type: "instance",
-              tags: [
-                { key: :string_tag, value: "string" },
-                { key: :integer_tag, value: "1" },
-              ],
-            },
-            {
-              resource_type: "volume",
-              tags: [
-                { key: :string_tag, value: "string" },
-                { key: :integer_tag, value: "1" },
-              ],
-            },
-          ]
-        )
-      end
+    it "is absent from the instance data when unset" do
+      expect(instance_data).not_to have_key(:user_data)
     end
   end
 end

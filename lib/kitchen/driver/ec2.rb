@@ -49,6 +49,7 @@ require "socket" unless defined?(Socket)
 require "shellwords" unless defined?(Shellwords)
 
 module Kitchen
+  # Namespace for Test Kitchen driver plugins.
   module Driver
     # Amazon EC2 driver for Test Kitchen.
     #
@@ -107,15 +108,33 @@ module Kitchen
 
       include Kitchen::Driver::Mixins::DedicatedHosts
 
+      # @param args [Array] passed through to {Kitchen::Driver::Base}
+      # @param block [Proc] passed through to {Kitchen::Driver::Base}
       def initialize(*args, &block)
         super
       end
 
+      # Warn that a config key is deprecated but still honored.
+      #
+      # @param driver [Kitchen::Driver::Ec2] the driver being validated
+      # @param old_key [Symbol] the deprecated key
+      # @param new_key [String, Symbol] what to use instead
+      # @return [void]
       def self.validation_warn(driver, old_key, new_key)
         driver.warn "WARN: The driver[#{driver.class.name}] config key `#{old_key}` " \
           "is deprecated, please use `#{new_key}`"
       end
 
+      # Report that a config key has been removed, and stop.
+      #
+      # Continuing would silently ignore a setting the user believes is in
+      # effect, which for keys like `ebs_volume_size` changes the shape of the
+      # instance that gets built.
+      #
+      # @param driver [Kitchen::Driver::Ec2] the driver being validated
+      # @param old_key [Symbol] the removed key
+      # @param new_key [String, Symbol] what to use instead
+      # @return [void] never returns; terminates the process with `exit!`
       def self.validation_error(driver, old_key, new_key)
         warn "ERROR: The driver[#{driver.class.name}] config key `#{old_key}` " \
           "has been removed, please use `#{new_key}`"
@@ -220,6 +239,20 @@ module Kitchen
         end
       end
 
+      # Create an EC2 instance and wait until it can be connected to.
+      #
+      # Auto-creates a security group and key pair when none were configured,
+      # allocates a dedicated host if `tenancy: host` requires one, requests
+      # either an on-demand or a spot instance, then waits for the instance to
+      # exist, become ready, and accept a transport connection.
+      #
+      # Any failure destroys the instance and everything auto-created alongside
+      # it, so that a failed create does not leave billable resources behind.
+      #
+      # @param state [Hash] the instance state, updated in place with
+      #   `:server_id`, `:hostname` and any auto-created credentials
+      # @return [void]
+      # @raise [RuntimeError] wrapping whatever went wrong, after cleaning up
       def create(state)
         return if state[:server_id]
 
@@ -308,6 +341,15 @@ module Kitchen
         raise "#{e.message} in the specified region #{config[:region]}. Please check this AMI is available in this region."
       end
 
+      # Terminate the instance and clean up everything created alongside it.
+      #
+      # An instance that no longer exists is treated as success, since `kitchen
+      # destroy` is also how a failed create is cleaned up. Termination is
+      # waited on only when an auto-created security group needs removing, as
+      # the group cannot be deleted while an instance still references it.
+      #
+      # @param state [Hash] the instance state, cleaned up in place
+      # @return [void]
       def destroy(state)
         if state[:server_id]
           server = ec2.get_instance(state[:server_id])
@@ -350,6 +392,12 @@ module Kitchen
         empty_hosts.each { |host| deallocate_host(host.host_id) }
       end
 
+      # The EC2 image this instance will be created from.
+      #
+      # @return [Aws::EC2::Image]
+      # @raise [RuntimeError] when neither `image_id` nor `image_search` yielded
+      #   an image, which happens when the platform name is not recognized and
+      #   no explicit search was configured
       def image
         return @image if defined?(@image)
 
@@ -365,6 +413,12 @@ module Kitchen
         @image
       end
 
+      # The instance type to use when the user did not choose one.
+      #
+      # t2 instances require a hardware-virtualized image, so a paravirtual
+      # image falls back to the older t1 family.
+      #
+      # @return [String] a free-tier instance type
       def default_instance_type
         @instance_type ||= if image && image.virtualization_type == "hvm"
                              info("instance_type not specified. Using free tier t2.micro instance ...")
@@ -376,11 +430,22 @@ module Kitchen
                            end
       end
 
-      # The actual platform is the platform detected from the image
+      # The platform detected from the image actually being used.
+      #
+      # This can differ from {#desired_platform}: the user asks for "ubuntu" and
+      # gets whichever Ubuntu release the search matched. It is the source of
+      # the default SSH username.
+      #
+      # @return [Kitchen::Driver::Aws::StandardPlatform, nil] nil when no
+      #   platform recognizes the image
       def actual_platform
         @actual_platform ||= Aws::StandardPlatform.from_image(self, image) if image
       end
 
+      # The platform requested by the Test Kitchen platform name.
+      #
+      # @return [Kitchen::Driver::Aws::StandardPlatform, nil] nil when the
+      #   platform name is not one the driver knows how to search for
       def desired_platform
         @desired_platform ||= begin
           platform = Aws::StandardPlatform.from_platform_string(self, instance.platform.name)
@@ -392,6 +457,12 @@ module Kitchen
         end
       end
 
+      # Search for an image matching the requested platform.
+      #
+      # Falls back to searching for Ubuntu when the platform name is not
+      # recognized, so that `kitchen create` still does something useful.
+      #
+      # @return [String, nil] the image ID, or nil when the search matched nothing
       def default_ami
         @default_ami ||= begin
           search_platform = desired_platform ||
@@ -401,6 +472,13 @@ module Kitchen
         end
       end
 
+      # Record the platform's default SSH username in the instance state.
+      #
+      # Only applied when the transport is still using its own default username,
+      # so that a username the user configured is never overwritten.
+      #
+      # @param state [Hash] the instance state, updated in place
+      # @return [void]
       def update_username(state)
         # BUG: With the following equality condition on username, if the user specifies 'root'
         # as the transport's username then we will overwrite that value with one from the standard
@@ -416,6 +494,9 @@ module Kitchen
         end
       end
 
+      # The EC2 client wrapper, configured from the driver config.
+      #
+      # @return [Kitchen::Driver::Aws::Client]
       def ec2
         @ec2 ||= Aws::Client.new(
           config[:region],
@@ -426,11 +507,20 @@ module Kitchen
         )
       end
 
+      # A generator for the RunInstances payload.
+      #
+      # @note Deliberately reassigned rather than memoized with `||=`: spot
+      #   requests retry against a rewritten {#config}, and a cached generator
+      #   would keep building the payload from the config of the first attempt.
+      #
+      # @return [Kitchen::Driver::Aws::InstanceGenerator]
       def instance_generator
         @instance_generator = Aws::InstanceGenerator.new(config, ec2, instance.logger)
       end
 
-      # AWS helper for creating the instance
+      # Request a single on-demand instance.
+      #
+      # @return [Aws::EC2::Instance] the newly requested instance
       def submit_server
         instance_data = instance_generator.ec2_instance_data
         debug("Creating EC2 instance in region #{config[:region]} with properties:")
@@ -441,13 +531,29 @@ module Kitchen
         ec2.create_instance(instance_data)
       end
 
+      # The driver config.
+      #
+      # {#submit_spots} overrides this with a rewritten config while trying each
+      # instance type and subnet combination, so the generator and the rest of
+      # the driver see the variant currently being attempted.
+      #
+      # @return [Hash] the config in effect
       def config
         return super unless @config
 
         @config
       end
 
-      # Take one config and expand to multiple configs
+      # Expand a config whose value for `key` is a list into one config per
+      # element.
+      #
+      # Used to turn `instance_type: [a, b]` into two candidate configs to try
+      # in turn. The original config is cloned rather than mutated.
+      #
+      # @param conf [Hash] the config to expand
+      # @param key [Symbol] the key that may hold a list
+      # @return [Array<Hash>] one config per value, or `[conf]` when the value
+      #   is not a list
       def expand_config(conf, key)
         configs = []
 
@@ -465,6 +571,15 @@ module Kitchen
         configs
       end
 
+      # Request a spot instance, trying each viable configuration in turn.
+      #
+      # Spot capacity is per instance type and per availability zone, so a
+      # request can fail for reasons that a different type or subnet would
+      # satisfy. Every combination of instance type and subnet is attempted
+      # before giving up, and all the failures are reported together.
+      #
+      # @return [Aws::EC2::Instance] the first instance that could be fulfilled
+      # @raise [RuntimeError] listing every failure when none could be fulfilled
       def submit_spots
         configs = [config]
         expanded = []
@@ -518,6 +633,18 @@ module Kitchen
         raise ["Could not create a spot instance:", errs].flatten.join("\n")
       end
 
+      # Request a single spot instance for the current config.
+      #
+      # A `spot_price` of "ondemand" or "on-demand" requests a spot instance
+      # with no price cap, which EC2 expresses by omitting `max_price`.
+      #
+      # `create_instances` is used rather than `request_spot_instances` because
+      # only the former can tag an instance at creation time; the retry loop
+      # compensates for its lack of built-in waiting.
+      #
+      # @return [Aws::EC2::Instance] the newly requested instance
+      # @raise [Aws::EC2::Errors::SpotMaxPriceTooLow] when the price could not be
+      #   satisfied within `spot_wait` seconds
       def submit_spot
         debug("Creating EC2 Spot Instance..")
         instance_data = instance_generator.ec2_instance_data
@@ -562,8 +689,16 @@ module Kitchen
         end
       end
 
-      # Normally we could use `server.wait_until_running` but we actually need
-      # to check more than just the instance state
+      # Wait until an instance is genuinely usable.
+      #
+      # `server.wait_until_running` is not sufficient: an instance can report
+      # running before it has an address, and a Windows instance is not usable
+      # until its console output says so. The hostname is stored as soon as it
+      # is known so that a later failure still leaves enough state to clean up.
+      #
+      # @param server [Aws::EC2::Instance] the instance to wait on
+      # @param state [Hash] the instance state, updated in place
+      # @return [void]
       def wait_until_ready(server, state)
         wait_with_destroy(server, state, "to become ready") do |aws_instance|
           hostname = hostname(aws_instance, config[:interface])
@@ -598,8 +733,18 @@ module Kitchen
         end
       end
 
-      # Poll a block, waiting for it to return true. If it does not succeed
-      # within the configured time we destroy the instance to save people money
+      # Poll until a block returns true, destroying the instance if it never does.
+      #
+      # An instance that never becomes ready would otherwise keep running and
+      # accruing charges after Test Kitchen gave up on it.
+      #
+      # @param server [Aws::EC2::Instance] the instance to wait on
+      # @param state [Hash] the instance state
+      # @param status_msg [String] what is being waited for, for log messages
+      # @yieldparam aws_instance [Aws::EC2::Instance] the instance being polled
+      # @yieldreturn [Boolean] true when the wait is over
+      # @return [void]
+      # @raise [Aws::Waiters::Errors::WaiterFailed] after destroying the instance
       def wait_with_destroy(server, state, status_msg, &block)
         wait_log = proc do |attempts|
           c = attempts * config[:retryable_sleep]
@@ -623,6 +768,14 @@ module Kitchen
         end
       end
 
+      # Wait for and decrypt the generated Windows administrator password.
+      #
+      # EC2 returns blank password data until the password is available, so this
+      # polls first and then decrypts with the instance's private key.
+      #
+      # @param server [Aws::EC2::Instance] the instance
+      # @param state [Hash] the instance state, updated in place with `:password`
+      # @return [void]
       def fetch_windows_admin_password(server, state)
         wait_with_destroy(server, state, "to fetch windows admin password") do |_aws_instance|
           enc = server.client.get_password_data(
@@ -638,6 +791,14 @@ module Kitchen
         info("Retrieved Windows password for instance <#{state[:server_id]}>.")
       end
 
+      # Retry a block with quadratic backoff when EC2 throttles the request.
+      #
+      # Only throttling is retried; any other error is re-raised immediately so
+      # that a genuine failure is not delayed by five pointless retries.
+      #
+      # @param state [Hash] the instance state, used for log messages
+      # @yieldreturn [Object] the block's value
+      # @return [Object] the block's value
       def with_request_limit_backoff(state)
         retries = 0
         begin
@@ -653,10 +814,11 @@ module Kitchen
         end
       end
 
+      # Mapping from the `interface` config value to the EC2 instance attribute
+      # holding that address, in the order they are preferred when no interface
+      # was requested.
       #
-      # Ordered mapping from config name to Fog name. Ordered by preference
-      # when looking up hostname.
-      #
+      # @return [Hash{String => String}]
       INTERFACE_TYPES =
         {
           "dns" => "public_dns_name",
@@ -671,6 +833,16 @@ module Kitchen
       # that interface to lookup hostname. Otherwise, try ordered list of
       # options.
       #
+      # The address to connect to an instance on.
+      #
+      # With no interface type, {INTERFACE_TYPES} is walked in order and the
+      # first populated value wins. AWS returns an empty string rather than nil
+      # for an address that is not assigned yet, so empty values are skipped.
+      #
+      # @param server [Aws::EC2::Instance] the instance
+      # @param interface_type [String, nil] one of the keys of {INTERFACE_TYPES}
+      # @return [String, nil] the address, or nil when none is available yet
+      # @raise [Kitchen::UserError] when `interface_type` is not recognized
       def hostname(server, interface_type = nil)
         if interface_type
           interface_type = INTERFACE_TYPES.fetch(interface_type) do
@@ -691,10 +863,20 @@ module Kitchen
       #
       # Returns the sudo command to use or empty string if sudo is not configured
       #
+      # The command used to elevate privileges, if any.
+      #
+      # @return [String] the sudo command, or an empty string when sudo is off
       def sudo_command
         instance.provisioner[:sudo] ? instance.provisioner[:sudo_command].to_s : ""
       end
 
+      # Write the Ohai EC2 hint file on the instance.
+      #
+      # Chef's `ec2` Ohai plugin only collects EC2 metadata when this hint file
+      # is present, so it is created for Chef provisioners.
+      #
+      # @param state [Hash] the instance state
+      # @return [void]
       def create_ec2_json(state)
         if windows_os?
           cmd = 'New-Item -Force C:\\chef\\ohai\\hints\\ec2.json -ItemType File'
@@ -705,6 +887,18 @@ module Kitchen
         instance.transport.connection(state).execute(cmd)
       end
 
+      # The default PowerShell user data script for Windows instances.
+      #
+      # Enables PS remoting, opens the WinRM firewall port and configures WinRM
+      # limits, without which a freshly created Windows instance cannot be
+      # connected to. Handles both EC2Launch (2016+) and the older EC2Config
+      # service, which log to different paths.
+      #
+      # When the transport uses an account other than Administrator, a matching
+      # local account is created and password complexity is relaxed first, since
+      # a generated password may not satisfy the default policy.
+      #
+      # @return [String] a PowerShell script wrapped in `<powershell>` tags
       def default_windows_user_data
         base_script = Kitchen::Util.outdent!(<<-EOH)
 	$OSVersion = (get-itemproperty -Path "HKLM:\\SOFTWARE\\Microsoft\\Windows NT\\CurrentVersion" -Name ProductName).ProductName
@@ -768,6 +962,9 @@ module Kitchen
         EOH
       end
 
+      # Log which image was chosen and what platform was detected on it.
+      #
+      # @return [void]
       def show_chosen_image
         # Print some debug stuff
         debug("Image for #{instance.name}: #{image.name}. #{image_info(image)}")
@@ -780,6 +977,10 @@ module Kitchen
         end
       end
 
+      # A one-line summary of the attributes that drive image selection.
+      #
+      # @param image [Aws::EC2::Image] the image to describe
+      # @return [String] architecture, virtualization, storage and creation date
       def image_info(image)
         root_device = image.block_device_mappings
           .find { |b| b.device_name == image.root_device_name }
@@ -920,6 +1121,15 @@ module Kitchen
         state[:ssh_key] = key_path
       end
 
+      # Attach a pre-existing elastic network interface to the instance.
+      #
+      # Attached at device index 1, leaving index 0 for the primary interface.
+      # An interface that is already attached is left alone, and one that does
+      # not exist is reported without failing the run, since the instance itself
+      # is already up by this point.
+      #
+      # @param state [Hash] the instance state
+      # @return [void]
       def attach_network_interface(state)
         info("Attaching Network interface <#{config[:elastic_network_interface_id]}> with the instance <#{state[:server_id]}> .")
         client = ::Aws::EC2::Client.new(region: config[:region])
@@ -972,6 +1182,14 @@ module Kitchen
         File.unlink("#{config[:kitchen_root]}/.kitchen/#{instance.name}.pem")
       end
 
+      # Finalize the driver config and install transport overrides.
+      #
+      # Instance Connect and SSM Session Manager both work by wrapping the
+      # transport's connection handling, which has to happen before the
+      # transport is first used.
+      #
+      # @param instance [Kitchen::Instance] the instance this driver serves
+      # @return [self]
       def finalize_config!(instance)
         super
 
@@ -991,6 +1209,18 @@ module Kitchen
 
       private
 
+      # Wrap the transport's `connection` method with Instance Connect setup.
+      #
+      # A pushed Instance Connect key expires after about a minute, so the key
+      # is refreshed and the connection mode re-decided before every connection
+      # rather than once at create time.
+      #
+      # Guarded against being applied twice: the override wraps the previous
+      # method, so applying it again would wrap the wrapper and push the key
+      # more than once per connection.
+      #
+      # @param instance [Kitchen::Instance] the instance whose transport to wrap
+      # @return [void]
       def instance_connect_setup_override(instance)
         # Prevent double pushing of the SSH public keys
         return if instance.transport.respond_to?(:instance_connect_override_applied)
@@ -1029,6 +1259,14 @@ module Kitchen
         instance.transport.define_singleton_method(:instance_connect_override_applied) { true }
       end
 
+      # Wrap the InSpec verifier's `call` method with Instance Connect setup.
+      #
+      # InSpec builds its own SSH options rather than going through the Test
+      # Kitchen transport, so it needs the proxy command or public DNS injected
+      # separately from {#instance_connect_setup_override}.
+      #
+      # @param instance [Kitchen::Instance] the instance whose verifier to wrap
+      # @return [void] a no-op unless the verifier is InSpec
       def instance_connect_setup_inspec_override(instance)
         # Only apply to InSpec verifier
         return unless instance.verifier.name.downcase == "inspec"
@@ -1117,6 +1355,13 @@ module Kitchen
         instance.verifier.define_singleton_method(:instance_connect_inspec_override_applied) { true }
       end
 
+      # Prepare an instance for its first Instance Connect connection.
+      #
+      # Chooses between tunnelling through an Instance Connect endpoint and
+      # connecting directly over public DNS, then pushes the SSH key.
+      #
+      # @param state [Hash] the instance state, updated in place
+      # @return [void]
       def instance_connect_setup_ready(state)
         # Determine whether to use proxy command or direct SSH based on endpoint availability
         if instance_connect_endpoint_available?(state)
@@ -1133,6 +1378,17 @@ module Kitchen
         instance_connect_refresh_key(state)
       end
 
+      # Push the SSH public key to the instance again.
+      #
+      # Instance Connect keys are accepted for roughly sixty seconds, so this
+      # runs before each connection. A failure is warned about rather than
+      # raised, because the key may still be valid from a previous push.
+      #
+      # @note Shells out to the AWS CLI rather than using the SDK client in
+      #   {Kitchen::Driver::Aws::InstanceConnect}.
+      #
+      # @param state [Hash] the instance state
+      # @return [void] a no-op when no SSH key is known
       def instance_connect_refresh_key(state)
         # Extract public key from the key that was already set up
         key_path = state[:ssh_key] || instance.transport[:ssh_key]
@@ -1163,6 +1419,14 @@ module Kitchen
         end
       end
 
+      # Configure SSH to tunnel through an Instance Connect endpoint.
+      #
+      # Used for instances with no public address: the AWS CLI opens a tunnel
+      # that SSH is pointed at as a proxy command.
+      #
+      # @param state [Hash] the instance state, updated in place with
+      #   `:ssh_proxy_command` and `:instance_connect_config`
+      # @return [void]
       def instance_connect_configure_ssh_proxy_command(state)
         info("[AWS EC2 Instance Connect] Configuring proxy command mode (tunnel)")
 
@@ -1198,6 +1462,15 @@ module Kitchen
         }
       end
 
+      # Whether an Instance Connect endpoint can be used for this instance.
+      #
+      # A configured endpoint ID is trusted without a lookup. Otherwise the
+      # instance's VPC is searched for a completed endpoint. Instance Connect
+      # endpoints are not available in every region or to every IAM principal,
+      # so a rejected lookup means "no endpoint" rather than an error.
+      #
+      # @param state [Hash] the instance state
+      # @return [Boolean]
       def instance_connect_endpoint_available?(state)
         # If explicitly configured, respect that configuration
         return true if config[:instance_connect_endpoint_id]
@@ -1222,6 +1495,10 @@ module Kitchen
         end
       end
 
+      # The VPC an instance belongs to.
+      #
+      # @param state [Hash] the instance state
+      # @return [String, nil] the VPC ID, or nil when it cannot be determined
       def get_vpc_id_for_instance(state)
         # Get the instance details to find its VPC
         return unless state[:server_id]
@@ -1237,6 +1514,14 @@ module Kitchen
         end
       end
 
+      # Configure SSH to connect straight to the instance's public DNS name.
+      #
+      # Used when no Instance Connect endpoint is available. When the instance
+      # has no public DNS name there is nothing to switch to, so the existing
+      # hostname is kept and a warning is logged.
+      #
+      # @param state [Hash] the instance state, updated in place
+      # @return [void]
       def instance_connect_configure_direct_ssh(state)
         # For direct SSH, we need to ensure the hostname is the public DNS name
         # and configure SSH options appropriately
@@ -1261,6 +1546,15 @@ module Kitchen
         end
       end
 
+      # The OpenSSH public key matching a private key.
+      #
+      # Prefers an adjacent `.pub` file, and derives the public half from the
+      # private key otherwise -- keys created by {#create_key} are downloaded
+      # from EC2 as a bare private key with no `.pub` alongside.
+      #
+      # @param private_key_path [String] path to the private key
+      # @return [String] the public key in OpenSSH format
+      # @raise [RuntimeError] when the key cannot be read or parsed
       def instance_connect_extract_public_key(private_key_path)
         public_key_path = "#{private_key_path}.pub"
 
@@ -1278,10 +1572,22 @@ module Kitchen
 
       # SSM Session Manager Support Methods
 
+      # The SSM Session Manager helper.
+      #
+      # @return [Kitchen::Driver::Aws::SsmSessionManager]
       def ssm_session_manager
         @ssm_session_manager ||= Aws::SsmSessionManager.new(config, instance.logger)
       end
 
+      # Wait for an instance to become reachable over SSM.
+      #
+      # The SSM agent registers itself some time after the instance boots, so
+      # this polls for up to two minutes. A timeout is warned about rather than
+      # raised: the usual cause is a missing IAM instance profile, and the
+      # connection attempt itself gives a clearer error.
+      #
+      # @param state [Hash] the instance state
+      # @return [void]
       def ssm_session_manager_setup_ready(state)
         info("[AWS SSM Session Manager] Setting up SSM Session Manager connection")
 
@@ -1314,6 +1620,14 @@ module Kitchen
         end
       end
 
+      # Wrap the transport's `connection` method with SSM Session Manager setup.
+      #
+      # SSM connections work by pointing SSH at `aws ssm start-session` as a
+      # proxy command, which needs the instance ID and so cannot be built until
+      # the instance exists.
+      #
+      # @param instance [Kitchen::Instance] the instance whose transport to wrap
+      # @return [void]
       def ssm_session_manager_setup_override(instance)
         # Prevent double setup
         return if instance.transport.respond_to?(:ssm_session_manager_override_applied)
@@ -1359,6 +1673,14 @@ module Kitchen
         instance.transport.define_singleton_method(:ssm_session_manager_override_applied) { true }
       end
 
+      # Wrap the InSpec verifier's `call` method with SSM Session Manager setup.
+      #
+      # InSpec builds its own SSH options rather than going through the Test
+      # Kitchen transport, so the proxy command has to be injected separately
+      # from {#ssm_session_manager_setup_override}.
+      #
+      # @param instance [Kitchen::Instance] the instance whose verifier to wrap
+      # @return [void] a no-op unless the verifier is InSpec
       def ssm_session_manager_setup_inspec_override(instance)
         # Only apply to InSpec verifier
         return unless instance.verifier.name.downcase == "inspec"

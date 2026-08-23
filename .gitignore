@@ -21,3 +21,4 @@ tmp
 .kitchen/
 .kitchen.local.yml
 vendor/bundle/
+spec/examples.txt

@@ -23,11 +23,26 @@ require "aws-sdk-core/instance_profile_credentials"
 
 module Kitchen
   module Driver
+    # Namespace for the driver's AWS-facing collaborators: the EC2 client
+    # wrapper, the RunInstances payload generator, the platform definitions and
+    # the Instance Connect and SSM Session Manager helpers.
     class Aws
       # A class for creating and managing the EC2 client connection
       #
       # @author Tyler Ball <tball@chef.io>
       class Client
+        # Configure the AWS SDK for this driver's connection settings.
+        #
+        # These settings are applied to the SDK's process-wide configuration
+        # rather than held on this object, so clients built later pick them up.
+        # A nil retry limit is omitted rather than written, so that the SDK's
+        # own default survives.
+        #
+        # @param region [String] the AWS region, e.g. "us-west-2"
+        # @param profile_name [String] shared credentials profile to use
+        # @param http_proxy [String, nil] proxy URL, if any
+        # @param retry_limit [Integer, nil] SDK retry limit, or nil for the default
+        # @param ssl_verify_peer [Boolean] whether to verify TLS peers
         def initialize(
           region,
           profile_name = "default",
@@ -78,10 +93,17 @@ module Kitchen
           resource.instance(id).exists?
         end
 
+        # The low-level EC2 client, for API calls with no resource equivalent.
+        #
+        # @return [Aws::EC2::Client]
         def client
           @client ||= ::Aws::EC2::Client.new
         end
 
+        # The EC2 resource interface, for working with instances and images as
+        # objects rather than raw API responses.
+        #
+        # @return [Aws::EC2::Resource]
         def resource
           @resource ||= ::Aws::EC2::Resource.new
         end

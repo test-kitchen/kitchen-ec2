@@ -23,12 +23,23 @@ module Kitchen
         class Fedora < StandardPlatform
           StandardPlatform.platforms["fedora"] = self
 
-          # default username for this platform's ami
-          # @return [String]
+          # The account EC2 creates on this platform's official AMIs.
+          #
+          # Used as the SSH username when the transport does not specify one.
+          #
+          # @return [String] the default SSH username
           def username
             "fedora"
           end
 
+          # EC2 image filters that select Fedora Cloud Base images.
+          #
+          # A filter is added for {StandardPlatform#architecture} only when one was
+          # requested, so that an unspecified architecture matches any of them.
+          #
+          # @return [Hash{String => String, Array<String>}] filter name to the value
+          #   or values it must match
+          # @see StandardPlatform#find_image
           def image_search
             search = {
               "owner-id" => "125523088429",
@@ -38,6 +49,14 @@ module Kitchen
             search
           end
 
+          # Detect this platform from an EC2 image.
+          #
+          # Matching is done on the image name, which is the only reliable signal
+          # EC2 exposes about what an AMI actually contains.
+          #
+          # @param driver [Kitchen::Driver::Ec2] the driver requesting detection
+          # @param image [Aws::EC2::Image] the image to inspect
+          # @return [Fedora, nil] a platform when the image is Fedora, otherwise nil
           def self.from_image(driver, image)
             return unless /fedora/i.match?(image.name)
 

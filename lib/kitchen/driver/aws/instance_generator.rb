@@ -26,18 +26,41 @@ module Kitchen
       #
       # @author Tyler Ball <tball@chef.io>
       class InstanceGenerator
-        attr_reader :config, :ec2, :logger
+        # @return [Hash] the driver config the payload is built from
+        attr_reader :config
 
+        # @return [Kitchen::Driver::Aws::Client] the driver's EC2 client wrapper
+        attr_reader :ec2
+
+        # @return [Kitchen::Logger] the logger to report through
+        attr_reader :logger
+
+        # @param config [Hash] the driver config
+        # @param ec2 [Kitchen::Driver::Aws::Client] the driver's EC2 client wrapper
+        # @param logger [Kitchen::Logger] the logger to report through
         def initialize(config, ec2, logger)
           @config = config
           @ec2 = ec2
           @logger = logger
         end
 
-        # Transform the provided kitchen config into the hash we'll use to create the aws instance
-        # can be passed in null, others need to be omitted if they are null
-        # Some fields can be passed in null, others need to be omitted if they are null
-        # @return [Hash]
+        # Build the RunInstances payload from the driver config.
+        #
+        # Some EC2 fields accept an explicit nil and others must be omitted
+        # entirely, so optional settings are added conditionally rather than
+        # always being present with a nil value.
+        #
+        # Two lookups happen here as a side effect, because both need to resolve
+        # before the payload can be built: a subnet is resolved from
+        # `subnet_filter` (and written back into the config), and security
+        # groups are resolved from `security_group_filter` within that subnet's
+        # VPC. Both are skipped when the corresponding ID is already set.
+        #
+        # @return [Hash] parameters for `Aws::EC2::Resource#create_instances`
+        # @raise [RuntimeError] when a subnet or security group filter matches
+        #   nothing, since launching into an unintended network is worse than
+        #   failing
+        # @see https://docs.aws.amazon.com/sdkforruby/api/Aws/EC2/Resource.html#create_instances-instance_method
         def ec2_instance_data
           # Support for looking up security group id and subnet id using tags.
           vpc_id = nil
@@ -130,21 +153,6 @@ module Kitchen
             i[:tag_specifications] = [instance_tag_spec, volume_tag_spec]
           end
 
-          availability_zone = config[:availability_zone]
-          if availability_zone
-            if /^[a-z]$/i.match?(availability_zone)
-              availability_zone = "#{config[:region]}#{availability_zone}"
-            end
-            i[:placement] = { availability_zone: availability_zone.downcase }
-          end
-          tenancy = config[:tenancy]
-          if tenancy
-            if i.key?(:placement)
-              i[:placement][:tenancy] = tenancy
-            else
-              i[:placement] = { tenancy: }
-            end
-          end
           unless config[:block_device_mappings].nil? || config[:block_device_mappings].empty?
             i[:block_device_mappings] = config[:block_device_mappings]
           end
@@ -177,6 +185,8 @@ module Kitchen
               i[:network_interfaces][0][:ipv_6_address_count] = 1
             end
           end
+          # A bare zone letter is a shorthand for that zone within the
+          # configured region, so "b" in us-west-2 becomes "us-west-2b".
           availability_zone = config[:availability_zone]
           if availability_zone
             if /^[a-z]$/i.match?(availability_zone)
@@ -236,6 +246,18 @@ module Kitchen
           i
         end
 
+        # The user data script, base64 encoded as EC2 requires.
+        #
+        # The configured value is treated as a file path when it names an
+        # existing file, and as inline script content otherwise. Content
+        # containing a null byte is always treated as inline, both because a
+        # path cannot contain one and because `File.file?` would raise on it.
+        #
+        # The result is memoized: the file is read once per driver, not once per
+        # call.
+        #
+        # @return [String, nil] base64 encoded user data, or nil when none is
+        #   configured
         def prepared_user_data
           # If user_data is a file reference, lets read it as such
           return nil if config[:user_data].nil?

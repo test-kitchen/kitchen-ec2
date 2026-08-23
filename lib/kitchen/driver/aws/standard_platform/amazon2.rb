@@ -23,12 +23,23 @@ module Kitchen
         class Amazon2 < StandardPlatform
           StandardPlatform.platforms["amazon2"] = self
 
-          # default username for this platform's ami
-          # @return [String]
+          # The account EC2 creates on this platform's official AMIs.
+          #
+          # Used as the SSH username when the transport does not specify one.
+          #
+          # @return [String] the default SSH username
           def username
             "ec2-user"
           end
 
+          # EC2 image filters that select Amazon Linux 2 AMIs published by AWS.
+          #
+          # A filter is added for {StandardPlatform#architecture} only when one was
+          # requested, so that an unspecified architecture matches any of them.
+          #
+          # @return [Hash{String => String, Array<String>}] filter name to the value
+          #   or values it must match
+          # @see StandardPlatform#find_image
           def image_search
             search = {
               "owner-id" => "137112412989",
@@ -38,10 +49,22 @@ module Kitchen
             search
           end
 
+          # Detect this platform from an EC2 image.
+          #
+          # Matching is done on the image name, which is the only reliable signal
+          # EC2 exposes about what an AMI actually contains.
+          #
+          # @param driver [Kitchen::Driver::Ec2] the driver requesting detection
+          # @param image [Aws::EC2::Image] the image to inspect
+          # @return [Amazon2, nil] a platform when the image is Amazon Linux 2, otherwise nil
           def self.from_image(driver, image)
             return unless /amzn2-ami/i.match?(image.name)
 
-            image.name =~ /\b(\d+(\.\d+[\.\d])?)/i
+            # `(\.\d+)?`, not `(\.\d+[\.\d])?`: the character class matched the
+            # separator that follows the minor version, capturing it into the
+            # version string ("2018.03.") and failing outright when the minor
+            # version was followed by anything but a dot or digit.
+            image.name =~ /\b(\d+(\.\d+)?)/i
             new(driver, "amazon2", (Regexp.last_match || [])[1], image.architecture)
           end
         end

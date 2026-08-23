@@ -19,29 +19,55 @@ module Kitchen
   module Driver
     class Aws
       class StandardPlatform
+        # Amazon's macOS images, which run only on dedicated Mac hosts.
+        #
+        # @see https://docs.aws.amazon.com/AWSEC2/latest/UserGuide/ec2-macos-instances.html
         class MacOS < StandardPlatform
           StandardPlatform.platforms["macos"] = self
 
-          # default username for this platform's ami
-          # @return [String]
+          # The account EC2 creates on this platform's official AMIs.
+          #
+          # Used as the SSH username when the transport does not specify one.
+          #
+          # @return [String] the default SSH username
           def username
             "ec2-user"
           end
 
+          # EC2 image filters that select Amazon's macOS AMIs, which run only on dedicated Mac hosts.
+          #
+          # A filter is added for {StandardPlatform#architecture} only when one was
+          # requested, so that an unspecified architecture matches any of them.
+          #
+          # @return [Hash{String => String, Array<String>}] filter name to the value
+          #   or values it must match
+          # @see StandardPlatform#find_image
           def image_search
             search = {
               "owner-id" => "100343932686",
-              "name" => version ? "amzn-ec2-macos-#{version}*" : "amzn2-ec2-macos-*",
+              "name" => version ? "amzn-ec2-macos-#{version}*" : "amzn-ec2-macos-*",
             }
             search["architecture"] = architecture if architecture
             search["architecture"] = "arm64_mac" if architecture == "arm64"
             search
           end
 
+          # Detect this platform from an EC2 image.
+          #
+          # Matching is done on the image name, which is the only reliable signal
+          # EC2 exposes about what an AMI actually contains.
+          #
+          # @param driver [Kitchen::Driver::Ec2] the driver requesting detection
+          # @param image [Aws::EC2::Image] the image to inspect
+          # @return [MacOS, nil] a platform when the image is macOS, otherwise nil
           def self.from_image(driver, image)
             return unless /amzn-ec2-macos/i.match?(image.name)
 
-            image.name =~ /\b(\d+(\.\d+[\.\d])?)/i
+            # `(\.\d+)?`, not `(\.\d+[\.\d])?`: the character class matched the
+            # separator that follows the minor version, capturing it into the
+            # version string ("2018.03.") and failing outright when the minor
+            # version was followed by anything but a dot or digit.
+            image.name =~ /\b(\d+(\.\d+)?)/i
             new(driver, "macos", (Regexp.last_match || [])[1], image.architecture)
           end
         end

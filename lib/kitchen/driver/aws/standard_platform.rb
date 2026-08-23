@@ -99,7 +99,13 @@ module Kitchen
         #
         # Find the best matching image for the given image search.
         #
-        # @return [String] The image ID (e.g. ami-213984723)
+        # The search hash is converted into EC2's filter format, and the results
+        # are ranked by {#sort_images} before the best match is taken.
+        #
+        # @param image_search [Hash{String => String, Array<String>}] EC2 image
+        #   filters, keyed by filter name
+        # @return [String, nil] the image ID (e.g. "ami-213984723"), or nil when
+        #   the search matched nothing
         def find_image(image_search)
           driver.debug("Searching for images matching #{image_search} ...")
           # Convert to ec2 search format (pairs of name+values)
@@ -126,6 +132,12 @@ module Kitchen
           @platforms ||= {}
         end
 
+        # A human-readable description of this platform.
+        #
+        # Version and architecture are omitted when unknown, so an unqualified
+        # platform reads as just "ubuntu" rather than "ubuntu  ".
+        #
+        # @return [String] e.g. "ubuntu 24.04 x86_64"
         def to_s
           "#{name}#{version ? " #{version}" : ""}#{architecture ? " #{architecture}" : ""}"
         end
@@ -162,6 +174,16 @@ module Kitchen
           nil
         end
 
+        # Split a platform string into its parts.
+        #
+        # The trailing segment is only treated as an architecture when it is one
+        # of {SUPPORTED_ARCHITECTURES}; anything else stays part of the version,
+        # so that a typo surfaces as an unmatched version rather than being
+        # silently discarded.
+        #
+        # @param platform_string [String] e.g. "centos-9-x86_64"
+        # @return [Array(String, String, String)] the platform name, version and
+        #   architecture, any of which except the name may be nil
         def self.parse_platform_string(platform_string)
           platform, version = platform_string.split("-", 2)
 
@@ -203,6 +225,16 @@ module Kitchen
 
         # Not supported yet: aix mac_os_x nexus solaris
 
+        # Move images matching a predicate ahead of those that do not.
+        #
+        # This is a stable partition rather than a sort, so it expresses a
+        # preference without disturbing the ordering established by earlier
+        # preferences.
+        #
+        # @param images [Array<Aws::EC2::Image>] the images to reorder
+        # @yieldparam image [Aws::EC2::Image] an image to test
+        # @yieldreturn [Boolean] true when the image is preferred
+        # @return [Array<Aws::EC2::Image>] preferred images first
         def prefer(images, &block)
           # Put the matching ones *before* the non-matching ones.
           matching, non_matching = images.partition(&block)
@@ -211,6 +243,14 @@ module Kitchen
 
         private
 
+        # Rank candidate images, best match first.
+        #
+        # Preferences are applied from weakest to strongest, each one a stable
+        # partition, so the last applied wins: version beats virtualization
+        # type, which beats root device type, and so on down to creation date.
+        #
+        # @param images [Array<Aws::EC2::Image>] the images to rank
+        # @return [Array<Aws::EC2::Image>] the images, best match first
         def sort_images(images)
           # P6: We prefer more recent images over older ones
           images = images.sort_by(&:creation_date).reverse
@@ -230,6 +270,10 @@ module Kitchen
           sort_by_version(images)
         end
 
+        # Log the search results, with the platform detected for each image.
+        #
+        # @param images [Array<Aws::EC2::Image>] the images the search returned
+        # @return [void]
         def show_returned_images(images)
           if images.empty?
             driver.error("Search returned 0 images.")
