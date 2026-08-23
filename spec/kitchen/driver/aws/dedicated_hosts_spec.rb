@@ -317,10 +317,20 @@ RSpec.describe Kitchen::Driver::Mixins::DedicatedHosts do
         expect { driver.allocate_host }.to raise_error(SystemExit)
       end
 
-      it "explains which setting is missing" do
+      # The gate is `allocate_dedicated_host` in the driver config. The message
+      # used to name an environment variable, TK_ALLOCATE_DEDICATED_HOST, that
+      # nothing reads -- setting it changed nothing, and the setting that does
+      # work went unmentioned.
+      it "names the driver setting that enables allocation" do
         stub_exit!
         expect { driver.allocate_host }.to raise_error(SystemExit)
-        expect(logged_output.string).to match(/TK_ALLOCATE_DEDICATED_HOST/)
+        expect(logged_output.string).to match(/allocate_dedicated_host/)
+      end
+
+      it "does not name an environment variable that nothing reads" do
+        stub_exit!
+        expect { driver.allocate_host }.to raise_error(SystemExit)
+        expect(logged_output.string).not_to match(/TK_ALLOCATE_DEDICATED_HOST/)
       end
     end
 

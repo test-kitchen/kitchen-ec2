@@ -91,7 +91,9 @@ module Kitchen
         #   host costs money whether or not it is used.
         def allocate_host
           unless allow_allocate_host?
-            warn "ERROR: Attempted to allocate dedicated host but need environment variable TK_ALLOCATE_DEDICATED_HOST to be set"
+            warn "ERROR: Attempted to allocate a dedicated host, but the driver setting `allocate_dedicated_host` is not enabled. " \
+                 "Set `allocate_dedicated_host: true` to allow it, remembering that a dedicated host is billed from allocation " \
+                 "until it is released."
             exit!
           end
 
