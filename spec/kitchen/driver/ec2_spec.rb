@@ -226,15 +226,46 @@ RSpec.describe Kitchen::Driver::Ec2 do
       expect(requests_for(ec2_client, :describe_images).size).to eq(1)
     end
 
-    context "with no image_id and no image_search" do
-      # `default_ami` normally fills image_id in, so reaching here means the
-      # platform name was not recognized and no search was configured either.
-      it "raises explaining that one or the other is required" do
-        driver = build_driver
-        allow(driver).to receive_messages(ec2: aws_client, config: { image_id: nil })
+    # `default_ami` normally fills image_id in, so reaching here means one of
+    # two different mistakes, which used to produce the same message: there was
+    # nothing to search for, or a search ran and matched nothing.
+    context "with nothing to search for" do
+      it "raises explaining that image_id or image_search is required" do
+        driver = build_driver(
+          instance_attributes: { platform: Kitchen::Platform.new(name: "mycorp-golden") }
+        )
+        allow(driver).to receive_messages(
+          ec2: aws_client, config: { image_id: nil, image_search: nil }
+        )
 
         expect { driver.image }
           .to raise_error(/Neither image_id nor an image_search specified/)
+      end
+    end
+
+    # Telling someone to "specify image_id or image_search" when the platform
+    # already supplies a search sends them to set an option that is set. This
+    # is what every `macos` run hit while that platform searched an owner that
+    # publishes nothing.
+    context "when a search ran and matched nothing" do
+      it "says the search matched nothing, and in which region" do
+        driver = build_driver
+        allow(driver).to receive_messages(
+          ec2: aws_client, config: { image_id: nil, image_search: nil, region: "us-west-2" }
+        )
+
+        expect { driver.image }
+          .to raise_error(/matched no image in region us-west-2/)
+      end
+
+      it "does not suggest setting an option the platform already provides" do
+        driver = build_driver
+        allow(driver).to receive_messages(
+          ec2: aws_client, config: { image_id: nil, image_search: nil, region: "us-west-2" }
+        )
+
+        expect { driver.image }
+          .not_to raise_error(/Neither image_id nor an image_search specified/)
       end
     end
   end
@@ -1014,6 +1045,40 @@ RSpec.describe Kitchen::Driver::Ec2 do
       it "keeps the region hint" do
         failure = create_failure(RuntimeError.new("No AMI matched the search"))
         expect(failure.message).to match(/available in region/)
+      end
+    end
+
+    # The hint interpolates config[:image_id]. When the image search is what
+    # failed there is no image ID, and the hint rendered as the nonsense
+    # "Check that image  exists and is available in region us-east-1".
+    context "when no image was ever resolved" do
+      it "drops the region hint rather than naming a blank image" do
+        driver = build_driver(image_id: nil, region: "us-west-2")
+        allow(driver).to receive(:ec2).and_return(aws_client)
+
+        message = driver.create_failure_message(RuntimeError.new("matched no image"))
+
+        expect(message).to match(/matched no image/)
+        expect(message).not_to match(/Check that image/)
+      end
+    end
+
+    # Plenty of EC2 errors name the AMI while being about something else
+    # entirely. An instance type whose architecture does not match the image's
+    # names it twice, and the hint then told the user to check whether an image
+    # that plainly exists, exists -- sending them after the wrong setting.
+    context "when an AWS error mentions the AMI but is not about it" do
+      it "drops the region hint" do
+        failure = create_failure(
+          ::Aws::EC2::Errors::InvalidParameterValue.new(
+            nil,
+            "The architecture 'x86_64' of the specified instance type does not match " \
+            "the architecture 'arm64' of the specified AMI."
+          )
+        )
+
+        expect(failure.message).to match(/does not match the architecture/)
+        expect(failure.message).not_to match(/available in region/)
       end
     end
 

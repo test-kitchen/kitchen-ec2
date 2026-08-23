@@ -389,7 +389,10 @@ module Kitchen
       # @see https://github.com/test-kitchen/kitchen-ec2/issues/606
       def create_failure_message(error)
         message = "Failed to create the EC2 instance: #{error.class}: #{error.message}"
-        return message unless image_related_error?(error)
+        # The hint names the image, so it has nothing to say when there is no
+        # image to name. Without this it rendered as "Check that image  exists"
+        # on exactly the failure where no image was ever resolved.
+        return message unless config[:image_id] && image_related_error?(error)
 
         "#{message} Check that image #{config[:image_id]} exists and is available " \
           "in region #{config[:region]}."
@@ -397,14 +400,19 @@ module Kitchen
 
       # Whether a failure is about the AMI rather than something else entirely.
       #
-      # EC2 reports every image problem with a code beginning "InvalidAMI"; the
-      # message check catches errors raised by the driver itself, which are
-      # plain strings with no code attached.
+      # EC2 reports every image problem with a code beginning "InvalidAMI". The
+      # message check is for errors raised by the driver itself, which are
+      # plain strings with no code attached -- but it only applies to those,
+      # because plenty of AWS errors merely *mention* the AMI while being about
+      # something else. The clearest example is an instance type whose
+      # architecture does not match the image's: its message names the AMI
+      # twice, and the old check duly told the user to go and check whether an
+      # image that exists, exists.
       #
       # @param error [Exception] the underlying failure
       # @return [Boolean]
       def image_related_error?(error)
-        return true if error.respond_to?(:code) && error.code.to_s.start_with?("InvalidAMI")
+        return error.code.to_s.start_with?("InvalidAMI") if error.respond_to?(:code)
 
         error.message.to_s.match?(/\bAMI\b/i)
       end
@@ -484,12 +492,31 @@ module Kitchen
           @image = ec2.resource.image(config[:image_id])
           show_chosen_image
 
+        elsif searched_for_image?
+          # A search ran and matched nothing. Saying "specify image_id or
+          # image_search" here sent people to set an option they had already
+          # set, or that the platform sets for them -- the real problem is
+          # that the filters matched no image in this region.
+          raise "The image search for #{desired_platform || instance.platform.name} matched no " \
+                "image in region #{config[:region]}. Set image_id to an AMI, or image_search to " \
+                "filters that match one."
         else
           raise "Neither image_id nor an image_search specified for instance #{instance.name}!" \
                 " Please specify one or the other."
         end
 
         @image
+      end
+
+      # Whether an image search ran and came back empty.
+      #
+      # Distinguishes "there was nothing to search for" -- an unrecognized
+      # platform name and no `image_search` -- from "the search matched
+      # nothing", which are different mistakes with different fixes.
+      #
+      # @return [Boolean]
+      def searched_for_image?
+        !config[:image_search].nil? || !desired_platform.nil?
       end
 
       # The instance type to use when the user did not choose one.
