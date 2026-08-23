@@ -1090,15 +1090,39 @@ RSpec.describe Kitchen::Driver::Ec2 do
       expect(request_params_for(ec2_client, :delete_security_group)[:group_id]).to eq("sg-created")
     end
 
+    # A dedicated host goes on listing an instance while it shuts down, and a
+    # host that still lists one cannot be released. The wait used to be gated
+    # on an auto-created security group alone, so a run that brought its own
+    # `security_group_ids` skipped it, found the host occupied, and left it
+    # allocated -- billing, with the ID already dropped from the state.
+    it "waits for termination before releasing a dedicated host it allocated" do
+      driver = build_driver(image_id: "ami-1", tenancy: "host", deallocate_dedicated_host: true)
+      allow(driver).to receive(:ec2).and_return(aws_client)
+      allow(driver).to receive(:deallocate_host)
+      allow(driver).to receive_messages(
+        host_for_id: instance_double(::Aws::EC2::Types::Host, host_id: "h-mine", state: "available"),
+        host_unused?: true
+      )
+      state[:server_id] = "i-0123456789abcdef0"
+      state[:allocated_host_id] = "h-mine"
+      allow(aws_client).to receive(:instance_exists?).and_return(true)
+      allow(server).to receive(:wait_until_terminated)
+
+      driver.destroy(state)
+
+      expect(server).to have_received(:wait_until_terminated)
+    end
+
     context "with dedicated hosts" do
       let(:config) { { image_id: "ami-1", tenancy: "host", deallocate_dedicated_host: true } }
 
+      def host_double(state_name: "available")
+        instance_double(::Aws::EC2::Types::Host, host_id: "h-mine", state: state_name)
+      end
+
       it "releases the host it allocated once no instances are left on it" do
         state[:allocated_host_id] = "h-mine"
-        allow(driver).to receive_messages(
-          host_for_id: instance_double(::Aws::EC2::Types::Host, host_id: "h-mine"),
-          host_unused?: true
-        )
+        allow(driver).to receive_messages(host_for_id: host_double, host_unused?: true)
         allow(driver).to receive(:deallocate_host)
 
         driver.destroy(state)
@@ -1109,8 +1133,45 @@ RSpec.describe Kitchen::Driver::Ec2 do
 
       it "leaves the host alone while instances are still running on it" do
         state[:allocated_host_id] = "h-mine"
+        allow(driver).to receive_messages(host_for_id: host_double, host_unused?: false)
+        allow(driver).to receive(:deallocate_host)
+
+        driver.destroy(state)
+
+        expect(driver).not_to have_received(:deallocate_host)
+      end
+
+      # Test Kitchen deletes the state file as soon as destroy returns, taking
+      # the host ID with it, so there is no later run that could retry this.
+      # Staying quiet meant the host billed on indefinitely with nothing left
+      # pointing at it.
+      it "reports a host it could not release, with the command to finish the job" do
+        state[:allocated_host_id] = "h-mine"
+        allow(driver).to receive_messages(host_for_id: host_double, host_unused?: false)
+        allow(driver).to receive(:deallocate_host)
+
+        driver.destroy(state)
+
+        expect(logged_output.string).to match(/Dedicated host h-mine still has instances on it/)
+        expect(logged_output.string).to match(/bills from allocation until it is released/)
+        expect(logged_output.string).to match(/release-hosts --region us-west-2 --host-ids h-mine/)
+      end
+
+      it "says nothing about a host EC2 no longer knows" do
+        state[:allocated_host_id] = "h-mine"
+        allow(driver).to receive_messages(host_for_id: nil, host_unused?: false)
+        allow(driver).to receive(:deallocate_host)
+
+        driver.destroy(state)
+
+        expect(driver).not_to have_received(:deallocate_host)
+        expect(logged_output.string).not_to match(/still has instances on it/)
+      end
+
+      it "says nothing about a host that has already been released" do
+        state[:allocated_host_id] = "h-mine"
         allow(driver).to receive_messages(
-          host_for_id: instance_double(::Aws::EC2::Types::Host, host_id: "h-mine"),
+          host_for_id: host_double(state_name: "released"),
           host_unused?: false
         )
         allow(driver).to receive(:deallocate_host)
@@ -1118,6 +1179,7 @@ RSpec.describe Kitchen::Driver::Ec2 do
         driver.destroy(state)
 
         expect(driver).not_to have_received(:deallocate_host)
+        expect(logged_output.string).not_to match(/still has instances on it/)
       end
 
       # Hosts are a shared pool: create places onto any managed host with room

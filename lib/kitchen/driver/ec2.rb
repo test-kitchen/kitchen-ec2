@@ -429,10 +429,17 @@ module Kitchen
               warn("Received #{e}, instance was probably already destroyed. Ignoring")
             end
           end
-          # If we are going to clean up an automatic security group, we need
-          # to wait for the instance to shut down. This slightly breaks the
-          # subsystem encapsulation, sorry not sorry.
-          if state[:auto_security_group_id] && server && ec2.instance_exists?(state[:server_id])
+          # Two cleanups below cannot succeed while the instance is still
+          # shutting down, so either of them means waiting termination out:
+          # an auto-created security group cannot be deleted while an instance
+          # still references it, and a dedicated host goes on listing a
+          # terminating instance, which blocks its release.
+          #
+          # The host case used to be missing, so a run that supplied its own
+          # `security_group_ids` skipped the wait, found the host still
+          # occupied, and silently left it allocated and billing.
+          if (state[:auto_security_group_id] || state[:allocated_host_id]) &&
+              server && ec2.instance_exists?(state[:server_id])
             wait_log = proc do |attempts|
               c = attempts * config[:retryable_sleep]
               t = config[:retryable_tries] * config[:retryable_sleep]
@@ -468,7 +475,20 @@ module Kitchen
         return unless host_id
 
         host = host_for_id(host_id)
-        deallocate_host(host_id) if host && host_unused?(host)
+        # Already gone, or never usable: nothing to release either way.
+        return if host.nil? || host.state != "available"
+
+        unless host_unused?(host)
+          # Test Kitchen deletes the state file once destroy returns, taking
+          # the host ID with it, so there is no later run that could pick this
+          # up -- say so loudly and give the command to finish the job.
+          error("Dedicated host #{host_id} still has instances on it and was not released. " \
+                "A dedicated host bills from allocation until it is released. Release it with: " \
+                "aws ec2 release-hosts --region #{config[:region]} --host-ids #{host_id}")
+          return
+        end
+
+        deallocate_host(host_id)
       end
 
       # The EC2 image this instance will be created from.
