@@ -232,11 +232,13 @@ module Kitchen
               i[:placement][:tenancy] = placement[:tenancy]
             end
           end
+          # RunInstances calls this `license_specifications`. The driver option
+          # is `licenses`, and the payload key used to match the option rather
+          # than the API, which no EC2 API accepts.
           license_specifications = config[:licenses]
           if license_specifications
-            i[:licenses] = []
-            license_specifications.each do |license_configuration_arn|
-              i[:licenses].append({ license_configuration_arn: license_configuration_arn[:license_configuration_arn] })
+            i[:license_specifications] = license_specifications.map do |license|
+              { license_configuration_arn: license[:license_configuration_arn] }
             end
           end
           unless config[:instance_initiated_shutdown_behavior].nil? ||

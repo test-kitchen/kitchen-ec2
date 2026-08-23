@@ -32,6 +32,57 @@ RSpec.describe Kitchen::Driver::Aws::InstanceGenerator do
     generator.ec2_instance_data
   end
 
+  # Every other example here asserts on the Hash `ec2_instance_data` returns,
+  # which says nothing about whether EC2 would accept it. A stubbed client
+  # validates request parameters against the real EC2 service model, so
+  # sending the payload through one is what tells a payload apart from a Hash
+  # that merely looks right.
+  #
+  # This is not hypothetical: the generator spent its life emitting a
+  # `licenses` key, which RunInstances has never had. The Hash assertion
+  # passed, and every `kitchen create` configuring `licenses` died with
+  # "unexpected value at params[:licenses]".
+  describe "the payload RunInstances accepts" do
+    def run_instances
+      ::Aws::EC2::Resource.new(client: ec2_client).create_instances(**instance_data)
+    end
+
+    it "is accepted for a plain instance" do
+      expect { run_instances }.not_to raise_error
+    end
+
+    it "is accepted with licence configurations" do
+      config[:licenses] = [{ license_configuration_arn: "arn:aws:license-manager:lic-1" }]
+
+      expect { run_instances }.not_to raise_error
+    end
+
+    it "is accepted with a public IP, subnet and security groups" do
+      config[:associate_public_ip] = true
+      config[:subnet_id] = "subnet-0123456789abcdef0"
+      config[:security_group_ids] = ["sg-0123456789abcdef0"]
+
+      expect { run_instances }.not_to raise_error
+    end
+
+    it "is accepted with tags, block devices and metadata options" do
+      config[:tags] = { "created-by" => "test-kitchen" }
+      config[:block_device_mappings] = [{ device_name: "/dev/sda1", ebs: { volume_size: 30 } }]
+      config[:metadata_options] = { http_tokens: "required" }
+
+      expect { run_instances }.not_to raise_error
+    end
+
+    it "is accepted with placement, tenancy and a shutdown behavior" do
+      config[:availability_zone] = "b"
+      config[:tenancy] = "host"
+      config[:placement] = { host_id: "h-0123456789abcdef0" }
+      config[:instance_initiated_shutdown_behavior] = "terminate"
+
+      expect { run_instances }.not_to raise_error
+    end
+  end
+
   describe "#ec2_instance_data" do
     it "always requests exactly one instance" do
       expect(instance_data).to include(min_count: 1, max_count: 1)
@@ -197,12 +248,23 @@ RSpec.describe Kitchen::Driver::Aws::InstanceGenerator do
         expect(instance_data[:iam_instance_profile]).to eq(name: "kitchen-profile")
       end
 
-      it "forwards licence configuration ARNs" do
+      # RunInstances calls the parameter `license_specifications`. The payload
+      # used to be built under a `licenses` key, which no EC2 API accepts, so
+      # configuring `licenses` failed the run outright:
+      #
+      #   ArgumentError: unexpected value at params[:licenses]
+      it "forwards licence configuration ARNs as license_specifications" do
         config[:licenses] = [{ license_configuration_arn: "arn:aws:license-manager:lic-1" }]
 
-        expect(instance_data[:licenses]).to eq([
+        expect(instance_data[:license_specifications]).to eq([
           { license_configuration_arn: "arn:aws:license-manager:lic-1" },
         ])
+      end
+
+      it "does not send a licenses parameter, which RunInstances does not accept" do
+        config[:licenses] = [{ license_configuration_arn: "arn:aws:license-manager:lic-1" }]
+
+        expect(instance_data).not_to have_key(:licenses)
       end
 
       it "forwards a shutdown behavior" do
