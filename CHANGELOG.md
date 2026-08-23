@@ -2,6 +2,13 @@
 
 ## Unreleased
 
+## [3.22.5](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.4...v3.22.5) (2026-08-23)
+
+
+### Bug Fixes
+
+* Default to t3.micro instead of t2.micro ([#673](https://github.com/test-kitchen/kitchen-ec2/issues/673)) ([f131db4](https://github.com/test-kitchen/kitchen-ec2/commit/f131db4a25aa56154f27d8ed1c3e6b4ef07edba8))
+
 ## [3.22.4](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.3...v3.22.4) (2026-08-23)
 
 ### Bug Fixes
