@@ -71,6 +71,41 @@ RSpec.describe Kitchen::Driver::Aws::StandardPlatform do
     it "returns nil for an empty string" do
       expect(described_class.from_platform_string(driver, "")).to be_nil
     end
+
+    # "amazon2023" and "amazon2" are distributions in their own right, not
+    # release 2023 or release 2 of "amazon" (which is the long-EOL Amazon
+    # Linux 1). Splitting the hyphenated spelling on the first dash lands on
+    # the "amazon" platform searching for a version that never existed, so the
+    # release is folded back into the name when the two together name a
+    # registered platform.
+    it "accepts the hyphenated spelling of a platform whose name ends in a release" do
+      platform = described_class.from_platform_string(driver, "amazon-2023")
+
+      expect(platform).to be_an_instance_of(described_class::Amazon2023)
+      expect(platform.name).to eq("amazon2023")
+      expect(platform.version).to be_nil
+    end
+
+    it "accepts the hyphenated spelling alongside an architecture" do
+      platform = described_class.from_platform_string(driver, "amazon-2023-arm64")
+
+      expect(platform).to be_an_instance_of(described_class::Amazon2023)
+      expect(platform.architecture).to eq("arm64")
+    end
+
+    it "accepts the hyphenated spelling of amazon-2" do
+      platform = described_class.from_platform_string(driver, "amazon-2")
+
+      expect(platform).to be_an_instance_of(described_class::Amazon2)
+      expect(platform.version).to be_nil
+    end
+
+    it "still treats a trailing release as a version for platforms named without one" do
+      platform = described_class.from_platform_string(driver, "ubuntu-24.04")
+
+      expect(platform).to be_an_instance_of(described_class::Ubuntu)
+      expect(platform.version).to eq("24.04")
+    end
   end
 
   describe ".platforms" do

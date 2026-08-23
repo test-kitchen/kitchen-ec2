@@ -153,6 +153,20 @@ module Kitchen
         #
         def self.from_platform_string(driver, platform_string)
           platform, version, architecture = parse_platform_string(platform_string)
+
+          # A few platform names end in what looks like a version but is
+          # really part of the distribution's name: "amazon2023" and "amazon2"
+          # are Amazon Linux 2023 and Amazon Linux 2, not releases 2023 and 2
+          # of "amazon" (which is the long-EOL Amazon Linux 1). Written with a
+          # dash -- the spelling the documentation uses -- the split above
+          # lands on the "amazon" platform searching for a release that never
+          # existed, and no image matches. Fold the release back into the name
+          # whenever the two together name a platform that is registered.
+          if version && platforms["#{platform}#{version}"]
+            platform = "#{platform}#{version}"
+            version = nil
+          end
+
           return unless platform && platforms[platform]
 
           platforms[platform].new(driver, platform, version, architecture)
