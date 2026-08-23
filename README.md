@@ -45,12 +45,18 @@ gem "kitchen-ec2"
 
 ## Authentication
 
-The driver resolves credentials in the same order as the AWS SDK. In order of preference:
+Credentials are never set in `kitchen.yml`. The driver hands resolution to the
+AWS SDK's standard credential chain, so anything the AWS CLI can authenticate
+with works here too:
 
-1. The `aws_access_key_id`, `aws_secret_access_key`, and `aws_session_token` driver options
-2. The standard `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY`, and `AWS_SESSION_TOKEN` environment variables
-3. A shared credentials file profile, selected with `shared_credentials_profile` or `AWS_PROFILE`
-4. An instance profile or container role, when running on AWS
+- The standard `AWS_ACCESS_KEY_ID`, `AWS_SECRET_ACCESS_KEY` and
+  `AWS_SESSION_TOKEN` environment variables
+- A profile in the shared credentials file, named with
+  `shared_credentials_profile` or `AWS_PROFILE`
+- An instance profile or container role, when running on AWS
+
+Naming a profile explicitly takes precedence over the environment variables;
+with no profile named, the environment variables win.
 
 The simplest setup is to run the AWS CLI configuration wizard once:
 
@@ -58,14 +64,16 @@ The simplest setup is to run the AWS CLI configuration wizard once:
 aws configure
 ```
 
-Avoid putting long-lived keys directly in `kitchen.yml`. If you must reference them, pull them from the environment with ERB:
+There are no `aws_access_key_id`, `aws_secret_access_key` or
+`aws_session_token` driver options. They were removed, and setting one now
+stops the run:
 
-```yaml
-driver:
-  name: ec2
-  aws_access_key_id: <%= ENV['AWS_ACCESS_KEY_ID'] %>
-  aws_secret_access_key: <%= ENV['AWS_SECRET_ACCESS_KEY'] %>
+```text
+aws_access_key_id is no longer a valid config option, please use
+ENV['AWS_ACCESS_KEY_ID'] or ~/.aws/credentials.
 ```
+
+Use the environment or a profile instead.
 
 ## Quick Start
 
@@ -130,9 +138,6 @@ All options below are set under the `driver:` key in `kitchen.yml`.
 | `region` | `$AWS_REGION`, else `"us-east-1"` | AWS region to launch in. |
 | `availability_zone` | *AWS chooses* | Availability zone. A bare letter such as `a` is expanded against `region`, so `a` becomes `us-east-1a`. |
 | `shared_credentials_profile` | `$AWS_PROFILE` | Named profile in the shared AWS credentials file. |
-| `aws_access_key_id` | `nil` | Access key ID. Prefer the environment or a profile. |
-| `aws_secret_access_key` | `nil` | Secret access key. Prefer the environment or a profile. |
-| `aws_session_token` | `nil` | Session token, for temporary credentials. |
 | `http_proxy` | `$HTTPS_PROXY`, else `$HTTP_PROXY` | Proxy used for AWS API calls. |
 | `ssl_verify_peer` | `true` | Verify TLS certificates on AWS API calls. |
 | `retry_limit` | `3` | Number of times the AWS SDK retries a failed API call. |
