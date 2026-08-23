@@ -19,12 +19,12 @@ RSpec.describe Kitchen::Driver::Aws::StandardPlatform::Freebsd do
     platform_name: "freebsd",
     username: "ec2-user",
     search_without_version: {
-      "owner-id" => "118940168514",
+      "owner-id" => "782442783595",
       "name" => ["FreeBSD *-RELEASE*", "FreeBSD/EC2 *-RELEASE*"],
     },
     version: "14.1",
     search_with_version: {
-      "owner-id" => "118940168514",
+      "owner-id" => "782442783595",
       "name" => ["FreeBSD 14.1*-RELEASE*", "FreeBSD/EC2 14.1*-RELEASE*"],
     },
     detects_image_named: "FreeBSD 14.1-RELEASE-amd64",

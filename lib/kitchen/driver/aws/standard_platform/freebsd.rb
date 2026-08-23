@@ -50,7 +50,7 @@ module Kitchen
           # @see StandardPlatform#find_image
           def image_search
             search = {
-              "owner-id" => "118940168514",
+              "owner-id" => "782442783595",
               "name" => ["FreeBSD #{version}*-RELEASE*", "FreeBSD/EC2 #{version}*-RELEASE*"],
             }
             search["architecture"] = architecture if architecture
