@@ -194,6 +194,25 @@ RSpec.describe Kitchen::Driver::Mixins::DedicatedHosts do
     end
   end
 
+  describe "#metal_instance_type?" do
+    it "is true for a bare .metal size" do
+      expect(driver.metal_instance_type?("mac1.metal")).to be(true)
+      expect(driver.metal_instance_type?("c5.metal")).to be(true)
+    end
+
+    # Newer families expose several bare-metal sizes on one family, named
+    # ".metal-24xl" and so on rather than a plain ".metal".
+    it "is true for a sized .metal variant" do
+      expect(driver.metal_instance_type?("m7i.metal-24xl")).to be(true)
+      expect(driver.metal_instance_type?("m8g.metal-48xl")).to be(true)
+    end
+
+    it "is false for a virtualized size" do
+      expect(driver.metal_instance_type?("m5.large")).to be(false)
+      expect(driver.metal_instance_type?("u7i-12tb.224xlarge")).to be(false)
+    end
+  end
+
   describe "#allow_allocate_host?" do
     context "when allocate_dedicated_host is set" do
       let(:config) { { allocate_dedicated_host: true } }
@@ -272,6 +291,20 @@ RSpec.describe Kitchen::Driver::Mixins::DedicatedHosts do
 
         params = request_params_for(ec2_client, :allocate_hosts)
         expect(params[:instance_type]).to eq("mac1.metal")
+        expect(params).not_to have_key(:instance_family)
+      end
+    end
+
+    context "with a sized .metal instance type" do
+      subject(:driver) do
+        build_driver(instance_type: "m7i.metal-24xl", availability_zone: "us-west-2a", **config)
+      end
+
+      it "allocates by instance type" do
+        driver.allocate_host
+
+        params = request_params_for(ec2_client, :allocate_hosts)
+        expect(params[:instance_type]).to eq("m7i.metal-24xl")
         expect(params).not_to have_key(:instance_family)
       end
     end

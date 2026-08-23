@@ -81,7 +81,7 @@ module Kitchen
 
         # Allocate a new dedicated host for the configured instance type.
         #
-        # A `.metal` size occupies a whole host, so it is allocated for that
+        # A bare-metal size occupies a whole host, so it is allocated for that
         # exact type; every other size can share a host, so the whole instance
         # family is allocated and EC2 places instances within it.
         #
@@ -118,8 +118,8 @@ module Kitchen
             ],
           }
 
-          # ".metal" is a 1:1 association, everything else has multi-instance capability
-          if instance_size_from_type(config[:instance_type]) == "metal"
+          # Bare metal is a 1:1 association, everything else has multi-instance capability
+          if metal_instance_type?(config[:instance_type])
             request[:instance_type] = config[:instance_type]
           else
             request[:instance_family] = instance_family_from_type(config[:instance_type])
@@ -159,6 +159,20 @@ module Kitchen
         # @return [String] the size, e.g. "large"
         def instance_size_from_type(instance_type)
           instance_type.split(".").last
+        end
+
+        # Whether an instance type runs on bare metal.
+        #
+        # Older families expose a single bare-metal size named plainly
+        # ".metal". Newer ones expose several on the same family and name them
+        # ".metal-24xl", ".metal-48xl" and so on, so an equality check against
+        # "metal" would take them for virtualized sizes and allocate their host
+        # by family.
+        #
+        # @param instance_type [String] a type in "family.size" form, e.g. "m7i.metal-24xl"
+        # @return [Boolean] true when an instance of this type occupies a whole host
+        def metal_instance_type?(instance_type)
+          instance_size_from_type(instance_type).start_with?("metal")
         end
 
         # Whether the user has opted in to allocating dedicated hosts.
