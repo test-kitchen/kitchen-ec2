@@ -294,7 +294,8 @@ module Kitchen
             exit!
           end
 
-          allocate_host unless host_available?
+          # Remembered so that destroy releases this host and no other.
+          state[:allocated_host_id] = allocate_host unless host_available?
 
           info("Auto placement on one dedicated host out of: #{hosts_with_capacity.map(&:host_id).join(", ")}")
         end
@@ -437,11 +438,22 @@ module Kitchen
         delete_security_group(state)
         delete_key(state)
 
-        # Clean up dedicated hosts matching instance_type and unused (if allowed)
+        # Release the dedicated host this instance's create allocated, if it
+        # allocated one and nothing else is left running on it.
+        #
+        # Only that host. Dedicated hosts are a shared pool -- create places
+        # onto any managed host with room rather than always allocating, so
+        # most runs allocate nothing -- and releasing every empty managed host
+        # tore down hosts belonging to other suites, including one allocated
+        # seconds earlier by a concurrent run whose instance had not launched
+        # onto it yet.
         return unless config[:tenancy] == "host" && allow_deallocate_host?
 
-        empty_hosts = hosts_with_capacity.select { |host| host_unused?(host) }
-        empty_hosts.each { |host| deallocate_host(host.host_id) }
+        host_id = state.delete(:allocated_host_id)
+        return unless host_id
+
+        host = host_for_id(host_id)
+        deallocate_host(host_id) if host && host_unused?(host)
       end
 
       # The EC2 image this instance will be created from.

@@ -1046,16 +1046,48 @@ RSpec.describe Kitchen::Driver::Ec2 do
     context "with dedicated hosts" do
       let(:config) { { image_id: "ami-1", tenancy: "host", deallocate_dedicated_host: true } }
 
-      it "releases hosts it manages that have no instances left" do
+      it "releases the host it allocated once no instances are left on it" do
+        state[:allocated_host_id] = "h-mine"
         allow(driver).to receive_messages(
-          hosts_with_capacity: [instance_double(::Aws::EC2::Types::Host, host_id: "h-empty")],
+          host_for_id: instance_double(::Aws::EC2::Types::Host, host_id: "h-mine"),
           host_unused?: true
         )
         allow(driver).to receive(:deallocate_host)
 
         driver.destroy(state)
 
-        expect(driver).to have_received(:deallocate_host).with("h-empty")
+        expect(driver).to have_received(:deallocate_host).with("h-mine")
+        expect(state).not_to have_key(:allocated_host_id)
+      end
+
+      it "leaves the host alone while instances are still running on it" do
+        state[:allocated_host_id] = "h-mine"
+        allow(driver).to receive_messages(
+          host_for_id: instance_double(::Aws::EC2::Types::Host, host_id: "h-mine"),
+          host_unused?: false
+        )
+        allow(driver).to receive(:deallocate_host)
+
+        driver.destroy(state)
+
+        expect(driver).not_to have_received(:deallocate_host)
+      end
+
+      # Hosts are a shared pool: create places onto any managed host with room
+      # rather than always allocating, so most runs allocate nothing. Releasing
+      # every empty managed host meant a run tore down hosts belonging to other
+      # suites -- including one allocated seconds earlier by a concurrent run
+      # whose instance had not launched onto it yet.
+      it "does not release a host it did not allocate" do
+        allow(driver).to receive_messages(
+          hosts_with_capacity: [instance_double(::Aws::EC2::Types::Host, host_id: "h-someone-elses")],
+          host_unused?: true
+        )
+        allow(driver).to receive(:deallocate_host)
+
+        driver.destroy(state)
+
+        expect(driver).not_to have_received(:deallocate_host)
       end
 
       it "leaves hosts alone when deallocation is not enabled" do
