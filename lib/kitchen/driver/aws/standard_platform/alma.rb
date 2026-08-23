@@ -50,6 +50,23 @@ module Kitchen
             search
           end
 
+          # Sort images newest release first, keeping Kitten builds last.
+          #
+          # AlmaLinux Kitten is AlmaLinux's development distribution, published
+          # from the same account and under the same "AlmaLinux OS" prefix as
+          # the releases. Its name carries no release number, so {.from_image}
+          # reads the major straight into the build date: "AlmaLinux OS Kitten
+          # 10.20260727.0" yields "10.20260727", a far larger number than the
+          # "10.2" of an actual release, which sorts Kitten ahead of
+          # everything. A versioned search is unaffected, since "AlmaLinux OS
+          # 10*" does not match "AlmaLinux OS Kitten 10*".
+          #
+          # @param images [Array<Aws::EC2::Image>] the images to sort
+          # @return [Array<Aws::EC2::Image>] the images, newest release first
+          def sort_by_version(images)
+            prefer(super) { |image| !image.name.include?("Kitten") }
+          end
+
           # Detect this platform from an EC2 image.
           #
           # Matching is done on the image name, which is the only reliable signal
