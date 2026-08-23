@@ -2,6 +2,18 @@
 
 ## Unreleased
 
+## [3.22.10](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.9...v3.22.10) (2026-08-23)
+
+
+### Bug Fixes
+
+* Apply every criterion in a security_group_filter ([#695](https://github.com/test-kitchen/kitchen-ec2/issues/695)) ([abd5fcc](https://github.com/test-kitchen/kitchen-ec2/commit/abd5fcccb70de79a172729e8857611591e1dc9d4))
+* Initialize extra Windows volumes on Server 2022 and later ([#697](https://github.com/test-kitchen/kitchen-ec2/issues/697)) ([958da75](https://github.com/test-kitchen/kitchen-ec2/commit/958da758d759ced0340a4aaf6abc5dc0d7ac6165))
+* Prefer the Debian release image over its backports counterpart ([#696](https://github.com/test-kitchen/kitchen-ec2/issues/696)) ([da4ea84](https://github.com/test-kitchen/kitchen-ec2/commit/da4ea844d8bd8a7428d7dad4e54c3dd1746c7e73))
+* Reject a placement config naming a group twice ([#692](https://github.com/test-kitchen/kitchen-ec2/issues/692)) ([4ef62b1](https://github.com/test-kitchen/kitchen-ec2/commit/4ef62b19070bb9a74868a8d6510af9e14b52d246))
+* Release only the dedicated host this run allocated ([#694](https://github.com/test-kitchen/kitchen-ec2/issues/694)) ([6c31e60](https://github.com/test-kitchen/kitchen-ec2/commit/6c31e600b6abec8dffe4edfb5a3aaa74c164da1f))
+* Support ed25519 keys with EC2 Instance Connect ([#691](https://github.com/test-kitchen/kitchen-ec2/issues/691)) ([fd5975d](https://github.com/test-kitchen/kitchen-ec2/commit/fd5975d4c452bc230dec853e6f8b8ec54cdc1ebe))
+
 ## [3.22.9](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.8...v3.22.9) (2026-08-23)
 
 
