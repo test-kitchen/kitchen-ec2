@@ -143,10 +143,20 @@ All options below are set under the `driver:` key in `kitchen.yml`.
 | --- | --- | --- |
 | `image_id` | *searched from platform* | Exact AMI ID to launch. Skips image search entirely. |
 | `image_search` | `nil` | Hash of EC2 image filters used to find an AMI, overriding the platform's built-in search. |
-| `username` | *per platform* | Login user for the image. Detected from the platform name if unset. |
 
 Either the platform name must be one the driver knows how to search for, or you
 must set `image_id` or `image_search`.
+
+The login user is detected from the platform, so it usually does not need
+setting. To override it, set it on the **transport**, not the driver:
+
+```yaml
+transport:
+  username: ec2-user
+```
+
+`driver.username` was removed; setting it stops the run with an error pointing
+at `transport.username`.
 
 ### Instance
 
