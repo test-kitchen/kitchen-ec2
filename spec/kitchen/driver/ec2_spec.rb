@@ -893,6 +893,109 @@ RSpec.describe Kitchen::Driver::Ec2 do
     end
   end
 
+  # This error path had no coverage before, which is how #606 survived: every
+  # failure, whatever its cause, was reported as an AMI availability problem.
+  describe "#create when creating fails" do
+    # A key pair and security group are supplied so that #create reaches the
+    # instance request itself rather than failing earlier while auto-creating
+    # them, which is not the path under test here.
+    let(:config) do
+      {
+        image_id: "ami-0123456789abcdef0",
+        aws_ssh_key_id: "kitchen",
+        security_group_ids: %w{sg-0123456789abcdef0},
+        skip_cost_warning: true,
+      }
+    end
+
+    before do
+      allow(driver).to receive(:update_username)
+      allow(driver).to receive(:destroy)
+    end
+
+    def create_failure(error)
+      allow(driver).to receive(:submit_server).and_raise(error)
+      begin
+        driver.create(state)
+        nil
+      rescue Kitchen::ActionFailed => e
+        e
+      end
+    end
+
+    it "reports the underlying error class and message" do
+      failure = create_failure(ArgumentError.new("Digest initialization failed"))
+
+      expect(failure.message).to include("ArgumentError")
+      expect(failure.message).to include("Digest initialization failed")
+    end
+
+    # The reporter of #606 hit a local OpenSSL fault and was told to go and
+    # check whether their AMI existed in the region.
+    it "does not blame the AMI for an unrelated error" do
+      failure = create_failure(ArgumentError.new("Digest initialization failed"))
+
+      expect(failure.message).not_to match(/available in region/)
+    end
+
+    it "keeps the original backtrace" do
+      error = ArgumentError.new("boom")
+      error.set_backtrace(["some/where.rb:42:in `thing'"])
+
+      expect(create_failure(error).backtrace).to include("some/where.rb:42:in `thing'")
+    end
+
+    it "still cleans up so no instance is left running" do
+      create_failure(ArgumentError.new("boom"))
+      expect(driver).to have_received(:destroy).with(state)
+    end
+
+    context "when the error really is about the image" do
+      # EC2 reports every image problem with a code beginning "InvalidAMI", and
+      # this is the common wrong-region mistake the hint exists for.
+      it "keeps the region hint" do
+        failure = create_failure(
+          ::Aws::EC2::Errors::InvalidAMIIDNotFound.new(nil, "The image id does not exist")
+        )
+
+        expect(failure.message).to match(/Check that image ami-0123456789abcdef0 exists/)
+        expect(failure.message).to match(/available in region/)
+      end
+    end
+
+    context "when a driver-raised error mentions the AMI" do
+      it "keeps the region hint" do
+        failure = create_failure(RuntimeError.new("No AMI matched the search"))
+        expect(failure.message).to match(/available in region/)
+      end
+    end
+
+    # Wrapping a Ctrl-C would report the user's own interrupt as a driver
+    # failure, and hide the fact that they stopped the run themselves.
+    context "when the run is interrupted" do
+      before { allow(driver).to receive(:submit_server).and_raise(interrupt) }
+
+      let(:interrupt) { Interrupt }
+
+      it "re-raises the interrupt untouched" do
+        expect { driver.create(state) }.to raise_error(Interrupt)
+      end
+
+      it "still cleans up first" do
+        expect { driver.create(state) }.to raise_error(Interrupt)
+        expect(driver).to have_received(:destroy).with(state)
+      end
+
+      context "on an explicit exit" do
+        let(:interrupt) { SystemExit }
+
+        it "re-raises SystemExit untouched" do
+          expect { driver.create(state) }.to raise_error(SystemExit)
+        end
+      end
+    end
+  end
+
   describe "#destroy" do
     let(:server) { instance_double(::Aws::EC2::Instance, id: "i-0123456789abcdef0") }
 

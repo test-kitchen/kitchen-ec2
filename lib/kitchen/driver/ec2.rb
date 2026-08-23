@@ -248,11 +248,13 @@ module Kitchen
       #
       # Any failure destroys the instance and everything auto-created alongside
       # it, so that a failed create does not leave billable resources behind.
+      # Interrupts are re-raised untouched once that cleanup has run.
       #
       # @param state [Hash] the instance state, updated in place with
       #   `:server_id`, `:hostname` and any auto-created credentials
       # @return [void]
-      # @raise [RuntimeError] wrapping whatever went wrong, after cleaning up
+      # @raise [Kitchen::ActionFailed] wrapping whatever went wrong, after
+      #   cleaning up
       def create(state)
         return if state[:server_id]
 
@@ -335,10 +337,60 @@ module Kitchen
         attach_network_interface(state) unless config[:elastic_network_interface_id].nil?
         create_ec2_json(state) if /chef/i.match?(instance.provisioner.name)
         debug("ec2:create '#{state[:hostname]}'")
-      rescue Exception => e
-        # Clean up the instance and any auto-created security groups or keys on the way out.
+      rescue ::Exception => e
+        # Deliberately ::Exception, and deliberately broad: a create that is
+        # interrupted partway through must still clean up, or the user is left
+        # paying for an instance Test Kitchen has forgotten about.
+        #
+        # Root-qualified because this file is nested inside `module Kitchen`.
+        # There is no Kitchen::Exception today, but Kitchen::StandardError does
+        # exist, and an unqualified constant would silently pick it up if one
+        # were ever added.
         destroy(state)
-        raise "#{e.message} in the specified region #{config[:region]}. Please check this AMI is available in this region."
+
+        # Signals and exits are re-raised untouched. Wrapping a Ctrl-C in an
+        # ActionFailed would report the user's own interrupt as a driver bug.
+        raise if e.is_a?(::SignalException) || e.is_a?(::SystemExit)
+
+        raise Kitchen::ActionFailed, create_failure_message(e), e.backtrace
+      end
+
+      # Describe a failed create without discarding what actually went wrong.
+      #
+      # This message used to append "in the specified region <region>. Please
+      # check this AMI is available in this region" to *every* failure, and to
+      # raise a bare RuntimeError, so the original exception class and
+      # backtrace were lost. A local OpenSSL fault, an expired credential or a
+      # missing subnet all arrived looking like an AMI problem, sending users
+      # to check something that was never wrong.
+      #
+      # The hint is worth keeping -- an AMI that does not exist in the region
+      # really is a common mistake -- but only when the failure is about the
+      # image.
+      #
+      # @param error [Exception] the underlying failure
+      # @return [String]
+      # @see https://github.com/test-kitchen/kitchen-ec2/issues/606
+      def create_failure_message(error)
+        message = "Failed to create the EC2 instance: #{error.class}: #{error.message}"
+        return message unless image_related_error?(error)
+
+        "#{message} Check that image #{config[:image_id]} exists and is available " \
+          "in region #{config[:region]}."
+      end
+
+      # Whether a failure is about the AMI rather than something else entirely.
+      #
+      # EC2 reports every image problem with a code beginning "InvalidAMI"; the
+      # message check catches errors raised by the driver itself, which are
+      # plain strings with no code attached.
+      #
+      # @param error [Exception] the underlying failure
+      # @return [Boolean]
+      def image_related_error?(error)
+        return true if error.respond_to?(:code) && error.code.to_s.start_with?("InvalidAMI")
+
+        error.message.to_s.match?(/\bAMI\b/i)
       end
 
       # Terminate the instance and clean up everything created alongside it.
