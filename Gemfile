@@ -8,10 +8,6 @@ group :test do
   gem "rspec", "~> 3.2"
 end
 
-group :debug do
-  gem "pry"
-end
-
 # Documentation tooling. CI runs the unit tests with BUNDLE_WITHOUT=development,
 # so yard is not installed there and the Rakefile's yard tasks simply do not
 # load -- documentation never gates a build.
