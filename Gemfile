@@ -16,5 +16,5 @@ group :development do
 end
 
 group :cookstyle do
-  gem "cookstyle", "~> 8.1"
+  gem "cookstyle", "~> 9.0"
 end
