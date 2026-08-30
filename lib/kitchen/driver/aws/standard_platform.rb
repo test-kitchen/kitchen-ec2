@@ -176,7 +176,7 @@ module Kitchen
         # Detect platform from an image.
         #
         # @param driver [Kitchen::Driver::Ec2] The driver.
-        # @param image [Aws::Ec2::Image] The EC2 Image object.
+        # @param image [Aws::EC2::Image] The EC2 Image object.
         #
         # @return [Kitchen::Driver::Aws::StandardPlatform]
         #
@@ -223,9 +223,9 @@ module Kitchen
         # Used by the default find_image. The default version calls platform_from_image()
         # on each image, and interprets the versions as floats (7 < 7.1 < 8).
         #
-        # @param images [Array[Aws::Ec2::Image]] The list of images to sort
+        # @param images [Array<Aws::EC2::Image>] The list of images to sort
         #
-        # @return [Array[Aws::Ec2::Image]] A sorted list.
+        # @return [Array<Aws::EC2::Image>] A sorted list.
         #
         def sort_by_version(images)
           # 7.1 -> [ img1, img2, img3 ]
@@ -246,6 +246,7 @@ module Kitchen
         # preferences.
         #
         # @param images [Array<Aws::EC2::Image>] the images to reorder
+        # @param block [Proc] the predicate each image is partitioned by
         # @yieldparam image [Aws::EC2::Image] an image to test
         # @yieldreturn [Boolean] true when the image is preferred
         # @return [Array<Aws::EC2::Image>] preferred images first

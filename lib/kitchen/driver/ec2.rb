@@ -1009,6 +1009,7 @@ module Kitchen
       # @param server [Aws::EC2::Instance] the instance to wait on
       # @param state [Hash] the instance state
       # @param status_msg [String] what is being waited for, for log messages
+      # @param block [Proc] the readiness check polled against the instance
       # @yieldparam aws_instance [Aws::EC2::Instance] the instance being polled
       # @yieldreturn [Boolean] true when the wait is over
       # @return [void]
