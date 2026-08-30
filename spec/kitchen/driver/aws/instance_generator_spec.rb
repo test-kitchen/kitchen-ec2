@@ -479,6 +479,80 @@ RSpec.describe Kitchen::Driver::Aws::InstanceGenerator do
           expect(requests_for(ec2_client, :describe_security_groups)).to be_empty
         end
       end
+
+      # The VPC used to be read off `describe_subnets(subnet_ids: [nil])`, so a
+      # filter with no subnet alongside it -- the natural configuration in a
+      # default VPC account -- died on `undefined method 'vpc_id' for nil`
+      # before anything was launched.
+      context "when no subnet is configured" do
+        let(:ec2_client) do
+          stub_ec2_client(
+            describe_vpcs: { vpcs: [{ vpc_id: "vpc-default" }] },
+            describe_security_groups: { security_groups: [{ group_id: "sg-found" }] }
+          )
+        end
+
+        before { config.delete(:subnet_id) }
+
+        it "searches the default VPC" do
+          config[:security_group_filter] = { name: "kitchen-sg" }
+
+          expect(instance_data[:security_group_ids]).to eq(%w{sg-found})
+          expect(request_params_for(ec2_client, :describe_security_groups)[:filters]).to eq([
+            { name: "group-name", values: %w{kitchen-sg} },
+            { name: "vpc-id", values: %w{vpc-default} },
+          ])
+        end
+
+        it "asks for the default VPC rather than describing a nil subnet" do
+          config[:security_group_filter] = { name: "kitchen-sg" }
+          instance_data
+
+          expect(requests_for(ec2_client, :describe_subnets)).to be_empty
+          expect(request_params_for(ec2_client, :describe_vpcs)[:filters]).to eq([
+            { name: "isDefault", values: %w{true} },
+          ])
+        end
+
+        # EC2-Classic, or an account whose default VPC has been deleted. The
+        # name still narrows the search, so this is not the unfiltered request
+        # that would attach every group in the region.
+        context "and the account has no default VPC" do
+          let(:ec2_client) do
+            stub_ec2_client(
+              describe_vpcs: { vpcs: [] },
+              describe_security_groups: { security_groups: [{ group_id: "sg-found" }] }
+            )
+          end
+
+          it "searches on the name alone" do
+            config[:security_group_filter] = { name: "kitchen-sg" }
+
+            expect(instance_data[:security_group_ids]).to eq(%w{sg-found})
+            expect(request_params_for(ec2_client, :describe_security_groups)[:filters]).to eq([
+              { name: "group-name", values: %w{kitchen-sg} },
+            ])
+          end
+        end
+      end
+
+      # Same nil dereference, reached the other way: a subnet that was named
+      # but does not exist.
+      context "when the configured subnet does not exist" do
+        let(:ec2_client) do
+          stub_ec2_client(
+            describe_subnets: { subnets: [] },
+            describe_security_groups: { security_groups: [{ group_id: "sg-found" }] }
+          )
+        end
+
+        it "raises naming the subnet" do
+          config[:security_group_filter] = { name: "kitchen-sg" }
+
+          expect { instance_data }
+            .to raise_error(/Subnet subnet-1 not found while resolving security_group_filter/)
+        end
+      end
     end
   end
 

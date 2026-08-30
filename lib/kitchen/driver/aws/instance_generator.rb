@@ -88,7 +88,7 @@ module Kitchen
 
           if config[:security_group_ids].nil? && config[:security_group_filter]
             # => Grab the VPC in the case a Subnet ID rather than Filter was set
-            vpc_id ||= client.describe_subnets(subnet_ids: [config[:subnet_id]]).subnets[0].vpc_id
+            vpc_id ||= security_group_search_vpc_id(client)
             security_groups = []
             filters = [config[:security_group_filter]].flatten
             filters.each do |sg_filter|
@@ -112,7 +112,10 @@ module Kitchen
                       "#{sg_filter.inspect} has neither."
               end
 
-              criteria << { name: "vpc-id", values: [vpc_id] }
+              # Only when a VPC is known. A name or tag has already narrowed the
+              # search, so leaving this off is not the unfiltered request the
+              # check above exists to prevent.
+              criteria << { name: "vpc-id", values: [vpc_id] } if vpc_id
 
               security_group = client.describe_security_groups(filters: criteria).security_groups
 
@@ -241,6 +244,46 @@ module Kitchen
             i[:instance_initiated_shutdown_behavior] = config[:instance_initiated_shutdown_behavior]
           end
           i
+        end
+
+        # The VPC to look for security groups in.
+        #
+        # Security group names are unique only within a VPC, so the search is
+        # scoped to the VPC the instance will launch into. Which VPC that is
+        # depends on how the subnet was chosen:
+        #
+        # - a named `subnet_id` decides it, so the subnet is described for it
+        # - no subnet at all means EC2 launches into the account's default VPC,
+        #   so that is what gets searched
+        #
+        # The second case used to describe a subnet with an ID of nil and then
+        # read `vpc_id` off the empty result, so a `security_group_filter` on
+        # its own -- a documented combination, and the natural one in a default
+        # VPC account -- died with `undefined method 'vpc_id' for nil` before
+        # anything was launched.
+        #
+        # An account with no default VPC returns nil, and the caller then
+        # searches on the name or tag alone.
+        #
+        # @param client [Aws::EC2::Client] the client to query with
+        # @return [String, nil] the VPC ID, or nil when there is no default VPC
+        # @raise [RuntimeError] when a named subnet does not exist, which would
+        #   otherwise surface as the same nil dereference
+        def security_group_search_vpc_id(client)
+          unless config[:subnet_id]
+            default_vpc = client.describe_vpcs(
+              filters: [{ name: "isDefault", values: %w{true} }]
+            ).vpcs.first
+
+            return default_vpc&.vpc_id
+          end
+
+          subnet = client.describe_subnets(subnet_ids: [config[:subnet_id]]).subnets.first
+          unless subnet
+            raise "Subnet #{config[:subnet_id]} not found while resolving security_group_filter."
+          end
+
+          subnet.vpc_id
         end
 
         # The user data script, base64 encoded as EC2 requires.
