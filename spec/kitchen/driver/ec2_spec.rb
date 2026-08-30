@@ -258,14 +258,19 @@ RSpec.describe Kitchen::Driver::Ec2 do
           .to raise_error(/matched no image in region us-west-2/)
       end
 
+      # Asserted on the message of the error that is raised rather than with
+      # `not_to raise_error(...)`, which passes for literally any other error
+      # -- a NoMethodError from a rename in lib/ included -- and so would go on
+      # passing while `#image` was broken.
       it "does not suggest setting an option the platform already provides" do
         driver = build_driver
         allow(driver).to receive_messages(
           ec2: aws_client, config: { image_id: nil, image_search: nil, region: "us-west-2" }
         )
 
-        expect { driver.image }
-          .not_to raise_error(/Neither image_id nor an image_search specified/)
+        expect { driver.image }.to raise_error(RuntimeError) do |error|
+          expect(error.message).not_to match(/Neither image_id nor an image_search specified/)
+        end
       end
     end
   end
@@ -549,6 +554,240 @@ RSpec.describe Kitchen::Driver::Ec2 do
       end.to raise_error(::Aws::EC2::Errors::InvalidInstanceIDNotFound)
 
       expect(attempts).to eq(1)
+    end
+  end
+
+  # The readiness test is the whole of `#wait_until_ready`: `wait_until` calls
+  # it until it answers true or the attempts run out. Capturing the block and
+  # calling it directly exercises that test without a waiter in the way, which
+  # is the only reason any of this is testable at all.
+  #
+  # It is also the driver's most consequential predicate. Answering true too
+  # early hands Test Kitchen an instance with no address, or a Windows box
+  # whose WinRM listener is not up yet, and the failure surfaces much later as
+  # a transport error that names nothing useful.
+  describe "#wait_until_ready" do
+    let(:server) { instance_double(::Aws::EC2::Instance, id: "i-0123456789abcdef0") }
+    let(:instance_state) { ::Aws::EC2::Types::InstanceState.new(name: "running") }
+    let(:aws_instance) do
+      instance_double(
+        ::Aws::EC2::Instance,
+        exists?: true,
+        state: instance_state,
+        public_dns_name: "ec2-1-2-3-4.compute.amazonaws.com",
+        public_ip_address: "1.2.3.4",
+        private_ip_address: "10.0.0.5",
+        private_dns_name: "ip-10-0-0-5.internal",
+        id: "i-0123456789abcdef0"
+      )
+    end
+
+    # Returns the readiness block `#wait_until_ready` handed to the waiter.
+    def readiness_probe
+      probe = nil
+      allow(server).to receive(:wait_until) { |**_opts, &block| probe = block }
+      driver.wait_until_ready(server, state)
+      probe
+    end
+
+    it "is ready once the instance is running with an address" do
+      expect(readiness_probe.call(aws_instance)).to be(true)
+    end
+
+    it "is not ready while the instance is still pending" do
+      allow(aws_instance).to receive(:state).and_return(::Aws::EC2::Types::InstanceState.new(name: "pending"))
+
+      expect(readiness_probe.call(aws_instance)).to be(false)
+    end
+
+    it "is not ready when the instance no longer exists" do
+      allow(aws_instance).to receive(:exists?).and_return(false)
+
+      expect(readiness_probe.call(aws_instance)).to be(false)
+    end
+
+    # Eucalyptus reports an instance running before it has an address, handing
+    # back 0.0.0.0. Connecting to that goes nowhere.
+    it "is not ready while the address is still 0.0.0.0" do
+      allow(aws_instance).to receive_messages(public_dns_name: "", public_ip_address: "0.0.0.0")
+
+      expect(readiness_probe.call(aws_instance)).to be(false)
+    end
+
+    # Stored on every attempt, not just the last: a failure partway through
+    # still needs to leave enough behind for destroy to clean up.
+    it "records the hostname as soon as it is known" do
+      readiness_probe.call(aws_instance)
+
+      expect(state[:hostname]).to eq("ec2-1-2-3-4.compute.amazonaws.com")
+    end
+
+    # An interface that names an address the instance does not have yet would
+    # otherwise leave the state file with an empty hostname and the run
+    # reporting ready.
+    context "when the requested interface has no address" do
+      let(:config) { { image_id: "ami-0123456789abcdef0", interface: "dns" } }
+
+      it "falls back to the ordered mapping" do
+        allow(aws_instance).to receive(:public_dns_name).and_return("")
+        readiness_probe.call(aws_instance)
+
+        expect(state[:hostname]).to eq("1.2.3.4")
+      end
+    end
+
+    context "on Windows" do
+      subject(:driver) do
+        build_driver(
+          instance_attributes: {
+            platform: Kitchen::Platform.new(name: "windows-2022"),
+            transport: transport,
+          },
+          **config
+        )
+      end
+
+      let(:transport) { Kitchen::Transport::Dummy.new(username: "Administrator") }
+
+      # A Windows instance reports running long before WinRM is listening. The
+      # console output is the only signal EC2 offers, so a run that skipped
+      # this check connected to a machine that was not up yet.
+      context "with a password already configured" do
+        let(:transport) { Kitchen::Transport::Dummy.new(username: "Administrator", password: "hunter2") }
+
+        it "is ready once the console says Windows is ready" do
+          allow(server).to receive(:console_output).and_return(
+            ::Aws::EC2::Types::GetConsoleOutputResult.new(output: Base64.encode64("Windows is Ready to use"))
+          )
+
+          expect(readiness_probe.call(aws_instance)).to be(true)
+        end
+
+        it "is not ready while the console has not said so yet" do
+          allow(server).to receive(:console_output).and_return(
+            ::Aws::EC2::Types::GetConsoleOutputResult.new(output: Base64.encode64("Waiting for the instance to boot"))
+          )
+
+          expect(readiness_probe.call(aws_instance)).to be(false)
+        end
+
+        # EC2 returns no console output at all for the first few minutes of an
+        # instance's life.
+        it "is not ready when there is no console output yet" do
+          allow(server).to receive(:console_output).and_return(
+            ::Aws::EC2::Types::GetConsoleOutputResult.new(output: nil)
+          )
+
+          expect(readiness_probe.call(aws_instance)).to be(false)
+        end
+      end
+
+      # Logging in as Administrator with no password configured is the one case
+      # where the driver has to go and get the password itself, because only it
+      # holds the key pair EC2 encrypted it to.
+      it "fetches the generated password instead of reading the console" do
+        allow(driver).to receive(:fetch_windows_admin_password)
+
+        expect(readiness_probe.call(aws_instance)).to be(true)
+        expect(driver).to have_received(:fetch_windows_admin_password).with(server, state)
+      end
+
+      it "does not fetch a password for a non-administrator account" do
+        allow(driver).to receive(:fetch_windows_admin_password)
+        allow(server).to receive(:console_output).and_return(
+          ::Aws::EC2::Types::GetConsoleOutputResult.new(output: Base64.encode64("Windows is Ready to use"))
+        )
+        allow(driver.instance.transport).to receive(:[]).with(:username).and_return("kitchen")
+        allow(driver.instance.transport).to receive(:[]).with(:password).and_return(nil)
+
+        expect(readiness_probe.call(aws_instance)).to be(true)
+        expect(driver).not_to have_received(:fetch_windows_admin_password)
+      end
+
+      # The Windows checks only run once the instance is otherwise ready, so a
+      # pending instance must not be spending an API call on console output on
+      # every attempt.
+      it "does not read the console until the instance is running" do
+        allow(server).to receive(:console_output)
+        allow(aws_instance).to receive(:state).and_return(::Aws::EC2::Types::InstanceState.new(name: "pending"))
+
+        expect(readiness_probe.call(aws_instance)).to be(false)
+        expect(server).not_to have_received(:console_output)
+      end
+    end
+  end
+
+  describe "#wait_with_destroy" do
+    let(:server) { instance_double(::Aws::EC2::Instance, id: "i-0123456789abcdef0") }
+    let(:state) { { server_id: "i-0123456789abcdef0" } }
+
+    it "returns once the waiter is satisfied" do
+      allow(server).to receive(:wait_until)
+
+      expect { driver.wait_with_destroy(server, state, "to become ready") { true } }
+        .not_to raise_error
+    end
+
+    it "passes the configured attempt count and delay to the waiter" do
+      driver = build_driver(image_id: "ami-0123456789abcdef0", retryable_tries: 7, retryable_sleep: 3)
+      allow(driver).to receive(:ec2).and_return(aws_client)
+      allow(server).to receive(:wait_until)
+
+      driver.wait_with_destroy(server, state, "to become ready") { true }
+
+      expect(server).to have_received(:wait_until).with(hash_including(max_attempts: 7, delay: 3))
+    end
+
+    # An instance that never becomes ready would otherwise keep running and
+    # accruing charges after Test Kitchen has given up on it. The error still
+    # has to surface: destroying and reporting success would leave the run
+    # looking like it worked.
+    it "destroys the instance and re-raises when the wait times out" do
+      allow(server).to receive(:wait_until).and_raise(::Aws::Waiters::Errors::WaiterFailed)
+      allow(driver).to receive(:destroy)
+
+      expect { driver.wait_with_destroy(server, state, "to become ready") { true } }
+        .to raise_error(::Aws::Waiters::Errors::WaiterFailed)
+      expect(driver).to have_received(:destroy).with(state)
+    end
+  end
+
+  describe "#fetch_windows_admin_password" do
+    subject(:driver) do
+      build_driver(
+        instance_attributes: { platform: Kitchen::Platform.new(name: "windows-2022") },
+        **config
+      )
+    end
+
+    let(:server) { instance_double(::Aws::EC2::Instance, id: "i-0123456789abcdef0", client: ec2_client) }
+    let(:state) { { server_id: "i-0123456789abcdef0", ssh_key: "/tmp/kitchen.pem" } }
+
+    before do
+      allow(server).to receive(:decrypt_windows_password).and_return("s3cret")
+      allow(driver).to receive(:wait_with_destroy).and_yield(server)
+    end
+
+    it "decrypts the password with the key pair the driver created" do
+      driver.fetch_windows_admin_password(server, state)
+
+      expect(state[:password]).to eq("s3cret")
+      expect(server).to have_received(:decrypt_windows_password).with(File.expand_path("/tmp/kitchen.pem"))
+    end
+
+    # EC2 answers with blank password data for the first few minutes, so the
+    # readiness block has to keep waiting rather than decrypting nothing.
+    it "waits while EC2 is still returning blank password data" do
+      probe = nil
+      allow(driver).to receive(:wait_with_destroy) { |*_args, &block| probe = block }
+
+      driver.fetch_windows_admin_password(server, state)
+
+      ec2_client.stub_responses(:get_password_data, password_data: "")
+      expect(probe.call(server)).to be(false)
+
+      ec2_client.stub_responses(:get_password_data, password_data: "encrypted-blob")
+      expect(probe.call(server)).to be(true)
     end
   end
 
