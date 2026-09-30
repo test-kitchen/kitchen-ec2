@@ -246,6 +246,38 @@ module Kitchen
         end
       end
 
+      # The payload generator does arithmetic on the count and treats each
+      # `network_interfaces` entry as a Hash, so a malformed value otherwise
+      # surfaces as a bare Ruby error mid-launch (or, for a Hash in place of
+      # an Array, as key/value pairs mistaken for interfaces).
+      validations[:network_interface_count] = lambda do |attr, val, _driver|
+        unless val.nil? || (val.is_a?(Integer) && val >= 1)
+          warn "'#{val.inspect}' is an invalid value for option '#{attr}'. " \
+            "It must be a whole number of 1 or more."
+          exit!
+        end
+      end
+
+      # `network_interfaces` decides the interface count when both are set, so
+      # a count that disagrees with it would be silently ignored.
+      validations[:network_interfaces] = lambda do |attr, val, driver|
+        next if val.nil?
+
+        unless val.is_a?(Array) && val.all?(Hash)
+          warn "Option '#{attr}' must be a list of hashes, one per interface " \
+            "beyond the primary. Example: [{subnet_id: 'subnet-123'}]"
+          exit!
+        end
+
+        count = driver[:network_interface_count]
+        if count && count != val.length + 1
+          warn "'network_interface_count' is #{count}, but '#{attr}' describes " \
+            "#{val.length + 1} interfaces (the primary plus #{val.length}). " \
+            "Please make them agree, or set only '#{attr}'."
+          exit!
+        end
+      end
+
       # empty keys cause failures when tagging and they make no sense
       validations[:tags] = lambda do |_attr, val, _driver|
         # if someone puts the tags each on their own line it's an array not a hash

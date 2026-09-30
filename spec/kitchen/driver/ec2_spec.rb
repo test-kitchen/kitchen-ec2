@@ -157,6 +157,47 @@ RSpec.describe Kitchen::Driver::Ec2 do
       expect(validate(placement: { host_id: "h-1" }).first).to eq(:ok)
     end
 
+    # The generator does arithmetic on the count, so anything but a positive
+    # Integer used to surface as a bare Ruby error partway through launch.
+    [0, -1, "2", 2.5, true].each do |bad|
+      it "refuses to run when network_interface_count is #{bad.inspect}" do
+        outcome, stderr = validate(network_interface_count: bad)
+
+        expect(outcome).to eq(:exited)
+        expect(stderr).to match(/network_interface_count/)
+      end
+    end
+
+    it "accepts a positive network_interface_count" do
+      expect(validate(network_interface_count: 2).first).to eq(:ok)
+    end
+
+    # A Hash here (a missing `-` in YAML) used to be split into key/value
+    # pairs, each mistaken for an interface.
+    [{ subnet_id: "subnet-1" }, ["subnet-1"], "subnet-1"].each do |bad|
+      it "refuses to run when network_interfaces is #{bad.inspect}" do
+        outcome, stderr = validate(network_interfaces: bad)
+
+        expect(outcome).to eq(:exited)
+        expect(stderr).to match(/network_interfaces.*list of hashes/)
+      end
+    end
+
+    it "accepts network_interfaces as a list of hashes" do
+      expect(validate(network_interfaces: [{ subnet_id: "subnet-1" }]).first).to eq(:ok)
+    end
+
+    it "refuses to run when network_interface_count disagrees with network_interfaces" do
+      outcome, stderr = validate(network_interface_count: 3, network_interfaces: [{}])
+
+      expect(outcome).to eq(:exited)
+      expect(stderr).to match(/network_interface_count.*3.*2 interfaces/m)
+    end
+
+    it "accepts a network_interface_count that agrees with network_interfaces" do
+      expect(validate(network_interface_count: 2, network_interfaces: [{}]).first).to eq(:ok)
+    end
+
     it "accepts each valid tenancy" do
       %w{default host dedicated}.each do |tenancy|
         expect(validate(tenancy: tenancy).first).to eq(:ok)
