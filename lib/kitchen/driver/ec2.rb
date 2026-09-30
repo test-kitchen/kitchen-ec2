@@ -258,6 +258,25 @@ module Kitchen
         end
       end
 
+      # Whether a value is one `elastic_ip` accepts: off (`nil`/`false`),
+      # `true` to allocate one, or a String naming an existing address.
+      # Anything else would otherwise fail inside {#find_elastic_ip}, after
+      # the instance is already running.
+      #
+      # @param val [Object] the configured value
+      # @return [Boolean]
+      def self.valid_elastic_ip?(val)
+        [nil, true, false].include?(val) || val.is_a?(String)
+      end
+
+      validations[:elastic_ip] = lambda do |attr, val, _driver|
+        unless valid_elastic_ip?(val)
+          warn "'#{val.inspect}' is an invalid value for option '#{attr}'. " \
+            "Valid values are true, false, or an allocation ID or public IP."
+          exit!
+        end
+      end
+
       # `network_interfaces` decides the interface count when both are set, so
       # a count that disagrees with it would be silently ignored.
       validations[:network_interfaces] = lambda do |attr, val, driver|
@@ -267,6 +286,14 @@ module Kitchen
           warn "Option '#{attr}' must be a list of hashes, one per interface " \
             "beyond the primary. Example: [{subnet_id: 'subnet-123'}]"
           exit!
+        end
+
+        val.each_with_index do |entry, i|
+          unless valid_elastic_ip?(entry[:elastic_ip])
+            warn "'#{entry[:elastic_ip].inspect}' is an invalid 'elastic_ip' for entry #{i} of '#{attr}'. " \
+              "Valid values are true, false, or an allocation ID or public IP."
+            exit!
+          end
         end
 
         count = driver[:network_interface_count]
@@ -1534,7 +1561,9 @@ module Kitchen
       #
       # `elastic_ip` at the top level names the primary interface's (device
       # index 0) address; each `network_interfaces` entry may set its own
-      # `elastic_ip` for that specific additional interface. Neither setting
+      # `elastic_ip` for that specific additional interface -- found by the
+      # entry's own `device_index` when it overrides one, rather than by its
+      # position in the list. Neither setting
       # is ever inherited by an interface that did not ask for one itself,
       # for the same reason a second interface never inherits
       # `associate_public_ip_address` in
@@ -1553,7 +1582,7 @@ module Kitchen
       # @return [void]
       def associate_elastic_ips(state)
         requests = [[0, config[:elastic_ip]]] + Array(config[:network_interfaces]).each_with_index.map do |overrides, i|
-          [i + 1, overrides[:elastic_ip]]
+          [overrides.fetch(:device_index, i + 1), overrides[:elastic_ip]]
         end
         requests = requests.reject { |_device_index, value| value.nil? || value == false }
         return if requests.empty?

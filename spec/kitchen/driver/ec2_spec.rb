@@ -198,6 +198,30 @@ RSpec.describe Kitchen::Driver::Ec2 do
       expect(validate(network_interface_count: 2, network_interfaces: [{}]).first).to eq(:ok)
     end
 
+    # Anything but true/false/String used to reach find_elastic_ip and fail
+    # on `start_with?` after the instance was already running.
+    [123, :eipalloc, ["eipalloc-1"], { allocation_id: "eipalloc-1" }].each do |bad|
+      it "refuses to run when elastic_ip is #{bad.inspect}" do
+        outcome, stderr = validate(elastic_ip: bad)
+
+        expect(outcome).to eq(:exited)
+        expect(stderr).to match(/invalid value for option 'elastic_ip'/)
+      end
+
+      it "refuses to run when a network_interfaces entry's elastic_ip is #{bad.inspect}" do
+        outcome, stderr = validate(network_interfaces: [{ elastic_ip: bad }])
+
+        expect(outcome).to eq(:exited)
+        expect(stderr).to match(/invalid 'elastic_ip' for entry 0 of 'network_interfaces'/)
+      end
+    end
+
+    [true, false, "eipalloc-0123456789abcdef0", "203.0.113.10"].each do |good|
+      it "accepts elastic_ip: #{good.inspect} at the top level and in an entry" do
+        expect(validate(elastic_ip: good, network_interfaces: [{ elastic_ip: good }]).first).to eq(:ok)
+      end
+    end
+
     it "accepts each valid tenancy" do
       %w{default host dedicated}.each do |tenancy|
         expect(validate(tenancy: tenancy).first).to eq(:ok)
@@ -1508,6 +1532,26 @@ RSpec.describe Kitchen::Driver::Ec2 do
         expect(request_params_for(ec2_client, :associate_address)).to eq(
           allocation_id: "eipalloc-new",
           network_interface_id: "eni-secondary"
+        )
+      end
+    end
+
+    # associate_elastic_ips used to assume entry i sat at device index i + 1,
+    # so an entry that overrode its device_index had its Elastic IP silently
+    # never associated.
+    context "with elastic_ip on an entry that overrides its device_index" do
+      let(:tertiary_eni) { { attachment: { device_index: 2 }, network_interface_id: "eni-tertiary" } }
+      let(:instance_data) { { network_interfaces: [primary_eni, tertiary_eni] } }
+      let(:config) do
+        { image_id: "ami-1", network_interfaces: [{ device_index: 2, elastic_ip: true }] }
+      end
+
+      it "associates the interface at the entry's own device index" do
+        driver.associate_elastic_ips(state)
+
+        expect(request_params_for(ec2_client, :associate_address)).to eq(
+          allocation_id: "eipalloc-new",
+          network_interface_id: "eni-tertiary"
         )
       end
     end
