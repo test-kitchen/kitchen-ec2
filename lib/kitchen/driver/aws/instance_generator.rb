@@ -56,6 +56,10 @@ module Kitchen
         # groups are resolved from `security_group_filter` within that subnet's
         # VPC. Both are skipped when the corresponding ID is already set.
         #
+        # `network_interface_count`/`network_interfaces` add interfaces beyond
+        # the primary one at device index 0; see
+        # {#additional_network_interface_overrides}.
+        #
         # @return [Hash] parameters for `Aws::EC2::Resource#create_instances`
         # @raise [RuntimeError] when a subnet or security group filter matches
         #   nothing, since launching into an unintended network is worse than
@@ -160,13 +164,15 @@ module Kitchen
           if config[:iam_profile_name]
             i[:iam_instance_profile] = { name: config[:iam_profile_name] }
           end
-          unless config.fetch(:associate_public_ip, nil).nil?
+          public_ip = config.fetch(:associate_public_ip, nil)
+          additional_interfaces = additional_network_interface_overrides
+          unless public_ip.nil? && additional_interfaces.empty?
             i[:network_interfaces] =
               [{
                 device_index: 0,
-                associate_public_ip_address: config[:associate_public_ip],
                 delete_on_termination: true,
               }]
+            i[:network_interfaces][0][:associate_public_ip_address] = public_ip unless public_ip.nil?
             # If specifying `:network_interfaces` in the request, you must specify
             # network specific configs in the network_interfaces block and not at
             # the top level
@@ -181,6 +187,13 @@ module Kitchen
             end
             if config[:associate_ipv6]
               i[:network_interfaces][0][:ipv_6_address_count] = 1
+            end
+            additional_interfaces.each_with_index do |overrides, offset|
+              # `elastic_ip` is a driver-only setting consumed after launch by
+              # `Ec2#associate_elastic_ips`, not a field `NetworkInterfaces`
+              # accepts -- RunInstances rejects the request outright if it is
+              # merged in here.
+              i[:network_interfaces] << default_network_interface(offset + 1).merge(overrides.except(:elastic_ip))
             end
           end
           # A bare zone letter is a shorthand for that zone within the
@@ -244,6 +257,46 @@ module Kitchen
             i[:instance_initiated_shutdown_behavior] = config[:instance_initiated_shutdown_behavior]
           end
           i
+        end
+
+        # Override hashes for the interfaces beyond the primary (device index
+        # 0), one per additional interface requested.
+        #
+        # `network_interfaces` is authoritative when set: its length decides
+        # how many additional interfaces are created, and each entry overrides
+        # whatever of {#default_network_interface}'s fields it names.
+        # `network_interface_count` is the plain-count convenience — it builds
+        # that many empty override hashes, taking every field from the
+        # inherited defaults. Neither being set means no additional
+        # interfaces, exactly as before this feature existed.
+        #
+        # @return [Array<Hash>] one override hash per additional interface
+        def additional_network_interface_overrides
+          return config[:network_interfaces] if config[:network_interfaces]
+          return [] unless config[:network_interface_count]
+
+          Array.new(config[:network_interface_count] - 1) { {} }
+        end
+
+        # The default payload for a Kitchen-created secondary interface,
+        # before any `network_interfaces` override is applied.
+        #
+        # Inherits the primary interface's subnet and security groups so a
+        # secondary interface needs no configuration of its own. Never
+        # inherits `associate_public_ip_address`, so a second interface never
+        # silently exposes a second public IP.
+        #
+        # @param device_index [Integer] the interface's `device_index`
+        # @return [Hash] a `network_interfaces` entry
+        def default_network_interface(device_index)
+          interface = {
+            device_index:,
+            associate_public_ip_address: false,
+            delete_on_termination: true,
+          }
+          interface[:subnet_id] = config[:subnet_id] if config[:subnet_id]
+          interface[:groups] = Array(config[:security_group_ids]) if config[:security_group_ids]
+          interface
         end
 
         # The VPC to look for security groups in.
