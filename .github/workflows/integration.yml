@@ -1,0 +1,86 @@
+---
+name: 'Integration'
+
+# Never on a pull request. Secrets are not available to forks, and every run
+# launches billable EC2 instances, so a pull request trigger would fail for
+# outside contributors and charge the account for anyone who could run it.
+"on":
+  schedule:
+    - cron: '0 6 * * 1'
+  workflow_dispatch:
+    inputs:
+      pattern:
+        description: 'Suite pattern to run, e.g. default-ubuntu-2404. Empty runs everything.'
+        required: false
+        default: ''
+
+# A repository with no AWS role configured has nothing to run against. Failing
+# a scheduled build on a fork that will never have credentials is noise, so the
+# job is skipped instead.
+env:
+  AWS_ROLE_ARN: ${{ vars.AWS_ROLE_ARN }}
+  AWS_REGION: ${{ vars.AWS_REGION || 'us-east-1' }}
+
+# Two overlapping runs share one account's instance and Elastic IP limits, and
+# both then fail. Queue rather than cancel: cancelling mid-run is exactly how
+# instances get left behind.
+concurrency:
+  group: ec2-integration
+  cancel-in-progress: false
+
+permissions:
+  contents: read
+  id-token: write
+
+jobs:
+  integration:
+    name: ${{ matrix.suite }}
+    runs-on: ubuntu-latest
+    if: ${{ vars.AWS_ROLE_ARN != '' }}
+    strategy:
+      fail-fast: false
+      # One suite at a time per matrix leg is not enough on its own: several
+      # legs still run concurrently, so keep the total modest.
+      max-parallel: 4
+      matrix:
+        suite:
+          - default-ubuntu-2404
+          - default-amazon-2023
+          - default-rhel-9
+          - default-debian-13
+          - arm64-ubuntu-2404-arm64
+          - block-devices-ubuntu-2404
+          - user-data-ubuntu-2404
+          - metadata-options-ubuntu-2404
+          - spot-ubuntu-2404
+          - windows-windows-2022
+    steps:
+      - uses: actions/checkout@v5
+
+      - uses: ruby/setup-ruby@v1
+        with:
+          ruby-version: '3.4'
+          bundler-cache: true
+
+      # Workload identity federation: GitHub's OIDC token is exchanged for
+      # short-lived AWS credentials, so no long-lived access key is stored.
+      - name: Assume the AWS role
+        uses: aws-actions/configure-aws-credentials@v5
+        with:
+          role-to-assume: ${{ env.AWS_ROLE_ARN }}
+          role-session-name: kitchen-ec2-${{ github.run_id }}
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Test ${{ matrix.suite }}
+        env:
+          KITCHEN_EC2_RUN_ID: ${{ github.run_id }}
+        run: bundle exec rake "integration:test[${{ github.event.inputs.pattern || matrix.suite }}]"
+
+      # `kitchen test` destroys on success. A suite that failed, or a job that
+      # was cancelled, leaves an instance running and billing, so this runs
+      # whatever happened.
+      - name: Destroy everything
+        if: always()
+        env:
+          KITCHEN_EC2_RUN_ID: ${{ github.run_id }}
+        run: bundle exec rake "integration:destroy[${{ github.event.inputs.pattern || matrix.suite }}]"

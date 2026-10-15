@@ -1,0 +1,133 @@
+---
+# Integration suites for kitchen-ec2.
+#
+# These launch real, billable EC2 instances. They are not part of `rake
+# default` and never run on a pull request -- see integration/README.md.
+#
+#   bundle exec rake integration:list
+#   bundle exec rake integration:test
+#   bundle exec rake integration:destroy
+driver:
+  name: ec2
+  region: <%= ENV.fetch("AWS_REGION", "us-east-1") %>
+  skip_cost_warning: true
+  tags:
+    created-by: test-kitchen
+    kitchen-ec2-integration: "true"
+    run-id: <%= ENV.fetch("KITCHEN_EC2_RUN_ID", "local") %>
+
+# Assertions live in the provisioner rather than a verifier. The script is
+# transferred over the driver's own transport and executed on the instance, so
+# reaching the machine is part of every assertion, a non-zero exit fails the
+# suite, and there is no verifier licence to satisfy.
+provisioner:
+  name: shell
+
+verifier:
+  name: dummy
+
+platforms:
+  - name: ubuntu-24.04
+  - name: amazon-2023
+  - name: rhel-9
+  - name: debian-13
+  - name: ubuntu-24.04-arm64
+  - name: windows-2022
+    driver:
+      instance_type: t3.medium
+    transport:
+      name: winrm
+
+suites:
+  # The whole point of the driver's defaults: name a platform and nothing else.
+  # Exercises the per-platform AMI search, the free-tier instance type default,
+  # the auto-created security group and key pair, and login as the platform's
+  # own user.
+  - name: default
+    provisioner:
+      script: integration/scripts/default.sh
+    includes:
+      - ubuntu-24.04
+      - amazon-2023
+      - rhel-9
+      - debian-13
+
+  # An instance type runs one processor architecture and EC2 rejects a launch
+  # pairing it with an image built for another, so the default has to follow
+  # the image. Defaulting to t3.micro for every HVM image made every arm64
+  # platform fail to launch outright.
+  - name: arm64
+    provisioner:
+      script: integration/scripts/arm64.sh
+    includes:
+      - ubuntu-24.04-arm64
+
+  # Root volume resized and retyped, plus an extra volume attached.
+  - name: block-devices
+    driver:
+      block_device_mappings:
+        - device_name: /dev/sda1
+          ebs:
+            volume_type: gp3
+            volume_size: 30
+            delete_on_termination: true
+        - device_name: /dev/sdf
+          ebs:
+            volume_type: gp3
+            volume_size: 20
+            delete_on_termination: true
+    provisioner:
+      script: integration/scripts/block_devices.sh
+    includes:
+      - ubuntu-24.04
+
+  # user_data given as a path is read and base64 encoded; cloud-init runs it.
+  - name: user-data
+    driver:
+      user_data: integration/user-data.sh
+    provisioner:
+      script: integration/scripts/user_data.sh
+    includes:
+      - ubuntu-24.04
+
+  # Hardened metadata service. Also the only suite that proves tags reach the
+  # instance, since reading them from inside requires instance_metadata_tags.
+  - name: metadata-options
+    driver:
+      metadata_options:
+        http_tokens: required
+        http_put_response_hop_limit: 1
+        instance_metadata_tags: enabled
+    provisioner:
+      script: integration/scripts/metadata_options.sh
+    includes:
+      - ubuntu-24.04
+
+  # A spot request with no price cap. The instance reports its own lifecycle,
+  # so this proves the market options actually took effect rather than being
+  # quietly dropped into an on-demand launch.
+  - name: spot
+    driver:
+      spot_price: on-demand
+      spot_wait: 300
+    provisioner:
+      script: integration/scripts/spot.sh
+    includes:
+      - ubuntu-24.04
+
+  # Windows: the generated PowerShell user data has to enable WinRM before the
+  # transport can connect at all, and the driver fetches and decrypts the
+  # generated Administrator password. The extra volume checks that the user
+  # data initializes it as GPT -- an MBR disk silently caps at 2 TiB.
+  - name: windows
+    driver:
+      block_device_mappings:
+        - device_name: xvdf
+          ebs:
+            volume_type: gp3
+            volume_size: 20
+            delete_on_termination: true
+    provisioner:
+      script: integration/scripts/windows.ps1
+    includes:
+      - windows-2022

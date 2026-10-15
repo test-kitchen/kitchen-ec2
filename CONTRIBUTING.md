@@ -20,7 +20,7 @@ cd kitchen-ec2
 bundle install
 ```
 
-## Running the tests
+## Running the unit tests
 
 Run the unit tests and the style check together:
 
@@ -52,6 +52,35 @@ AWS credentials. `spec/` mirrors `lib/`, and the shared helpers under
 `spec/support/` build stubbed AWS clients, EC2 image fixtures, and configured
 driver instances.
 
+## Running the integration tests
+
+The unit tests prove the driver *builds* the right EC2 request. They cannot
+prove EC2 accepts it, or that the instance comes up configured the way the
+request asked for — a stub encodes the same assumption the code does.
+
+`integration/` holds Test Kitchen suites that launch real instances and assert
+on the machine itself: AMI search per platform, the instance type default
+following the image architecture, block device mappings, `user_data`, metadata
+options, spot requests, and the Windows path end to end.
+
+```sh
+export AWS_REGION=us-east-1
+bundle exec rake integration:list
+bundle exec rake integration:test
+bundle exec rake integration:destroy   # always, after a failed run
+```
+
+**These launch billable resources**, so they are not part of `bundle exec rake`
+and never run on a pull request. Full details, including the IAM permissions
+needed and how CI authenticates, are in
+[integration/README.md](integration/README.md).
+
+Changes that touch instance creation, networking, or connectivity should be
+exercised this way. Confirm in the EC2 console afterwards that no instances,
+security groups, key pairs, or dedicated hosts were left behind — a run that
+fails partway through can leave resources running. Prefer a scratch account and
+a region you do not use for anything else, so stray resources are easy to spot.
+
 ## Documentation
 
 The library is documented with [YARD](https://yardoc.org/). Generate the HTML
@@ -75,20 +104,6 @@ bundle exec rake yard:serve
 
 Documentation is not checked in CI, so `rake yard` never fails a build. Please
 still add YARD comments to new methods, and update the ones you change.
-
-### Manual testing against AWS
-
-Changes that touch instance creation, networking, or connectivity should also be
-exercised against a real account, since the stubbed tests cannot catch API-level
-regressions.
-
-**This launches billable resources.** Run `kitchen destroy` when you are done
-and confirm in the EC2 console that no instances, security groups, key pairs, or
-dedicated hosts were left behind — a run that fails partway through can leave
-resources running.
-
-Prefer a scratch account, a cheap instance type, and a region you do not use for
-anything else, so stray resources are easy to spot.
 
 ## Submitting changes
 
