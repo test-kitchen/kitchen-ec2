@@ -65,6 +65,26 @@ RSpec.describe Kitchen::Driver::Aws::InstanceGenerator do
       expect { run_instances }.not_to raise_error
     end
 
+    it "is accepted with a second network interface" do
+      config[:subnet_id] = "subnet-0123456789abcdef0"
+      config[:network_interface_count] = 2
+
+      expect { run_instances }.not_to raise_error
+    end
+
+    # elastic_ip is a driver-only setting consumed after launch by
+    # Ec2#associate_elastic_ips; RunInstances has no such field. A prior
+    # version of default_network_interface's override merge let it leak
+    # straight into the interface entry, and every `network_interfaces`
+    # config naming one died with
+    # "unexpected value at params[:network_interfaces][1][:elastic_ip]".
+    it "is accepted with an elastic_ip override on a second network interface" do
+      config[:subnet_id] = "subnet-0123456789abcdef0"
+      config[:network_interfaces] = [{ elastic_ip: true }]
+
+      expect { run_instances }.not_to raise_error
+    end
+
     it "is accepted with tags, block devices and metadata options" do
       config[:tags] = { "created-by" => "test-kitchen" }
       config[:block_device_mappings] = [{ device_name: "/dev/sda1", ebs: { volume_size: 30 } }]
@@ -325,6 +345,113 @@ RSpec.describe Kitchen::Driver::Aws::InstanceGenerator do
       it "builds an interface block when associate_public_ip is false" do
         config[:associate_public_ip] = false
         expect(instance_data[:network_interfaces][0][:associate_public_ip_address]).to be(false)
+      end
+    end
+
+    # `network_interface_count`/`network_interfaces` only ever append beyond
+    # device index 0, so with neither set the payload must come out exactly
+    # as it did before this feature existed.
+    describe "network_interface_count and network_interfaces" do
+      describe "when neither option is set" do
+        it "builds no interface block, same as before, with associate_public_ip unset" do
+          expect(instance_data).not_to have_key(:network_interfaces)
+        end
+
+        it "builds a single interface block, same as before, with associate_public_ip set" do
+          config[:associate_public_ip] = true
+          config[:subnet_id] = "subnet-0123456789abcdef0"
+          config[:security_group_ids] = %w{sg-aaa}
+
+          expect(instance_data[:network_interfaces]).to eq([
+            {
+              device_index: 0,
+              associate_public_ip_address: true,
+              delete_on_termination: true,
+              subnet_id: "subnet-0123456789abcdef0",
+              groups: %w{sg-aaa},
+            },
+          ])
+        end
+      end
+
+      describe "network_interface_count" do
+        before do
+          config[:subnet_id] = "subnet-0123456789abcdef0"
+          config[:security_group_ids] = %w{sg-aaa}
+          config[:network_interface_count] = 2
+        end
+
+        it "appends one additional interface with defaults inherited from the primary" do
+          expect(instance_data[:network_interfaces]).to eq([
+            {
+              device_index: 0,
+              delete_on_termination: true,
+              subnet_id: "subnet-0123456789abcdef0",
+              groups: %w{sg-aaa},
+            },
+            {
+              device_index: 1,
+              associate_public_ip_address: false,
+              delete_on_termination: true,
+              subnet_id: "subnet-0123456789abcdef0",
+              groups: %w{sg-aaa},
+            },
+          ])
+        end
+
+        # associate_public_ip is a separate, unset option here -- requesting
+        # more interfaces must not force one on the primary interface.
+        it "does not add a public IP to the primary interface on its own" do
+          expect(instance_data[:network_interfaces][0]).not_to have_key(:associate_public_ip_address)
+        end
+      end
+
+      describe "network_interfaces overrides" do
+        before { config[:subnet_id] = "subnet-0123456789abcdef0" }
+
+        it "treats an empty override hash the same as network_interface_count" do
+          config[:network_interfaces] = [{}]
+
+          expect(instance_data[:network_interfaces][1]).to eq(
+            device_index: 1,
+            associate_public_ip_address: false,
+            delete_on_termination: true,
+            subnet_id: "subnet-0123456789abcdef0"
+          )
+        end
+
+        it "overrides only the fields given, defaulting the rest" do
+          config[:network_interfaces] = [{ subnet_id: "subnet-other", private_ip_address: "10.0.2.5" }]
+
+          expect(instance_data[:network_interfaces][1]).to eq(
+            device_index: 1,
+            associate_public_ip_address: false,
+            delete_on_termination: true,
+            subnet_id: "subnet-other",
+            private_ip_address: "10.0.2.5"
+          )
+        end
+
+        it "creates one additional interface per array entry" do
+          config[:network_interfaces] = [{}, {}]
+          expect(instance_data[:network_interfaces].length).to eq(3)
+        end
+
+        # elastic_ip is consumed after launch by Ec2#associate_elastic_ips, not
+        # a field NetworkInterfaces accepts -- RunInstances rejects the whole
+        # request if it is merged into the interface entry.
+        it "does not leak an elastic_ip override into the interface entry" do
+          config[:network_interfaces] = [{ elastic_ip: true }]
+
+          expect(instance_data[:network_interfaces][1]).not_to have_key(:elastic_ip)
+        end
+      end
+
+      it "lets network_interfaces win over network_interface_count when both are set" do
+        config[:network_interface_count] = 5
+        config[:network_interfaces] = [{}, {}]
+
+        expect(instance_data[:network_interfaces].length).to eq(3)
       end
     end
 

@@ -157,6 +157,98 @@ RSpec.describe Kitchen::Driver::Ec2 do
       expect(validate(placement: { host_id: "h-1" }).first).to eq(:ok)
     end
 
+    # The generator does arithmetic on the count, so anything but a positive
+    # Integer used to surface as a bare Ruby error partway through launch.
+    [0, -1, "2", 2.5, true].each do |bad|
+      it "refuses to run when network_interface_count is #{bad.inspect}" do
+        outcome, stderr = validate(network_interface_count: bad)
+
+        expect(outcome).to eq(:exited)
+        expect(stderr).to match(/network_interface_count/)
+      end
+    end
+
+    it "accepts a positive network_interface_count" do
+      expect(validate(network_interface_count: 2).first).to eq(:ok)
+    end
+
+    # A Hash here (a missing `-` in YAML) used to be split into key/value
+    # pairs, each mistaken for an interface.
+    [{ subnet_id: "subnet-1" }, ["subnet-1"], "subnet-1"].each do |bad|
+      it "refuses to run when network_interfaces is #{bad.inspect}" do
+        outcome, stderr = validate(network_interfaces: bad)
+
+        expect(outcome).to eq(:exited)
+        expect(stderr).to match(/network_interfaces.*list of hashes/)
+      end
+    end
+
+    it "accepts network_interfaces as a list of hashes" do
+      expect(validate(network_interfaces: [{ subnet_id: "subnet-1" }]).first).to eq(:ok)
+    end
+
+    it "refuses to run when network_interface_count disagrees with network_interfaces" do
+      outcome, stderr = validate(network_interface_count: 3, network_interfaces: [{}])
+
+      expect(outcome).to eq(:exited)
+      expect(stderr).to match(/network_interface_count.*3.*2 interfaces/m)
+    end
+
+    it "accepts a network_interface_count that agrees with network_interfaces" do
+      expect(validate(network_interface_count: 2, network_interfaces: [{}]).first).to eq(:ok)
+    end
+
+    # Anything but true/false/String used to reach find_elastic_ip and fail
+    # on `start_with?` after the instance was already running.
+    [123, :eipalloc, ["eipalloc-1"], { allocation_id: "eipalloc-1" }].each do |bad|
+      it "refuses to run when elastic_ip is #{bad.inspect}" do
+        outcome, stderr = validate(elastic_ip: bad)
+
+        expect(outcome).to eq(:exited)
+        expect(stderr).to match(/invalid value for option 'elastic_ip'/)
+      end
+
+      it "refuses to run when a network_interfaces entry's elastic_ip is #{bad.inspect}" do
+        outcome, stderr = validate(network_interfaces: [{ elastic_ip: bad }])
+
+        expect(outcome).to eq(:exited)
+        expect(stderr).to match(/invalid 'elastic_ip' for entry 0 of 'network_interfaces'/)
+      end
+    end
+
+    [true, false, "eipalloc-0123456789abcdef0", "203.0.113.10"].each do |good|
+      it "accepts elastic_ip: #{good.inspect} at the top level and in an entry" do
+        expect(validate(elastic_ip: good, network_interfaces: [{ elastic_ip: good }]).first).to eq(:ok)
+      end
+    end
+
+    # AWS refuses to auto-assign a public IP on a multi-interface launch, and
+    # only after the security group and key pair already exist.
+    [
+      { network_interface_count: 2 },
+      { network_interfaces: [{}] },
+      { network_interface_count: 2, network_interfaces: [{}] },
+    ].each do |nics|
+      it "refuses to run when associate_public_ip is true with #{nics.inspect}" do
+        outcome, stderr = validate(associate_public_ip: true, **nics)
+
+        expect(outcome).to eq(:exited)
+        expect(stderr).to match(/associate_public_ip: true.*more than one network interface.*elastic_ip: true/m)
+      end
+    end
+
+    {
+      "true with one interface" => { associate_public_ip: true },
+      "true with network_interface_count: 1" => { associate_public_ip: true, network_interface_count: 1 },
+      "true with an empty network_interfaces" => { associate_public_ip: true, network_interfaces: [] },
+      "false with several interfaces" => { associate_public_ip: false, network_interface_count: 2 },
+      "unset with several interfaces" => { network_interface_count: 2 },
+    }.each do |desc, config|
+      it "accepts associate_public_ip #{desc}" do
+        expect(validate(**config).first).to eq(:ok)
+      end
+    end
+
     it "accepts each valid tenancy" do
       %w{default host dedicated}.each do |tenancy|
         expect(validate(tenancy: tenancy).first).to eq(:ok)
@@ -1327,6 +1419,440 @@ RSpec.describe Kitchen::Driver::Ec2 do
     end
   end
 
+  describe "#assert_elastic_ips_available!" do
+    let(:free_address) { { allocation_id: "eipalloc-free", public_ip: "203.0.113.20" } }
+    let(:used_address) do
+      { allocation_id: "eipalloc-used", public_ip: "203.0.113.30",
+        association_id: "eipassoc-other", instance_id: "i-0other", network_interface_id: "eni-other" }
+    end
+    let(:addresses) { [free_address] }
+    let(:ec2_client) do
+      stub_ec2_client(describe_images: { images: [image.data.to_h] }, describe_addresses: { addresses: addresses })
+    end
+
+    it "makes no lookups when no address is named" do
+      build_driver(image_id: "ami-1", elastic_ip: true, network_interfaces: [{ elastic_ip: true }])
+        .tap { |d| allow(d).to receive(:ec2).and_return(aws_client) }
+        .assert_elastic_ips_available!
+
+      expect(requests_for(ec2_client, :describe_addresses)).to be_empty
+    end
+
+    context "with an unassociated address named at the top level" do
+      let(:config) { { image_id: "ami-1", elastic_ip: "eipalloc-free" } }
+
+      it "allows the launch" do
+        expect { driver.assert_elastic_ips_available! }.not_to raise_error
+      end
+    end
+
+    # AWS moves an address that is in use unless told not to, taking it from
+    # whatever held it -- and destroying the Kitchen instance would not give
+    # it back.
+    context "with an address that is already associated with an instance" do
+      let(:addresses) { [used_address] }
+      let(:config) { { image_id: "ami-1", elastic_ip: "203.0.113.30" } }
+
+      it "refuses, naming what holds it" do
+        expect { driver.assert_elastic_ips_available! }
+          .to raise_error(Kitchen::UserError, /203\.0\.113\.30.*already associated with i-0other/)
+      end
+    end
+
+    context "with an in-use address named in a network_interfaces entry" do
+      let(:addresses) { [used_address.except(:instance_id)] }
+      let(:config) { { image_id: "ami-1", network_interfaces: [{ elastic_ip: "eipalloc-used" }] } }
+
+      it "refuses, naming the interface when no instance holds it" do
+        expect { driver.assert_elastic_ips_available! }
+          .to raise_error(Kitchen::UserError, /eipalloc-used.*already associated with eni-other/)
+      end
+    end
+
+    context "with an address that does not exist" do
+      let(:addresses) { [] }
+      let(:config) { { image_id: "ami-1", elastic_ip: "eipalloc-missing" } }
+
+      it "refuses before launch" do
+        expect { driver.assert_elastic_ips_available! }
+          .to raise_error(Kitchen::UserError, /eipalloc-missing.*does not match/)
+      end
+    end
+  end
+
+  describe "#create with an elastic_ip that is already in use" do
+    let(:config) { { image_id: "ami-1", elastic_ip: "eipalloc-used" } }
+    let(:ec2_client) do
+      stub_ec2_client(
+        describe_images: { images: [image.data.to_h] },
+        describe_addresses: { addresses: [{ allocation_id: "eipalloc-used", association_id: "eipassoc-other",
+                                            instance_id: "i-0other" }] }
+      )
+    end
+
+    it "stops before creating anything" do
+      expect { driver.create(state) }.to raise_error(Kitchen::UserError, /already associated/)
+
+      expect(requests_for(ec2_client, :run_instances)).to be_empty
+      expect(requests_for(ec2_client, :create_security_group)).to be_empty
+      expect(requests_for(ec2_client, :create_key_pair)).to be_empty
+    end
+  end
+
+  describe "#associate_elastic_ips" do
+    let(:primary_eni) { { attachment: { device_index: 0 }, network_interface_id: "eni-primary" } }
+    let(:secondary_eni) { { attachment: { device_index: 1 }, network_interface_id: "eni-secondary" } }
+    let(:instance_data) { { network_interfaces: [primary_eni, secondary_eni] } }
+    let(:ec2_client) do
+      stub_ec2_client(
+        describe_images: { images: [image.data.to_h] },
+        describe_instances: { reservations: [{ instances: [instance_data] }] },
+        allocate_address: { allocation_id: "eipalloc-new", public_ip: "203.0.113.10" },
+        associate_address: { association_id: "eipassoc-1" }
+      )
+    end
+
+    before { state[:server_id] = "i-0123456789abcdef0" }
+
+    context "with no elastic_ip configured anywhere" do
+      it "does nothing" do
+        driver.associate_elastic_ips(state)
+
+        expect(requests_for(ec2_client, :describe_instances)).to be_empty
+        expect(requests_for(ec2_client, :allocate_address)).to be_empty
+        expect(requests_for(ec2_client, :associate_address)).to be_empty
+      end
+
+      # launch_instance only refreshes state[:hostname] afterward when this
+      # returns truthy -- see #refresh_hostname_after_elastic_ip -- so a
+      # falsy return here matters as more than incidental.
+      it "returns a falsy value" do
+        expect(driver.associate_elastic_ips(state)).to be_falsy
+      end
+    end
+
+    context "with elastic_ip: true at the top level" do
+      let(:config) { { image_id: "ami-1", elastic_ip: true } }
+
+      it "allocates a new address and associates it with the primary interface" do
+        driver.associate_elastic_ips(state)
+
+        expect(request_params_for(ec2_client, :associate_address)).to eq(
+          allocation_id: "eipalloc-new",
+          network_interface_id: "eni-primary",
+          allow_reassociation: false
+        )
+      end
+
+      # launch_instance uses this to decide whether to refresh
+      # state[:hostname] -- see #refresh_hostname_after_elastic_ip.
+      it "returns a truthy value" do
+        expect(driver.associate_elastic_ips(state)).to be_truthy
+      end
+
+      it "tags the new address as created by test-kitchen" do
+        driver.associate_elastic_ips(state)
+
+        expect(request_params_for(ec2_client, :allocate_address)[:tag_specifications]).to eq([
+          { resource_type: "elastic-ip", tags: [{ key: "created-by", value: "test-kitchen" }] },
+        ])
+      end
+
+      it "records the allocation so destroy can release it" do
+        driver.associate_elastic_ips(state)
+
+        expect(state[:auto_elastic_ip_allocation_ids]).to eq(["eipalloc-new"])
+      end
+    end
+
+    context "with an existing Elastic IP named by allocation ID" do
+      let(:config) { { image_id: "ami-1", elastic_ip: "eipalloc-existing" } }
+      let(:ec2_client) do
+        stub_ec2_client(
+          describe_images: { images: [image.data.to_h] },
+          describe_instances: { reservations: [{ instances: [instance_data] }] },
+          describe_addresses: { addresses: [{ allocation_id: "eipalloc-existing", public_ip: "203.0.113.20" }] },
+          associate_address: { association_id: "eipassoc-1" }
+        )
+      end
+
+      it "looks it up and associates it without allocating a new one" do
+        driver.associate_elastic_ips(state)
+
+        expect(request_params_for(ec2_client, :describe_addresses)).to eq(allocation_ids: ["eipalloc-existing"])
+        expect(request_params_for(ec2_client, :associate_address)).to eq(
+          allocation_id: "eipalloc-existing",
+          network_interface_id: "eni-primary",
+          allow_reassociation: false
+        )
+        expect(requests_for(ec2_client, :allocate_address)).to be_empty
+      end
+
+      it "does not record it for destroy to release" do
+        driver.associate_elastic_ips(state)
+
+        expect(state).not_to have_key(:auto_elastic_ip_allocation_ids)
+      end
+    end
+
+    context "with an existing Elastic IP named by public IP address" do
+      let(:config) { { image_id: "ami-1", elastic_ip: "203.0.113.20" } }
+      let(:ec2_client) do
+        stub_ec2_client(
+          describe_images: { images: [image.data.to_h] },
+          describe_instances: { reservations: [{ instances: [instance_data] }] },
+          describe_addresses: { addresses: [{ allocation_id: "eipalloc-existing", public_ip: "203.0.113.20" }] },
+          associate_address: { association_id: "eipassoc-1" }
+        )
+      end
+
+      it "looks it up by IP rather than allocation ID" do
+        driver.associate_elastic_ips(state)
+
+        expect(request_params_for(ec2_client, :describe_addresses)).to eq(public_ips: ["203.0.113.20"])
+      end
+    end
+
+    context "with a String elastic_ip that matches no existing address" do
+      let(:config) { { image_id: "ami-1", elastic_ip: "203.0.113.99" } }
+      let(:ec2_client) do
+        stub_ec2_client(
+          describe_images: { images: [image.data.to_h] },
+          describe_instances: { reservations: [{ instances: [instance_data] }] },
+          describe_addresses: { addresses: [] }
+        )
+      end
+
+      it "raises a clear UserError instead of associating nothing silently" do
+        expect { driver.associate_elastic_ips(state) }.to raise_error(
+          Kitchen::UserError, /203\.0\.113\.99/
+        )
+      end
+    end
+
+    context "with elastic_ip only on an additional network_interfaces entry" do
+      let(:config) do
+        { image_id: "ami-1", network_interfaces: [{ elastic_ip: true }] }
+      end
+
+      it "associates only the additional interface, leaving the primary alone" do
+        driver.associate_elastic_ips(state)
+
+        expect(request_params_for(ec2_client, :associate_address)).to eq(
+          allocation_id: "eipalloc-new",
+          network_interface_id: "eni-secondary",
+          allow_reassociation: false
+        )
+      end
+    end
+
+    # associate_elastic_ips used to assume entry i sat at device index i + 1,
+    # so an entry that overrode its device_index had its Elastic IP silently
+    # never associated.
+    context "with elastic_ip on an entry that overrides its device_index" do
+      let(:tertiary_eni) { { attachment: { device_index: 2 }, network_interface_id: "eni-tertiary" } }
+      let(:instance_data) { { network_interfaces: [primary_eni, tertiary_eni] } }
+      let(:config) do
+        { image_id: "ami-1", network_interfaces: [{ device_index: 2, elastic_ip: true }] }
+      end
+
+      it "associates the interface at the entry's own device index" do
+        driver.associate_elastic_ips(state)
+
+        expect(request_params_for(ec2_client, :associate_address)).to eq(
+          allocation_id: "eipalloc-new",
+          network_interface_id: "eni-tertiary",
+          allow_reassociation: false
+        )
+      end
+    end
+
+    # Backstops #assert_elastic_ips_available! in case the address is taken
+    # between the check and the association.
+    context "with an existing address named by allocation ID" do
+      let(:config) { { image_id: "ami-1", elastic_ip: "eipalloc-existing" } }
+      let(:ec2_client) do
+        stub_ec2_client(
+          describe_images: { images: [image.data.to_h] },
+          describe_instances: { reservations: [{ instances: [instance_data] }] },
+          describe_addresses: { addresses: [{ allocation_id: "eipalloc-existing" }] },
+          associate_address: { association_id: "eipassoc-1" }
+        )
+      end
+
+      it "never lets AWS move it from wherever else it is associated" do
+        driver.associate_elastic_ips(state)
+
+        expect(request_params_for(ec2_client, :associate_address)).to include(allow_reassociation: false)
+      end
+    end
+
+    context "with elastic_ip: true on both the primary and an additional interface" do
+      let(:config) do
+        { image_id: "ami-1", elastic_ip: true, network_interfaces: [{ elastic_ip: true }] }
+      end
+      let(:ec2_client) do
+        stub_ec2_client(
+          describe_images: { images: [image.data.to_h] },
+          describe_instances: { reservations: [{ instances: [instance_data] }] },
+          allocate_address: [
+            { allocation_id: "eipalloc-1", public_ip: "203.0.113.10" },
+            { allocation_id: "eipalloc-2", public_ip: "203.0.113.11" },
+          ],
+          associate_address: { association_id: "eipassoc-1" }
+        )
+      end
+
+      it "allocates and associates a separate address for each interface" do
+        driver.associate_elastic_ips(state)
+
+        expect(requests_for(ec2_client, :associate_address).map { |r| r[:params] }).to contain_exactly(
+          { allocation_id: "eipalloc-1", network_interface_id: "eni-primary", allow_reassociation: false },
+          { allocation_id: "eipalloc-2", network_interface_id: "eni-secondary", allow_reassociation: false }
+        )
+      end
+
+      it "records both allocations for destroy to release" do
+        driver.associate_elastic_ips(state)
+
+        expect(state[:auto_elastic_ip_allocation_ids]).to eq(%w{eipalloc-1 eipalloc-2})
+      end
+    end
+
+    # A second interface never inherits associate_public_ip_address either --
+    # see default_network_interface -- for the same reason: a NIC should
+    # never silently end up internet-facing just because another one asked.
+    context "with elastic_ip: true only at the top level" do
+      let(:config) { { image_id: "ami-1", elastic_ip: true } }
+
+      it "does not also give the additional interface an address" do
+        driver.associate_elastic_ips(state)
+
+        expect(requests_for(ec2_client, :associate_address).size).to eq(1)
+        expect(request_params_for(ec2_client, :associate_address)[:network_interface_id]).to eq("eni-primary")
+      end
+    end
+  end
+
+  # wait_until_ready caches state[:hostname] before associate_elastic_ips ever
+  # runs, so a primary interface whose only route to a public address is a
+  # freshly associated elastic_ip would otherwise leave the rest of #create
+  # trying to reach a stale (usually private) address.
+  describe "#refresh_hostname_after_elastic_ip" do
+    before { state[:server_id] = "i-0123456789abcdef0" }
+
+    context "with an explicit public interface preference" do
+      let(:config) { { image_id: "ami-1", interface: "public" } }
+      let(:server) { instance_double(::Aws::EC2::Instance, public_ip_address: "203.0.113.10") }
+
+      before { allow(aws_client).to receive(:get_instance).and_return(server) }
+
+      it "replaces a stale hostname with the instance's current public address" do
+        state[:hostname] = "10.0.0.5"
+
+        driver.refresh_hostname_after_elastic_ip(state)
+
+        expect(state[:hostname]).to eq("203.0.113.10")
+      end
+    end
+
+    context "with an explicit private interface preference" do
+      let(:config) { { image_id: "ami-1", interface: "private" } }
+      let(:server) { instance_double(::Aws::EC2::Instance, private_ip_address: "10.0.0.5") }
+
+      before { allow(aws_client).to receive(:get_instance).and_return(server) }
+
+      it "honors it rather than preferring the newly associated public address" do
+        driver.refresh_hostname_after_elastic_ip(state)
+
+        expect(state[:hostname]).to eq("10.0.0.5")
+      end
+    end
+  end
+
+  describe "#release_elastic_ips" do
+    let(:ec2_client) { stub_ec2_client(describe_images: { images: [image.data.to_h] }) }
+
+    it "releases every recorded allocation and clears the state" do
+      state[:auto_elastic_ip_allocation_ids] = %w{eipalloc-1 eipalloc-2}
+      driver.release_elastic_ips(state)
+
+      expect(requests_for(ec2_client, :release_address).map { |r| r[:params] }).to contain_exactly(
+        { allocation_id: "eipalloc-1" },
+        { allocation_id: "eipalloc-2" }
+      )
+      expect(state).not_to have_key(:auto_elastic_ip_allocation_ids)
+    end
+
+    it "does nothing when create never allocated one" do
+      driver.release_elastic_ips(state)
+      expect(requests_for(ec2_client, :release_address)).to be_empty
+    end
+
+    # An address named by allocation ID or public IP string was never this
+    # driver's to destroy -- release_elastic_ips only ever sees what
+    # associate_elastic_ips recorded, and it does not record those.
+    it "does not release an address that was only looked up, not allocated" do
+      driver.release_elastic_ips({})
+      expect(requests_for(ec2_client, :release_address)).to be_empty
+    end
+
+    context "when an allocation is already gone" do
+      before do
+        ec2_client.stub_responses(
+          :release_address,
+          ::Aws::EC2::Errors::InvalidAllocationIDNotFound.new(nil, "no such allocation")
+        )
+      end
+
+      it "warns instead of raising" do
+        state[:auto_elastic_ip_allocation_ids] = ["eipalloc-gone"]
+
+        expect { driver.release_elastic_ips(state) }.not_to raise_error
+        expect(logged_output.string).to match(/no such allocation/)
+      end
+    end
+
+    # The IDs used to be dropped from state before any release was tried, so
+    # one failure lost every address after it and left a retry nothing to do.
+    context "when the first of several releases fails" do
+      before do
+        ec2_client.stub_responses(:release_address, ["RequestLimitExceeded", {}, {}])
+        state[:auto_elastic_ip_allocation_ids] = %w{eipalloc-1 eipalloc-2 eipalloc-3}
+      end
+
+      it "still tries every address" do
+        expect { driver.release_elastic_ips(state) }.to raise_error(Kitchen::ActionFailed)
+
+        expect(requests_for(ec2_client, :release_address).map { |r| r[:params][:allocation_id] })
+          .to eq(%w{eipalloc-1 eipalloc-2 eipalloc-3})
+      end
+
+      it "keeps only the unreleased address in state for a retry" do
+        expect { driver.release_elastic_ips(state) }.to raise_error(Kitchen::ActionFailed)
+
+        expect(state[:auto_elastic_ip_allocation_ids]).to eq(%w{eipalloc-1})
+      end
+
+      it "names the address and the reason" do
+        expect { driver.release_elastic_ips(state) }
+          .to raise_error(Kitchen::ActionFailed, /eipalloc-1 \(.*\).*run destroy again/)
+      end
+    end
+
+    context "when an already-gone address is mixed with a successful release" do
+      before do
+        ec2_client.stub_responses(:release_address, ["InvalidAllocationID.NotFound", {}])
+        state[:auto_elastic_ip_allocation_ids] = %w{eipalloc-gone eipalloc-2}
+      end
+
+      it "treats both as released and clears the state" do
+        expect { driver.release_elastic_ips(state) }.not_to raise_error
+        expect(state).not_to have_key(:auto_elastic_ip_allocation_ids)
+      end
+    end
+  end
+
   # This error path had no coverage before, which is how #606 survived: every
   # failure, whatever its cause, was reported as an AMI availability problem.
   describe "#create when creating fails" do
@@ -1585,6 +2111,18 @@ RSpec.describe Kitchen::Driver::Ec2 do
     it "does nothing when there is no instance to destroy" do
       driver.destroy(state)
       expect(server).not_to have_received(:terminate)
+    end
+
+    # A failed Elastic IP release now raises, which must not also skip the
+    # dedicated host release that comes after it -- a host bills far more.
+    it "still releases the dedicated host when an Elastic IP release fails" do
+      state[:auto_elastic_ip_allocation_ids] = %w{eipalloc-1}
+      ec2_client.stub_responses(:release_address, "RequestLimitExceeded")
+      allow(driver).to receive(:release_allocated_host)
+
+      expect { driver.destroy(state) }.to raise_error(Kitchen::ActionFailed)
+      expect(driver).to have_received(:release_allocated_host).with(state)
+      expect(state[:auto_elastic_ip_allocation_ids]).to eq(%w{eipalloc-1})
     end
 
     # An auto-created security group cannot be deleted while an instance is
