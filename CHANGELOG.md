@@ -2,6 +2,14 @@
 
 ## Unreleased
 
+## [3.23.1](https://github.com/test-kitchen/kitchen-ec2/compare/v3.23.0...v3.23.1) (2026-08-30)
+
+
+### Bug Fixes
+
+* Fail early when a Windows platform has a Bourne shell type ([#670](https://github.com/test-kitchen/kitchen-ec2/issues/670)) ([29bef13](https://github.com/test-kitchen/kitchen-ec2/commit/29bef13fc43bd2cfeaface0451bf29e76cb26d39)), closes [#621](https://github.com/test-kitchen/kitchen-ec2/issues/621)
+* Find security groups by filter when no subnet is set ([#709](https://github.com/test-kitchen/kitchen-ec2/issues/709)) ([6d5e55a](https://github.com/test-kitchen/kitchen-ec2/commit/6d5e55a806bd53e9a42838908c0b60d55496a190))
+
 ## [3.23.0](https://github.com/test-kitchen/kitchen-ec2/compare/v3.22.10...v3.23.0) (2026-08-23)
 
 
