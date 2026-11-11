@@ -21,6 +21,6 @@ Gem::Specification.new do |gem|
   gem.add_dependency "aws-sdk-ec2instanceconnect", "~> 1.0"
   gem.add_dependency "aws-sdk-ssm", "~> 1.0"
   gem.add_dependency "retryable", ">= 2.0", "< 4.0" # 4.0 will need to be validated
-  gem.add_dependency "sshkey", "~> 2.0"
+  gem.add_dependency "sshkey", "~> 3.0"
   gem.add_dependency "test-kitchen", ">= 3.9.0", "< 5"
 end
